@@ -1,0 +1,41 @@
+framework:
+    messenger:
+        default_bus: command.bus
+        buses:
+            command.bus:
+                middleware:
+                    - doctrine_transaction
+            query.bus: ~
+            event.bus:
+                default_middleware: allow_no_handlers
+
+        transports:
+            sync: 'sync://'
+
+            async:
+                dsn: '%env(RABBITMQ_DSN)%'
+                options:
+                    exchange:
+                        name: events
+                        type: topic
+                    queues:
+                        events.user:
+                            binding_keys: ['user.#']
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2
+
+            async.dead_letter:
+                dsn: '%env(RABBITMQ_DSN)%'
+                options:
+                    exchange:
+                        name: dead_letter
+                        type: direct
+                    queues:
+                        dead_letter: ~
+
+        routing:
+            'App\Shared\Domain\Bus\Command\Command': sync
+            'App\Shared\Domain\Bus\Query\Query': sync
+            'App\Shared\Domain\Bus\Event\DomainEvent': async

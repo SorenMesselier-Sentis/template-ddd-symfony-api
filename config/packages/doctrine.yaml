@@ -1,0 +1,40 @@
+doctrine:
+    dbal:
+        driver: pdo_pgsql
+        url: '%env(resolve:DATABASE_URL)%'
+        types:
+            uuid: App\Shared\Infrastructure\Persistence\Doctrine\Type\UuidType
+            email: App\Shared\Infrastructure\Persistence\Doctrine\Type\EmailType
+    orm:
+        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+        mappings:
+            # Here is an example of how to correctly map the entities definitions
+            # User:
+                # type: php
+                # dir: '%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping'
+                # prefix: App\User\Domain\Entity
+                # is_bundle: false
+
+when@test:
+    doctrine:
+        dbal:
+            # "TEST_TOKEN" is typically set by ParaTest
+            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
+when@prod:
+    doctrine:
+        orm:
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system
