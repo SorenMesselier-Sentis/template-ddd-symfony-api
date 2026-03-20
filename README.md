@@ -12,7 +12,6 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Database | PostgreSQL 16 |
 | Message Bus | Symfony Messenger |
 | Queue | RabbitMQ |
-| Search | Elasticsearch |
 | Logging | Monolog |
 | Monitoring | Prometheus + Grafana |
 
@@ -33,7 +32,6 @@ src/
 │       ├── Logging/                # Monolog implementation
 │       ├── Monitoring/             # Prometheus, OpenTelemetry
 │       ├── Messaging/              # Dead letter handler
-│       ├── Search/                 # Elasticsearch client
 │       └── Persistence/
 │           ├── Migrations/         # All migrations centralized here
 │           └── Doctrine/
@@ -55,7 +53,6 @@ src/
         │   └── Doctrine/
         │       ├── Mapping/        # PHP mapping files (no XML, no attributes)
         │       └── Repository/
-        ├── Search/                 # Elasticsearch repository
         ├── Messaging/              # RabbitMQ consumers
         ├── Http/
         │   ├── Controller/
@@ -151,7 +148,6 @@ make messenger-stats  # display transport stats
 |---|---|---|
 | API | http://localhost:8080 | — |
 | RabbitMQ UI | http://localhost:15672 | app / see .env.local |
-| Elasticsearch | http://localhost:9200 | — |
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin / see .env.local |
 | PostgreSQL | localhost:5432 | app / see .env.local |

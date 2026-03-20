@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help
 
-DOCKER_COMPOSE = docker compose -f docker/compose.yaml
+DOCKER_COMPOSE = docker compose -f docker/compose.yaml --env-file .env.local
 PHP = $(DOCKER_COMPOSE) exec php
 CONSOLE = $(PHP) bin/console
 COMPOSER = $(PHP) composer

@@ -5,22 +5,19 @@ services:
     php:
         build:
             context: .
-            dockerfile: docker/php/Dockerfile
+            dockerfile: php/Dockerfile
         volumes:
-            - .:/app
+            - ../:/app
         environment:
             APP_ENV: ${APP_ENV}
             APP_SECRET: ${APP_SECRET}
             DATABASE_URL: ${DATABASE_URL}
             RABBITMQ_DSN: ${RABBITMQ_DSN}
-            ELASTICSEARCH_URL: ${ELASTICSEARCH_URL}
             PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT}
         depends_on:
             postgres:
                 condition: service_healthy
             rabbitmq:
-                condition: service_healthy
-            elasticsearch:
                 condition: service_healthy
 
     # =========================================================
@@ -31,8 +28,8 @@ services:
         ports:
             - "${NGINX_PORT}:80"
         volumes:
-            - .:/app
-            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - ../:/app
+            - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
         depends_on:
             - php
 
@@ -47,7 +44,7 @@ services:
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
         volumes:
             - postgres_data:/var/lib/postgresql/data
-            - ./docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+            - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
         ports:
             - "${POSTGRES_PORT}:5432"
         healthcheck:
@@ -66,7 +63,7 @@ services:
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
         volumes:
             - rabbitmq_data:/var/lib/rabbitmq
-            - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+            - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
         ports:
             - "${RABBITMQ_PORT}:5672"
             - "${RABBITMQ_MANAGEMENT_PORT}:15672"
@@ -77,33 +74,12 @@ services:
             retries: 5
 
     # =========================================================
-    # Elasticsearch
-    # =========================================================
-    elasticsearch:
-        image: elasticsearch:8.13.0
-        environment:
-            discovery.type: single-node
-            ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-            xpack.security.enabled: "false"
-            http.port: ${ELASTICSEARCH_PORT}
-        volumes:
-            - elasticsearch_data:/usr/share/elasticsearch/data
-            - ./docker/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
-        ports:
-            - "${ELASTICSEARCH_PORT}:9200"
-        healthcheck:
-            test: ["CMD-SHELL", "curl -s http://localhost:${ELASTICSEARCH_PORT}/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
-            interval: 10s
-            timeout: 5s
-            retries: 10
-
-    # =========================================================
     # Prometheus
     # =========================================================
     prometheus:
         image: prom/prometheus:v2.51.0
         volumes:
-            - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
             - prometheus_data:/prometheus
         ports:
             - "${PROMETHEUS_PORT}:9090"
@@ -123,8 +99,8 @@ services:
             GF_USERS_ALLOW_SIGN_UP: "false"
         volumes:
             - grafana_data:/var/lib/grafana
-            - ./docker/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
-            - ./docker/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+            - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+            - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
         ports:
             - "${GRAFANA_PORT}:3000"
         depends_on:
@@ -133,6 +109,5 @@ services:
 volumes:
     postgres_data:
     rabbitmq_data:
-    elasticsearch_data:
     prometheus_data:
     grafana_data:

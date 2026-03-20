@@ -1,4 +1,3 @@
-# docker/php/Dockerfile
 FROM php:8.4-fpm-alpine
 
 RUN apk add --no-cache \
@@ -29,14 +28,11 @@ RUN apk del \
     linux-headers \
     && rm -rf /tmp/pear /var/cache/apk/*
 
-COPY docker/php/php.ini     $PHP_INI_DIR/conf.d/app.ini
-COPY docker/php/opcache.ini $PHP_INI_DIR/conf.d/opcache.ini
+COPY php/php.ini     $PHP_INI_DIR/conf.d/app.ini
+COPY php/opcache.ini $PHP_INI_DIR/conf.d/opcache.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
-COPY . .
-
-RUN composer install --no-dev --optimize-autoloader
 
 EXPOSE 9000
