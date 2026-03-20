@@ -18,3 +18,6 @@ services:
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:
             tags:
                 - { name: kernel.event_listener, event: kernel.exception, priority: 100 }
+
+    App\User\Domain\Repository\UserRepositoryInterface:
+        alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository

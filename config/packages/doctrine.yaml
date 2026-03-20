@@ -5,16 +5,17 @@ doctrine:
         types:
             uuid: App\Shared\Infrastructure\Persistence\Doctrine\Type\UuidType
             email: App\Shared\Infrastructure\Persistence\Doctrine\Type\EmailType
+            user_name: App\User\Infrastructure\Persistence\Doctrine\Type\UserNameType
+            hashed_password: App\User\Infrastructure\Persistence\Doctrine\Type\HashedPasswordType
     orm:
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         mappings:
-            # Here is an example of how to correctly map the entities definitions
-            # User:
-                # type: php
-                # dir: '%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping'
-                # prefix: App\User\Domain\Entity
-                # is_bundle: false
-
+            User:
+                type: php
+                dir: '%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping'
+                prefix: App\User\Domain\Entity
+                is_bundle: false
+                alias: User
 when@test:
     doctrine:
         dbal:
