@@ -1,4 +1,6 @@
 doctrine_migrations:
     migrations_paths:
         'App\Shared\Infrastructure\Persistence\Migrations': '%kernel.project_dir%/src/Shared/Infrastructure/Persistence/Migrations'
-    enable_profiler: false
+    storage:
+        table_storage:
+            table_name: 'doctrine_migration_versions'

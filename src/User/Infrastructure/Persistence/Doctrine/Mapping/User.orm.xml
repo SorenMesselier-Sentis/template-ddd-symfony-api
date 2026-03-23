@@ -1,0 +1,17 @@
+<doctrine-mapping
+    xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                        https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd"
+>
+    <entity name="App\User\Domain\Entity\User" table="users">
+
+        <id name="id" type="uuid" column="id"/>
+
+        <field name="firstName" type="user_name" column="first_name" length="100" nullable="false"/>
+        <field name="lastName" type="user_name" column="last_name" length="100" nullable="false"/>
+        <field name="email" type="email" column="email" length="254" nullable="false"/>
+        <field name="password" type="hashed_password" column="password" length="255" nullable="false"/>
+
+    </entity>
+</doctrine-mapping>
