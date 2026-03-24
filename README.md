@@ -2,6 +2,18 @@
 
 A production-ready REST API template built with Symfony 8 and Domain-Driven Design principles.
 
+## TODO
+
+3. Manage the serializer
+4. Manage the Deserializer
+2. Create the filtering config based on API guidelines
+5. Auto format Queries
+6. Set up Prometheus
+7. Set up Grafana
+8. Set up Shared\Services for the email for example
+9. Manage Nelmio Doc Bundle with Swagger
+10. Set up Scheduler
+
 ## Stack
 
 | Layer | Technology |
@@ -51,7 +63,7 @@ src/
     └── Infrastructure/             # Framework & persistence
         ├── Persistence/
         │   └── Doctrine/
-        │       ├── Mapping/        # PHP mapping files (no XML, no attributes)
+        │       ├── Mapping/        # XML mapping files
         │       └── Repository/
         ├── Messaging/              # RabbitMQ consumers
         ├── Http/

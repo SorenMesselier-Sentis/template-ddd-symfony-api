@@ -8,8 +8,8 @@ use Symfony\Component\Uid\Uuid;
 
 abstract class DomainEvent
 {
-    private string $eventId;
-    private string $occurredOn;
+    private readonly string $eventId;
+    private readonly string $occurredOn;
 
     public function __construct()
     {
@@ -17,7 +17,7 @@ abstract class DomainEvent
         $this->occurredOn = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
     }
 
-    abstract public function eventName(): string;
+    abstract public static function eventName(): string;
 
     public function aggregateId(): string
     {

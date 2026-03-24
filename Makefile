@@ -75,6 +75,9 @@ db-reset: db-drop db-create db-migrate
 db-validate:
 	$(CONSOLE) doctrine:schema:validate
 
+debug-router:
+	$(CONSOLE) debug:router
+
 consume:
 	$(CONSOLE) messenger:consume async --time-limit=3600 -vv
 

@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\User\Infrastructure\Http\Request;
 
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
-use Symfony\Component\HttpFoundation\RequestStack;
+use App\Shared\Infrastructure\Http\Request\JsonRequest;
 
-final class CreateUserRequest
+final class CreateUserRequest extends JsonRequest
 {
-    private array $data;
 
-    public function __construct(RequestStack $requestStack)
+    protected function rules(): array
     {
-        $request = $requestStack->getCurrentRequest();
-        $this->data = json_decode($request->getContent(), true) ?? [];
-
-        $this->validate();
+        return [
+            'firstName' => true,
+            'lastName' => true,
+            'email' => true,
+            'password' => true,
+        ];
     }
 
     public function firstName(): string
@@ -37,18 +37,5 @@ final class CreateUserRequest
     public function password(): string
     {
         return $this->data['password'];
-    }
-
-    private function validate(): void
-    {
-        $required = ['firstName', 'lastName', 'email', 'password'];
-
-        foreach ($required as $field) {
-            if (empty($this->data[$field])) {
-                throw new BadRequestException(
-                    sprintf('Field "%s" is required.', $field)
-                );
-            }
-        }
     }
 }
