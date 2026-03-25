@@ -26,6 +26,11 @@ abstract class Uuid
         return new static(SymfonyUuid::v4()->toRfc4122());
     }
 
+    public function value(): string
+    {
+        return $this->value;
+    }
+
     public function equals(self $other): bool
     {
         return $this->value === $other->value;

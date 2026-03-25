@@ -16,5 +16,13 @@ services:
 
     # Define the http listner
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:
-            tags:
-                - { name: kernel.event_listener, event: kernel.exception, priority: 100 }
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception, priority: 100 }
+
+    # Define the http headers
+    App\Shared\Infrastructure\Http\Listener\ApiHeadersListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.response }
+
+    App\User\Domain\Repository\UserRepositoryInterface:
+        alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository
