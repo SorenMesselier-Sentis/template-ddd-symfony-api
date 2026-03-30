@@ -1,4 +1,14 @@
 services:
+    App\Shared\Infrastructure\Http\Serializer\ValueObjectNormalizer:
+        tags: [serializer.normalizer]
+
+    App\Shared\Infrastructure\Http\Serializer\ResponseNormalizer:
+        tags: [serializer.normalizer]
+
+    App\Shared\Infrastructure\Http\Response\ApiResponse:
+        arguments:
+            $serializer: '@serializer'
+
     App\Shared\Infrastructure\Bus\Command\MessengerCommandBus:
         arguments:
             $commandBus: '@command.bus'
