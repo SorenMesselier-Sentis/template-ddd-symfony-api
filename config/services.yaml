@@ -2,23 +2,27 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
+        public: false
 
+    # Autowire src/ folder
     App\:
         resource: '../src/'
         exclude:
-            - '../src/*/Domain/'
-            - '../src/**/Domain/'
+            - '../src/*/Domain/ValueObject/'
+            - '../src/*/Domain/Exception/'
 
+    # Normalizers
     App\Shared\Infrastructure\Http\Serializer\ValueObjectNormalizer:
         tags: [serializer.normalizer]
-
     App\Shared\Infrastructure\Http\Serializer\ResponseNormalizer:
         tags: [serializer.normalizer]
 
+    # API Response
     App\Shared\Infrastructure\Http\Response\ApiResponse:
         arguments:
             $serializer: '@serializer'
 
+    # Bus implementations
     App\Shared\Infrastructure\Bus\Command\MessengerCommandBus:
         arguments:
             $commandBus: '@command.bus'
@@ -31,10 +35,12 @@ services:
         arguments:
             $eventBus: '@event.bus'
 
+    # Logger
     App\Shared\Infrastructure\Logging\MonologLogger:
         arguments:
             $logger: '@logger'
 
+    # Domain interfaces → alias to implementations
     App\Shared\Domain\Bus\Event\EventBusInterface:
         alias: App\Shared\Infrastructure\Bus\Event\MessengerEventBus
 
@@ -47,15 +53,17 @@ services:
     App\Shared\Domain\Logging\LoggerInterface:
         alias: App\Shared\Infrastructure\Logging\MonologLogger
 
+    # Listeners
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:
         arguments:
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
         tags:
             - { name: kernel.event_listener, event: kernel.exception, priority: 100 }
-    # Define the http headers
+
     App\Shared\Infrastructure\Http\Listener\ApiHeadersListener:
         tags:
             - { name: kernel.event_listener, event: kernel.response }
 
+    # Repositories
     App\User\Domain\Repository\UserRepositoryInterface:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository

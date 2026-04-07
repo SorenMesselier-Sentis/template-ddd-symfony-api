@@ -20,7 +20,7 @@ final class HashedPassword
 
     public static function fromPlainPassword(string $plainPassword): self
     {
-        return self(password_hash($plainPassword, PASSWORD_ARGON2ID));
+        return new self(password_hash($plainPassword, PASSWORD_ARGON2ID));
     }
 
     public function verify(string $plainPassword): bool

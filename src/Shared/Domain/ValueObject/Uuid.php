@@ -16,12 +16,12 @@ abstract class Uuid
         $this->value = $value;
     }
 
-    public function fromString(string $value): static
+    public static function fromString(string $value): static
     {
         return new static($value);
     }
 
-    public function random(): static
+    public static function random(): static
     {
         return new static(SymfonyUuid::v4()->toRfc4122());
     }
@@ -43,5 +43,10 @@ abstract class Uuid
             sprintf('"%s" is not a valid UUID.', $value)
             );
         }
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
     }
 }

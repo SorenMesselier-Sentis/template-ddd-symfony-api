@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Domain\Event;
 
-use App\Shared\Domain\BUS\Event\DomainEvent;
+use App\Shared\Domain\Bus\Event\DomainEvent;
 
 final class UserCreated extends DomainEvent
 {

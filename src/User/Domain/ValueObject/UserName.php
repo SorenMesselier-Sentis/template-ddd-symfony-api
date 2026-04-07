@@ -17,7 +17,7 @@ final class UserName
         $this->value = trim($value);
     }
 
-    public function fromString(string $value): self
+    public static function fromString(string $value): self
     {
         return new self($value);
     }

@@ -40,9 +40,10 @@ final class CreateUserCommandHandler
             password: HashedPassword::fromPlainPassword($command->password),
         );
 
+
         $this->repository->save($user);
         $this->eventBus->publish(...$user->pullDomainEvents());
 
-        $this->logger->info('User created', ['id' => $command->id]);
+        $this->logger->info('User created', ['id' => $user->id()->value()]);
     }
 }

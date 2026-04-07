@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Domain\Entity;
 
-use App\Shared\Domain\BUS\Event\DomainEvent;
+use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserCreated;
 use App\User\Domain\ValueObject\HashedPassword;
@@ -12,7 +12,6 @@ use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
 
 final class User
-
 {
     /**@var DomainEvent[] */
     private array $domainEvents = [];
