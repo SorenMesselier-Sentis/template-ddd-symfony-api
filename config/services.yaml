@@ -1,4 +1,14 @@
 services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/*/Domain/'
+            - '../src/**/Domain/'
+
     App\Shared\Infrastructure\Http\Serializer\ValueObjectNormalizer:
         tags: [serializer.normalizer]
 
@@ -21,14 +31,27 @@ services:
         arguments:
             $eventBus: '@event.bus'
 
+    App\Shared\Infrastructure\Logging\MonologLogger:
+        arguments:
+            $logger: '@logger'
+
+    App\Shared\Domain\Bus\Event\EventBusInterface:
+        alias: App\Shared\Infrastructure\Bus\Event\MessengerEventBus
+
+    App\Shared\Domain\Bus\Command\CommandBusInterface:
+        alias: App\Shared\Infrastructure\Bus\Command\MessengerCommandBus
+
+    App\Shared\Domain\Bus\Query\QueryBusInterface:
+        alias: App\Shared\Infrastructure\Bus\Query\MessengerQueryBus
+
     App\Shared\Domain\Logging\LoggerInterface:
         alias: App\Shared\Infrastructure\Logging\MonologLogger
 
-    # Define the http listner
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:
+        arguments:
+            $logger: '@App\Shared\Domain\Logging\LoggerInterface'
         tags:
             - { name: kernel.event_listener, event: kernel.exception, priority: 100 }
-
     # Define the http headers
     App\Shared\Infrastructure\Http\Listener\ApiHeadersListener:
         tags:

@@ -39,3 +39,4 @@ framework:
             'App\Shared\Domain\Bus\Command\Command': sync
             'App\Shared\Domain\Bus\Query\Query': sync
             'App\Shared\Domain\Bus\Event\DomainEvent': async
+            'App\Shared\Infrastructure\Messaging\RabbitMQ\DeadLetterMessage': async.dead_letter

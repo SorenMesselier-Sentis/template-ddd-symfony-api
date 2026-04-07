@@ -58,9 +58,9 @@ final class ExceptionListener
                 'exception' => $exception::class,
                 'trace' => $exception->getTraceAsString(),
             ]);
-        }
 
-        return;
+            return;
+        }
 
         $this->logger->warning($exception->getMessage(), [
             'exception' => $exception::class

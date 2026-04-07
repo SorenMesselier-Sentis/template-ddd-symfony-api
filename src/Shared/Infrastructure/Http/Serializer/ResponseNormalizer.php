@@ -5,21 +5,20 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\Http\Serializer;
 
 use App\Shared\Domain\BUS\Query\Response;
+use Symfony\Component\Serializer\Encoder\NormalizationAwareInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 
-final class ResponseNormalizer implements NormalizerInterface
+final class ResponseNormalizer implements NormalizerInterface, NormalizationAwareInterface
 {
-    public function __construct(
-        private readonly ObjectNormalizer $objectNormalizer
-    ) {}
+    use NormalizerAwareTrait;
 
     public function normalize(
         mixed $object,
         string $format = null,
         array $context = [],
     ): array {
-        return $this->objectNormalizer->normalize($object, $format, $context);
+        return $this->normalizer->normalize($object, $format, $context);
     }
 
     public function supportsNormalization(mixed $data, string $format = null, array $context = []): bool

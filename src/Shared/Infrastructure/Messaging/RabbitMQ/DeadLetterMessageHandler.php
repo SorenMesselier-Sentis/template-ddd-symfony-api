@@ -14,10 +14,10 @@ final class DeadLetterMessageHandler
         private readonly LoggerInterface $logger
     ) {}
 
-    public function __invoke(mixed $message): void
+    public function __invoke(DeadLetterMessage $message): void
     {
         $this->logger->error('Message moved to dead letter queue', [
-            'message' => $message::class
+            'message' => $message->originalMessage::class,
         ]);
     }
 }
