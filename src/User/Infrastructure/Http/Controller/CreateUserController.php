@@ -17,6 +17,7 @@ final class CreateUserController
 {
     public function __construct(
         private readonly CommandBusInterface $commandBus,
+        private readonly ApiResponse $apiResponse,
     ) {}
 
     public function __invoke(CreateUserRequest $request): JsonResponse
@@ -31,6 +32,6 @@ final class CreateUserController
             password: $request->password(),
         ));
 
-        return ApiResponse::created(['id' => $id]);
+        return $this->apiResponse->created(['id' => $id]);
     }
 }

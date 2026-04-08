@@ -14,7 +14,7 @@ final class ApiResponse
         private readonly SerializerInterface $serializer,
     ) {}
 
-    public static function success(mixed $data = null, int $status = 200): JsonResponse
+    public function success(mixed $data = null, int $status = 200): JsonResponse
     {
         return new JsonResponse(
             data: $this->normalize(['data' => $data]),
@@ -23,7 +23,7 @@ final class ApiResponse
         );
     }
 
-    public static function created(mixed $data = null):JsonResponse
+    public function created(mixed $data = null): JsonResponse
     {
         return new JsonResponse(
             data: $this->normalize(['data' => $data]),
@@ -32,12 +32,12 @@ final class ApiResponse
         );
     }
 
-    public static function noContent(): JsonResponse
+    public function noContent(): JsonResponse
     {
         return new JsonResponse(null, 204);
     }
 
-    public static function paginated(
+    public function paginated(
         mixed $data,
         int $total,
         int $page,

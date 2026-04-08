@@ -4,14 +4,12 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
-3. Manage the serializer
-4. Manage the Deserializer
+9. Manage Nelmio Doc Bundle with Swagger
 2. Create the filtering config based on API guidelines
 5. Auto format Queries
 6. Set up Prometheus
 7. Set up Grafana
 8. Set up Shared\Services for the email for example
-9. Manage Nelmio Doc Bundle with Swagger
 10. Set up Scheduler
 
 ## Stack
@@ -76,7 +74,7 @@ src/
 
 **Migrations are centralized** in `Shared/Infrastructure/Persistence/Migrations/`. Doctrine mappings stay in each Bounded Context — migrations are a global infrastructure concern.
 
-**Doctrine mapping uses PHP files**, not XML or attributes. Attributes would pollute the Domain layer with infrastructure concerns.
+**Doctrine mapping lives in XML** under each bounded context’s `Infrastructure/Persistence/Doctrine/Mapping/` folder. The domain layer stays free of ORM attributes; only infrastructure owns mapping files.
 
 **Three separate Messenger buses** — commands and queries are handled synchronously, domain events are dispatched asynchronously through RabbitMQ.
 
@@ -126,6 +124,13 @@ make down         # stop containers
 make bash         # open a shell in the PHP container
 make logs         # tail all container logs
 make logs-php     # tail PHP logs only
+make restart      # stop then start containers (pick up image / config changes)
+```
+
+### Cache
+
+```bash
+make clear        # Symfony cache:clear + composer dump-autoload -o
 ```
 
 ### Database

@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Http\Serializer;
 
-use App\Shared\Domain\BUS\Query\Response;
-use Symfony\Component\Serializer\Encoder\NormalizationAwareInterface;
-use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
+use App\Shared\Domain\Bus\Query\Response;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-final class ResponseNormalizer implements NormalizerInterface, NormalizationAwareInterface
+final class ResponseNormalizer implements NormalizerInterface
 {
-    use NormalizerAwareTrait;
-
     public function normalize(
         mixed $object,
-        string $format = null,
+        ?string $format = null,
         array $context = [],
-    ): array {
-        return $this->normalizer->normalize($object, $format, $context);
+    ): array|string|int|float|bool|\ArrayObject|null {
+        if (!$object instanceof Response) {
+            throw new \InvalidArgumentException(sprintf('Expected %s, %s given.', Response::class, get_debug_type($object)));
+        }
+
+        return get_object_vars($object);
     }
 
-    public function supportsNormalization(mixed $data, string $format = null, array $context = []): bool
+    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
         return $data instanceof Response;
     }

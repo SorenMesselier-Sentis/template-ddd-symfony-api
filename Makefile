@@ -48,6 +48,7 @@ update:
 
 clear:
 	$(CONSOLE) cache:clear
+	$(COMPOSER) dump-autoload -o
 
 warmup:
 	$(CONSOLE) cache:warmup
