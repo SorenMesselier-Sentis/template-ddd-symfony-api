@@ -8,9 +8,11 @@ use App\Shared\Domain\Bus\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use App\User\Application\Query\GetUser\GetUserQuery;
 use App\User\Application\Query\GetUser\UserResponse;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
+#[OA\Tag(name: 'Users')]
 #[Route('/users/{id}', methods: ['GET'])]
 final class GetUserController
 {
@@ -19,6 +21,37 @@ final class GetUserController
         private readonly ApiResponse $apiResponse,
     ) {}
 
+    #[OA\Get(
+        path: '/api/v1/users/{id}',
+        summary: 'Get a user',
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'path',
+                required: true,
+                schema: new OA\Schema(type: 'string', format: 'uuid'),
+            ),
+        ],
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'OK',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'data',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                        new OA\Property(property: 'firstName', type: 'string'),
+                        new OA\Property(property: 'lastName', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string', format: 'email'),
+                    ],
+                    type: 'object',
+                ),
+            ],
+        ),
+    )]
+    #[OA\Response(response: 404, description: 'User not found')]
     public function __invoke(string $id): JsonResponse
     {
         /** @var UserResponse $user */

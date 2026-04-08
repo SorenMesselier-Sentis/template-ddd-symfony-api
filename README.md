@@ -4,13 +4,13 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
-9. Manage Nelmio Doc Bundle with Swagger
-2. Create the filtering config based on API guidelines
-5. Auto format Queries
-6. Set up Prometheus
-7. Set up Grafana
-8. Set up Shared\Services for the email for example
-10. Set up Scheduler
+- Setup fixtures with composer require --dev orm-fixtures
+- Create the filtering config based on API guidelines
+- Auto format Queries
+- Set up Prometheus
+- Set up Grafana
+- Set up Shared\Services for the email for example
+- Set up Scheduler
 
 ## Stack
 
@@ -24,6 +24,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Queue | RabbitMQ |
 | Logging | Monolog |
 | Monitoring | Prometheus + Grafana |
+| API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
 
 ## Architecture
 
@@ -79,6 +80,8 @@ src/
 **Three separate Messenger buses** — commands and queries are handled synchronously, domain events are dispatched asynchronously through RabbitMQ.
 
 **Domain exceptions map to HTTP status codes** via a single `ExceptionListener` in `Shared/Infrastructure/Http/Listener/`, keeping HTTP concerns out of the domain.
+
+**OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers and filtered to routes under `/api/v1` (see `config/packages/nelmio_api_doc.yaml`). Swagger UI is served at `/api/doc/` and loads the spec from the same bundle (no extra JSON route required).
 
 ## Getting started
 
@@ -152,6 +155,42 @@ make messenger-stop   # gracefully stop all workers
 make messenger-stats  # display transport stats
 ```
 
+### API documentation (Swagger UI)
+
+With the stack running, open:
+
+| Resource | URL |
+|---|---|
+| Swagger UI | http://localhost:8080/api/doc/ |
+
+Configuration lives in `config/packages/nelmio_api_doc.yaml` (title, OpenAPI version, `path_patterns` for documented routes) and `config/routes/nelmio_api_doc.yaml` (UI prefix).
+
+Export the OpenAPI document from the CLI (JSON or YAML):
+
+```bash
+php bin/console nelmio:apidoc:dump --format=json
+php bin/console nelmio:apidoc:dump --format=yaml
+```
+
+To document new HTTP endpoints, add `OpenApi\Attributes` (for example `#[OA\Get]`, `#[OA\Post]`, `#[OA\RequestBody]`, `#[OA\Response]`) on the controller action next to the existing Symfony `#[Route]` attributes; see `src/User/Infrastructure/Http/Controller/` for examples.
+
+## REST API (examples)
+
+Base path: `/api/v1`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/users` | Create a user (`firstName`, `lastName`, `email`, `password`) |
+| `GET` | `/users/{id}` | Fetch a user by UUID |
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/users \
+  -H 'Content-Type: application/json' \
+  -d '{"firstName":"John","lastName":"Doe","email":"john.doe@example.com","password":"secret1234"}'
+
+curl -s http://localhost:8080/api/v1/users/00000000-0000-4000-8000-000000000000
+```
+
 ## Adding a new Bounded Context
 
 1. Create the directory structure under `src/<ContextName>/`
@@ -164,6 +203,7 @@ make messenger-stats  # display transport stats
 | Service | URL | Credentials |
 |---|---|---|
 | API | http://localhost:8080 | — |
+| Swagger UI (OpenAPI) | http://localhost:8080/api/doc/ | — |
 | RabbitMQ UI | http://localhost:15672 | app / see .env.local |
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin / see .env.local |
