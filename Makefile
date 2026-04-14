@@ -71,6 +71,11 @@ db-status:
 db-diff:
 	$(CONSOLE) doctrine:migrations:diff
 
+db-fixtures:
+	$(CONSOLE) doctrine:fixtures:load --no-interaction
+
+db-fresh: db-reset db-fixtures
+
 db-reset: db-drop db-create db-migrate
 
 db-validate:
