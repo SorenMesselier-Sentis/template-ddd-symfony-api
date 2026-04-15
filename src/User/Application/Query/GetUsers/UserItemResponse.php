@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\User\Application\Query\GetUser;
+namespace App\User\Application\Query\GetUsers;
 
-use App\Shared\Domain\Bus\Query\Response;
+use App\Shared\Domain\BUS\Query\Response;
 use App\User\Domain\Entity\User;
 
-final class UserResponse implements Response
+final class UserItemResponse implements Response
 {
     public readonly string $id;
     public readonly string $firstName;

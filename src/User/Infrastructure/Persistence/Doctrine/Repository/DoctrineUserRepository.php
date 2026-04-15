@@ -38,4 +38,24 @@ final class DoctrineUserRepository implements UserRepositoryInterface
     {
         return $this->findByEmail($email) !== null;
     }
+
+    public function findAll(int $page, int $perPage): array
+    {
+        return $this->em->getRepository(User::class)
+        ->createQueryBuilder('u')
+        ->orderBy('u.email', 'ASC')
+        ->setFirstResult(($page -1) * $perPage)
+        ->setMaxResults($perPage)
+        ->getQuery()
+        ->getResult();
+    }
+
+    public function count(): int
+    {
+        return (int) $this->em->getRepository(User::class)
+        ->createQueryBuilder('u')
+        ->select('COUNT(u.id)')
+        ->getQuery()
+        ->getSingleScalarResult();
+    }
 }
