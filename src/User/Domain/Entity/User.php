@@ -43,6 +43,10 @@ final class User
         return $user;
     }
 
+    public static function delete(): void
+    {
+    }
+
     public function updateName(UserName $firstName, UserName $lastName): void
     {
         $this->firstName = $firstName;

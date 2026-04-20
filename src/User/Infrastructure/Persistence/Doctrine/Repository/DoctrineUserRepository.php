@@ -22,6 +22,11 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         $this->saveEntity($this->em, $user);
     }
 
+    public function delete(User $user): void
+    {
+        $this->deleteEntity($this->em, $user);
+    }
+
     public function findById(UserId $id): ?User
     {
         return $this->em->find(User::class, $id);
