@@ -13,6 +13,7 @@ use App\Shared\Domain\Logging\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\Messenger\Exception\HandlerFailedException;
 
 final class ExceptionListener
 {
@@ -24,6 +25,10 @@ final class ExceptionListener
     {
         $exception = $event->getThrowable();
 
+        if ($exception instanceof HandlerFailedException) {
+            $exception = $exception->getPrevious() ?? $exception;
+        }
+
         [$statusCode, $errorCode] = $this->resolveException($exception);
 
         $this->log($exception, $statusCode);
@@ -34,7 +39,8 @@ final class ExceptionListener
                     'code' => $errorCode,
                     'message' => $exception->getMessage(),
                 ]
-            ]
+            ],
+            status: $statusCode,
         ));
     }
 
