@@ -10,6 +10,7 @@ use App\User\Domain\Event\UserCreated;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
+use App\User\Domain\Event\UserUpdated;
 
 final class User
 {
@@ -51,11 +52,22 @@ final class User
     {
         $this->firstName = $firstName;
         $this->lastName = $lastName;
+
+        $this->record(new UserUpdated($this->id->value()));
     }
 
-    public function updateEmail(HashedPassword $password): void
+    public function updateEmail(Email $email): void
+    {
+        $this->email = $email;
+
+        $this->record(new UserUpdated($this->id->value()));
+    }
+
+    public function updatePassword(HashedPassword $password): void
     {
         $this->password = $password;
+
+        $this->record(new UserUpdated($this->id->value()));
     }
 
     /**
