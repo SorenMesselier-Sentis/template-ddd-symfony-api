@@ -1,4 +1,9 @@
-nelmio_api_doc.swagger_ui:
-    resource: '@NelmioApiDocBundle/config/routing/swaggerui.php'
-    type: php
-    prefix: /api/doc
+app.swagger:
+    path: /api/doc.json
+    methods: GET
+    defaults: {_controller: nelmio_api_doc.controller.swagger}
+
+app.swagger_ui:
+    path: /api/doc
+    methods: GET
+    defaults: {_controller: nelmio_api_doc.controller.swagger_ui}

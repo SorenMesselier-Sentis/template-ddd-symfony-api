@@ -14,6 +14,11 @@ final class ApiHeadersListener
             return;
         }
 
+        $request = $event->getRequest();
+        if (!str_starts_with($request->getPathInfo(), '/api/v1')) {
+            return;
+        }
+
         $response = $event->getResponse();
         $response->headers->set('Content-Type', 'application/json');
         $response->headers->set('X-Content-Type-Options', 'nosniff');

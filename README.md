@@ -4,7 +4,6 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
-- Add the DELETE option
 - Fix the documentation rendering
 - Create the filtering config based on API guidelines
 - Auto format Queries
