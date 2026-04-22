@@ -7,6 +7,7 @@ namespace App\User\Domain\Entity;
 use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserCreated;
+use App\User\Domain\Event\UserReplaced;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
@@ -44,9 +45,7 @@ final class User
         return $user;
     }
 
-    public static function delete(): void
-    {
-    }
+    public static function delete(): void {}
 
     public function updateName(UserName $firstName, UserName $lastName): void
     {
@@ -68,6 +67,20 @@ final class User
         $this->password = $password;
 
         $this->record(new UserUpdated($this->id->value()));
+    }
+
+    public function replace(
+        UserName $firstName,
+        UserName $lastName,
+        Email $email,
+        HashedPassword $password,
+    ): void {
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+        $this->password = $password;
+
+        $this->record(new UserReplaced($this->id->value()));
     }
 
     /**

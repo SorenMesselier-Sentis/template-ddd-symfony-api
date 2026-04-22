@@ -55,7 +55,7 @@ final class UpdateUserCommandHandler
             $user->updatePassword(HashedPassword::fromPlainPassword($command->password));
         }
 
-        this->repository->save($user);
+        $this->repository->save($user);
         $this->eventbus->publish(...$user->pullDomainEvents());
 
         $this->logger->info('User updated', ['id' => $command->id]);
