@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\Bus\Command;
 
-use App\Shared\Domain\BUS\Command\Command;
+use App\Shared\Domain\Bus\Command\Command;
 
 interface CommandBusInterface
 {

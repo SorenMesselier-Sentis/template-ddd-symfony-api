@@ -16,14 +16,14 @@ final class GetUsersQueryHandler
 
     public function __invoke(GetUsersQuery $query): UsersResponse
     {
-        $users = $this->repository->findAll($query->page, $query->perPage);
-        $total = $this->repository->count();
+        $users = $this->repository->findByFilters($query->filters);
+        $total = $this->repository->countByFilters($query->filters);
 
         return new UsersResponse(
             users: array_map(fn($user) => new UserItemResponse($user), $users),
             total: $total,
-            page: $query->page,
-            perPage: $query->perPage,
+            page: $query->filters->pagination->page,
+            perPage: $query->filters->pagination->limit,
         );
     }
 }

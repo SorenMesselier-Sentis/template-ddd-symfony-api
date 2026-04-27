@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Domain\Repository;
 
+use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Entity\User;
 use App\User\Domain\ValueObject\UserId;
@@ -15,6 +16,9 @@ interface UserRepositoryInterface
     public function findById(UserId $id): ?User;
     public function findByEmail(Email $email): ?User;
     public function existsByEmail(Email $email): bool;
-    public function findAll(int $page, int $perPage): array;
-    public function count(): int;
+    /**
+     * @return void
+     */
+    public function findByFilters(Filters $filters): array;
+    public function countByFilters(Filters $filters): int;
 }

@@ -7,6 +7,7 @@ doctrine:
             email: App\Shared\Infrastructure\Persistence\Doctrine\Type\EmailType
             user_name: App\User\Infrastructure\Persistence\Doctrine\Type\UserNameType
             hashed_password: App\User\Infrastructure\Persistence\Doctrine\Type\HashedPasswordType
+            user_status: App\User\Infrastructure\Persistence\Doctrine\Type\UserStatusType
     orm:
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         mappings:

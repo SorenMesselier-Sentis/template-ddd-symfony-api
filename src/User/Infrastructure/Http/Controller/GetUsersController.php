@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\User\Infrastructure\Http\Controller;
 
 use App\Shared\Domain\Bus\Query\QueryBusInterface;
+use App\Shared\Infrastructure\Http\Filter\FiltersBuilder;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use App\User\Application\Query\GetUsers\GetUsersQuery;
 use OpenApi\Attributes as OA;
@@ -19,6 +20,12 @@ use Symfony\Component\Routing\Attribute\Route;
 #[OA\Response(response: 200, description: 'List of users')]
 final class GetUsersController
 {
+    Private const ALLOWED_FILTERS = [
+        'email' => 'equal',
+        'firstName' => 'equal',
+        'lastName' => 'equal',
+    ];
+
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly ApiResponse $apiResponse,
@@ -26,10 +33,9 @@ final class GetUsersController
 
     public function __invoke(Request $request): JsonResponse
     {
-        $page = max(1, (int) $request->query->get('page', 1));
-        $perPage = min(100, max(1, (int) $request->query->get('per_page', 20)));
+        $filters = FiltersBuilder::fromRequest($request,self::ALLOWED_FILTERS);
 
-        $result = $this->queryBus->ask(new GetUsersQuery($page, $perPage));
+        $result = $this->queryBus->ask(new GetUsersQuery($filters));
 
         return $this->apiResponse->paginated(
             data: $result->users,

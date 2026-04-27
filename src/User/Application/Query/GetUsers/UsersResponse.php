@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Application\Query\GetUsers;
 
-use App\Shared\Domain\BUS\Query\Response;
+use App\Shared\Domain\Bus\Query\Response;
 
 final class UsersResponse implements Response
 {

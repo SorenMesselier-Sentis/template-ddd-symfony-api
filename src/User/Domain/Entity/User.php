@@ -7,11 +7,14 @@ namespace App\User\Domain\Entity;
 use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserCreated;
+use App\User\Domain\Event\UserDeleted;
 use App\User\Domain\Event\UserReplaced;
+use App\User\Domain\Event\UserUpdated;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
-use App\User\Domain\Event\UserUpdated;
+use App\User\Domain\ValueObject\UserStatus;
+use DateTimeImmutable;
 
 final class User
 {
@@ -24,6 +27,9 @@ final class User
         private UserName $lastName,
         private Email $email,
         private HashedPassword $password,
+        private UserStatus $status,
+        private readonly DateTimeImmutable $createdAt,
+        private DateTimeImmutable $updatedAt,
     ) {}
 
     public static function create(
@@ -33,7 +39,17 @@ final class User
         Email $email,
         HashedPassword $password,
     ): self {
-        $user = new self($id, $firstName, $lastName, $email, $password);
+        $now = new DateTimeImmutable();
+        $user = new self(
+            id: $id,
+            firstName: $firstName,
+            lastName: $lastName,
+            email: $email,
+            password: $password,
+            status: UserStatus::ACTIVE,
+            createdAt: $now,
+            updatedAt: $now,
+        );
 
         $user->record(new UserCreated(
             aggregateId: $id->value(),
@@ -45,12 +61,11 @@ final class User
         return $user;
     }
 
-    public static function delete(): void {}
-
     public function updateName(UserName $firstName, UserName $lastName): void
     {
         $this->firstName = $firstName;
         $this->lastName = $lastName;
+        $this->touch();
 
         $this->record(new UserUpdated($this->id->value()));
     }
@@ -58,6 +73,7 @@ final class User
     public function updateEmail(Email $email): void
     {
         $this->email = $email;
+        $this->touch();
 
         $this->record(new UserUpdated($this->id->value()));
     }
@@ -65,6 +81,7 @@ final class User
     public function updatePassword(HashedPassword $password): void
     {
         $this->password = $password;
+        $this->touch();
 
         $this->record(new UserUpdated($this->id->value()));
     }
@@ -79,8 +96,17 @@ final class User
         $this->lastName = $lastName;
         $this->email = $email;
         $this->password = $password;
+        $this->touch();
 
         $this->record(new UserReplaced($this->id->value()));
+    }
+
+    public static function delete(): void
+    {
+        $this->status = UserStatus::DELETED;
+        $this->touch();
+
+        $this->record(new UserDeleted($this->id->value()));
     }
 
     /**
@@ -98,6 +124,15 @@ final class User
     {
         $this->domainEvents[] = $event;
     }
+
+    private function touch(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    // ====================================
+    // GETTERS & SETTERS
+    // ====================================
 
     public function id(): UserId
     {
@@ -122,5 +157,20 @@ final class User
     public function password(): HashedPassword
     {
         return $this->password;
+    }
+
+    public function status(): UserStatus
+    {
+        return $this->status;
+    }
+
+    public function createdAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function updatedAt(): DateTimeImmutable
+    {
+        return $this->updatedAt;
     }
 }
