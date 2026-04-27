@@ -4,7 +4,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
-- Add the testing config
+- Fix the testing config (Function and Methods deprecated or not found)
 - Create a CLI to generate a clean bounded context
 - Auto format Queries
 - Set up Prometheus

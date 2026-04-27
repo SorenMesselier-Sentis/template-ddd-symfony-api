@@ -8,3 +8,8 @@
 /vendor/
 
 docker/data
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###

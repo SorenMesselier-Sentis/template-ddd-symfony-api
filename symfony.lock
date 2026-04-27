@@ -56,6 +56,21 @@
             "ref": "c8e0c38e1a280ab9e37587a8fa32b251d5bc1c94"
         }
     },
+    "phpunit/phpunit": {
+        "version": "13.1",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "11.1",
+            "ref": "ca0bc067abfb40a8de1b2561b96cbfc2b833c314"
+        },
+        "files": [
+            ".env.test",
+            "phpunit.dist.xml",
+            "tests/bootstrap.php",
+            "bin/phpunit"
+        ]
+    },
     "symfony/console": {
         "version": "8.0",
         "recipe": {
