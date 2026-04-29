@@ -7,6 +7,7 @@ namespace App\Shared\Infrastructure\Messaging\Outbox;
 use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\Logging\LoggerInterface;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 final class OutboxRelay
@@ -22,7 +23,7 @@ final class OutboxRelay
         $messages = $this->connection->fetchAllAssociative(
             'SELECT id, event_class, aggregate_id, payload FROM outbox_messages WHERE published_at IS NULL ORDER BY created_at ASC LIMIT ?',
             [$limit],
-            [\PDO::PARAM_INT]
+            [ParameterType::INTEGER]
         );
 
         $published = 0;
@@ -54,11 +55,23 @@ final class OutboxRelay
     {
         /** @var array<string, mixed> $payload */
         $payload = json_decode($payloadJson, true, 512, JSON_THROW_ON_ERROR);
+
+        if (!class_exists($eventClass)) {
+            throw new \RuntimeException(sprintf('Unknown event class "%s".', $eventClass));
+        }
+
+        /** @var class-string $eventClass */
         $reflection = new \ReflectionClass($eventClass);
         $constructor = $reflection->getConstructor();
 
         if (null === $constructor) {
-            return $reflection->newInstance();
+            $event = $reflection->newInstance();
+
+            if (!$event instanceof DomainEvent) {
+                throw new \RuntimeException(sprintf('Class "%s" must implement %s.', $eventClass, DomainEvent::class));
+            }
+
+            return $event;
         }
 
         $arguments = [];
@@ -71,14 +84,25 @@ final class OutboxRelay
             }
 
             if (!array_key_exists($name, $payload)) {
-                throw new \RuntimeException(sprintf('Missing outbox payload key "%s" for "%s".', $name, $eventClass));
+                throw new \RuntimeException(sprintf(
+                    'Missing outbox payload key "%s" for "%s".',
+                    $name,
+                    $eventClass
+                ));
             }
 
             $arguments[] = $payload[$name];
         }
 
-        /** @var DomainEvent $event */
         $event = $reflection->newInstanceArgs($arguments);
+
+        if (!$event instanceof DomainEvent) {
+            throw new \RuntimeException(sprintf(
+                'Class "%s" must implement %s.',
+                $eventClass,
+                DomainEvent::class
+            ));
+            }
 
         return $event;
     }
