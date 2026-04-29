@@ -34,6 +34,12 @@ RUN pecl install redis \
     && docker-php-ext-enable redis
 
 # =========================================================
+# Install PCOV (code coverage driver for PHPUnit)
+# =========================================================
+RUN pecl install pcov \
+    && docker-php-ext-enable pcov
+
+# =========================================================
 # Cleanup unecessary files
 # =========================================================
 RUN apk del autoconf g++ make linux-headers \

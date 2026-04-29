@@ -113,4 +113,4 @@ test-integration:
 	$(PHP) vendor/bin/phpunit --testsuite=Integration
 
 test-coverage:
-	$(PHP) vendor/bin/phpunit --coverage-html var/coverage
+	$(PHP) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage

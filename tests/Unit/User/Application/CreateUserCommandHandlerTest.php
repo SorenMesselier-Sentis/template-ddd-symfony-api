@@ -13,11 +13,16 @@ use App\User\Application\Command\CreateUser\CreateUserCommandHandler;
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\User\Domain\ValueObject\UserId;
+use PHPUnit\Framework\MockObject\MockObject;
 
 final class CreateUserCommandHandlerTest extends UnitTestCase
 {
+    /** @var UserRepositoryInterface&MockObject */
     private UserRepositoryInterface $repository;
+
+    /** @var EventBusInterface&MockObject */
     private EventBusInterface $eventBus;
+
     private LoggerInterface $logger;
     private CreateUserCommandHandler $handler;
 
@@ -25,7 +30,7 @@ final class CreateUserCommandHandlerTest extends UnitTestCase
     {
         $this->repository = $this->createMock(UserRepositoryInterface::class);
         $this->eventBus = $this->createMock(EventBusInterface::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->logger = $this->createStub(LoggerInterface::class);
 
         $this->handler = new CreateUserCommandHandler(
             $this->repository,
@@ -74,8 +79,13 @@ final class CreateUserCommandHandlerTest extends UnitTestCase
         );
 
         $this->repository
+            ->expects($this->once())
             ->method('existsByEmail')
             ->willReturn(true);
+
+        $this->eventBus
+            ->expects($this->never())
+            ->method('publish');
 
         ($this->handler)($command);
     }
