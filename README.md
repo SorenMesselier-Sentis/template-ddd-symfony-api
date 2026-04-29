@@ -5,7 +5,6 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 ## TODO
 
 - Fix the testing config (Function and Methods deprecated or not found)
-- Create a CLI to generate a clean bounded context
 - Auto format Queries
 - Set up Prometheus
 - Set up Grafana
@@ -169,6 +168,80 @@ make messenger-stop   # gracefully stop all workers
 make messenger-stats  # display transport stats
 ```
 
+### Generating a new Bounded Context
+
+Use the built-in maker command to scaffold the full DDD structure:
+
+```bash
+make bc name=Product
+```
+```
+This generates the following structure:src/Product/
+├── Domain/
+│   ├── Entity/Product.php
+│   ├── ValueObject/ProductId.php
+│   ├── Repository/ProductRepositoryInterface.php
+│   ├── Event/ProductCreated.php
+│   ├── Event/ProductUpdated.php
+│   ├── Event/ProductDeleted.php
+│   └── Exception/
+│       ├── ProductNotFoundException.php
+│       └── ProductAlreadyExistsException.php
+├── Application/
+│   ├── Command/
+│   │   ├── CreateProduct/
+│   │   ├── UpdateProduct/
+│   │   └── DeleteProduct/
+│   └── Query/
+│       ├── GetProduct/
+│       └── GetProducts/
+└── Infrastructure/
+├── Persistence/Doctrine/
+│   ├── Mapping/Product.orm.xml
+│   ├── Repository/DoctrineProductRepository.php
+│   └── Type/ProductIdType.php
+├── Http/
+│   ├── Controller/
+│   └── Request/
+├── Fixture/ProductFixture.php
+└── Messaging/ProductCreatedMessageHandler.phptests/
+├── Unit/Product/
+├── Integration/Product/
+└── E2E/Product/
+```
+
+After running the command, follow the printed next steps:
+
+```bash
+# 1. Register the Doctrine type in config/packages/doctrine.yaml
+doctrine:
+    dbal:
+        types:
+            product_id: App\Product\Infrastructure\Persistence\Doctrine\Type\ProductIdType
+
+# 2. Register the Doctrine mapping in config/packages/doctrine.yaml
+    orm:
+        mappings:
+            Product:
+                type: xml
+                dir: '%kernel.project_dir%/src/Product/Infrastructure/Persistence/Doctrine/Mapping'
+                prefix: App\Product\Domain\Entity
+                is_bundle: false
+
+# 3. Register the repository in config/services.yaml
+App\Product\Domain\Repository\ProductRepositoryInterface:
+    alias: App\Product\Infrastructure\Persistence\Doctrine\Repository\DoctrineProductRepository
+
+# 4. Add the RabbitMQ binding key in config/packages/messenger.yaml
+queues:
+    events.product:
+        binding_keys: ['product.#']
+
+# 5. Generate and run the migration
+make db-diff
+make db-migrate
+```
+
 ### API documentation (Swagger UI)
 
 With the stack running, open:
@@ -323,10 +396,12 @@ On failure after 3 retries:
 ## Testing
 
 Tests are organized in three suites matching the architecture layers.
+```
 tests/
 ├── Unit/           # Domain + Application — no I/O, fast
 ├── Integration/    # Infrastructure — hits the real database
 └── E2E/            # HTTP — full request/response cycle
+```
 
 ```bash
 make test             # run all test suites
