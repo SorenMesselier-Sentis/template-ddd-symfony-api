@@ -96,10 +96,13 @@ messenger-stop:
 messenger-stats:
 	$(CONSOLE) messenger:stats
 
-init: build up install db-create db-migrate
+init: build up install db-fresh
 
 bc:
 	$(CONSOLE) make:bounded-context $(name)
+
+deptrac:
+	$(PHP) vendor/bin/deptrac analyse
 
 phpstan:
 	$(PHP) vendor/bin/phpstan analyse

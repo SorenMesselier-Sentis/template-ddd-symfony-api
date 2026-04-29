@@ -1,0 +1,70 @@
+deptrac:
+  paths:
+    - ./src
+
+  layers:
+    - name: SharedDomain
+      collectors:
+        - type: directory
+          value: src/Shared/Domain/.*
+
+    - name: SharedInfrastructure
+      collectors:
+        - type: directory
+          value: src/Shared/Infrastructure/.*
+
+    - name: Domain
+      collectors:
+        - type: directory
+          value: src/(?!Shared/).*/Domain/.*
+
+    - name: Application
+      collectors:
+        - type: directory
+          value: src/(?!Shared/).*/Application/.*
+
+    - name: Infrastructure
+      collectors:
+        - type: directory
+          value: src/(?!Shared/).*/Infrastructure/.*
+
+    - name: Kernel
+      collectors:
+        - type: classLike
+          value: App\\Kernel
+
+  ruleset:
+    SharedDomain:
+      - SharedDomain
+
+    SharedInfrastructure:
+      - SharedDomain
+      - SharedInfrastructure
+
+    Domain:
+      - SharedDomain
+      - Domain
+
+    Application:
+      - SharedDomain
+      - Domain
+      - Application
+
+    Infrastructure:
+      - SharedDomain
+      - SharedInfrastructure
+      - Domain
+      - Application
+      - Infrastructure
+
+    Kernel:
+      - SharedDomain
+      - SharedInfrastructure
+      - Domain
+      - Application
+      - Infrastructure
+      - Kernel
+
+  skip_violations:
+    App\Shared\Infrastructure\Fixture\AppFixtures:
+      - App\User\Infrastructure\Fixture\UserFixture

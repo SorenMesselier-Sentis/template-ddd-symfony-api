@@ -13,3 +13,7 @@ docker/data
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
+###> deptrac/deptrac ###
+.deptrac.cache
+###> deptrac/deptrac ###

@@ -406,6 +406,22 @@ make test-integration # integration tests only
 make test-coverage    # generate HTML coverage report in var/coverage/
 ```
 
+## Code quality
+
+Run static analysis and architecture checks:
+
+```bash
+make phpstan   # run PHPStan with phpstan.neon
+make deptrac   # run Deptrac with deptrac.yaml
+```
+
+If Docker is not available in your environment, run them directly:
+
+```bash
+vendor/bin/phpstan analyse
+vendor/bin/deptrac analyse --config-file=deptrac.yaml
+```
+
 ### License
 
 Proprietary
