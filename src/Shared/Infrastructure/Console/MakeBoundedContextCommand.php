@@ -171,11 +171,6 @@ final class MakeBoundedContextCommand extends Command
 
             // Integration
             "Integration/{$name}/Infrastructure/Doctrine{$name}RepositoryTest.php" => $this->templateRepositoryTest($name),
-
-            // E2E
-            "E2E/{$name}/Create{$name}Test.php" => $this->templateE2ETest($name, 'Create'),
-            "E2E/{$name}/Get{$name}Test.php"    => $this->templateE2ETest($name, 'Get'),
-            "E2E/{$name}/Delete{$name}Test.php" => $this->templateE2ETest($name, 'Delete'),
         ];
 
         $this->writeFiles($testsDir, $files);
@@ -1115,31 +1110,6 @@ final class MakeBoundedContextCommand extends Command
             public function test_it_returns_null_when_not_found(): void
             {
                 \$this->assertNull(\$this->repository->findById({$name}Id::random()));
-            }
-        }
-        PHP;
-    }
-
-    private function templateE2ETest(string $name, string $action): string
-    {
-        $lower = $this->toSnakeCase($name);
-        $table = $lower.'s';
-
-        return <<<PHP
-        <?php
-
-        declare(strict_types=1);
-
-        namespace App\\Tests\\E2E\\{$name};
-
-        use App\\Tests\\E2E\\ApiTestCase;
-
-        final class {$action}{$name}Test extends ApiTestCase
-        {
-            public function test_{$this->toSnakeCase($action)}_{$lower}(): void
-            {
-                // TODO: implement
-                \$this->assertTrue(true);
             }
         }
         PHP;

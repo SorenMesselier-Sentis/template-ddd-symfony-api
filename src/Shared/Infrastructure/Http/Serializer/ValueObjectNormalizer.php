@@ -12,14 +12,14 @@ final class ValueObjectNormalizer implements NormalizerInterface
 {
     public function normalize(
         mixed $object,
-        string $format = null,
+        ?string $format = null,
         array $context = []
     ): string
     {
         return $object->value();
     }
 
-    public function supportsNormalization($data, string $format = null, array $context = []): bool
+    public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
         return $data instanceof Uuid || $data instanceof Email;
     }

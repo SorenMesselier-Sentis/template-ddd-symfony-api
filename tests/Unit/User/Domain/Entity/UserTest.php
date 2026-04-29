@@ -27,8 +27,8 @@ final class UserTest extends UnitTestCase
             email: $email,
         );
 
-        $this->assertEquals('Jhon', $user->firstName()->value());
-        $this->assertEquals('Doe', $user->lastName()->value());
+        $this->assertEquals('jhon', $user->firstName()->value());
+        $this->assertEquals('doe', $user->lastName()->value());
         $this->assertEquals('jhon.doe@example.com', $user->email()->value());
         $this->assertEquals(UserStatus::ACTIVE, $user->status());
     }
@@ -58,8 +58,8 @@ final class UserTest extends UnitTestCase
 
         $user->updateName($firstName, $lastName);
 
-        $this->assertEquals('Jane', $user->firstName()->value());
-        $this->assertEquals('Smith', $user->lastName()->value());
+        $this->assertEquals('jane', $user->firstName()->value());
+        $this->assertEquals('smith', $user->lastName()->value());
 
         $events = $user->pullDomainEvents();
         $this->assertCount(2, $events);

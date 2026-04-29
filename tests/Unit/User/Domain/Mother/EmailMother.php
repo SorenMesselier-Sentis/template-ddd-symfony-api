@@ -8,12 +8,12 @@ use App\Shared\Domain\ValueObject\Email;
 
 final class EmailMother
 {
-    public function random(): Email
+    public static function random(): Email
     {
         return Email::fromString(sprintf('user-%s@example.com', uniqid()));
     }
 
-    public function create(string $value): Email
+    public static function create(string $value): Email
     {
         return Email::fromString($value);
     }

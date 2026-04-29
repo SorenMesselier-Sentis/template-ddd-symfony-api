@@ -13,7 +13,7 @@ final class UserIdMother
         return UserId::random();
     }
 
-    public function create(string $value): UserId
+    public static function create(string $value): UserId
     {
         return UserId::fromString($value);
     }

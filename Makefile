@@ -100,3 +100,17 @@ init: build up install db-create db-migrate
 
 bc:
 	$(CONSOLE) make:bounded-context $(name)
+
+test:
+	$(PHP) vendor/bin/phpunit
+
+test-unit:
+	$(PHP) vendor/bin/phpunit --testsuite=Unit
+
+test-integration:
+	APP_ENV=test $(CONSOLE) doctrine:database:create --if-not-exists
+	APP_ENV=test $(CONSOLE) doctrine:migrations:migrate --no-interaction
+	$(PHP) vendor/bin/phpunit --testsuite=Integration
+
+test-coverage:
+	$(PHP) vendor/bin/phpunit --coverage-html var/coverage

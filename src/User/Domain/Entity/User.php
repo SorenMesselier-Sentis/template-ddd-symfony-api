@@ -101,7 +101,7 @@ final class User
         $this->record(new UserReplaced($this->id->value()));
     }
 
-    public static function delete(): void
+    public function delete(): void
     {
         $this->status = UserStatus::DELETED;
         $this->touch();
@@ -127,7 +127,7 @@ final class User
 
     private function touch(): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     // ====================================

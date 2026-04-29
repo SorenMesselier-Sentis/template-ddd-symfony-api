@@ -18,7 +18,7 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = static::getContainer()->get(DoctrineUserRepository::class);
+        $this->repository = new DoctrineUserRepository($this->em);
     }
 
     public function test_it_saves_and_finds_a_user(): void

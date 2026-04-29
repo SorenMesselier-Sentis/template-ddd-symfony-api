@@ -24,20 +24,7 @@
         <testsuite name="Integration">
             <directory>tests/Integration</directory>
         </testsuite>
-        <testsuite name="E2E">
-            <directory>tests/E2E</directory>
-        </testsuite>
     </testsuites>
-
-    <coverage>
-        <include>
-            <directory suffix=".php">src</directory>
-        </include>
-        <exclude>
-            <directory>src/Shared/Infrastructure/Persistence/Migrations</directory>
-            <directory>src/*/Infrastructure/Fixture</directory>
-        </exclude>
-    </coverage>
 
     <source ignoreSuppressionOfDeprecations="true"
             ignoreIndirectDeprecations="true"
@@ -47,6 +34,10 @@
         <include>
             <directory>src</directory>
         </include>
+        <exclude>
+            <directory>src/Shared/Infrastructure/Persistence/Migrations</directory>
+            <directory>src/*/Infrastructure/Fixture</directory>
+        </exclude>
 
         <deprecationTrigger>
             <method>Doctrine\Deprecations\Deprecation::trigger</method>

@@ -206,8 +206,7 @@ This generates the following structure:src/Product/
 ├── Fixture/ProductFixture.php
 └── Messaging/ProductCreatedMessageHandler.phptests/
 ├── Unit/Product/
-├── Integration/Product/
-└── E2E/Product/
+└── Integration/Product/
 ```
 
 After running the command, follow the printed next steps:
@@ -399,15 +398,13 @@ Tests are organized in three suites matching the architecture layers.
 ```
 tests/
 ├── Unit/           # Domain + Application — no I/O, fast
-├── Integration/    # Infrastructure — hits the real database
-└── E2E/            # HTTP — full request/response cycle
+└── Integration/    # Infrastructure — hits the real database
 ```
 
 ```bash
 make test             # run all test suites
 make test-unit        # unit tests only
 make test-integration # integration tests only
-make test-e2e         # end-to-end tests only
 make test-coverage    # generate HTML coverage report in var/coverage/
 ```
 

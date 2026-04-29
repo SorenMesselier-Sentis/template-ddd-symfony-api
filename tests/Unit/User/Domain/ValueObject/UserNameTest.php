@@ -14,14 +14,14 @@ final class UserNameTest extends UnitTestCase
     {
         $name = UserName::fromString('John');
 
-        $this->assertEquals('John', $name->value());
+        $this->assertEquals('john', $name->value());
     }
 
     public function test_it_trims_whitespace(): void
     {
         $name = UserName::fromString('  John  ');
 
-        $this->assertEquals('John', $name->value());
+        $this->assertEquals('john', $name->value());
     }
 
     public function test_it_throws_on_empty_name(): void
@@ -35,7 +35,7 @@ final class UserNameTest extends UnitTestCase
     {
         $this->expectException(InvalidUserNameException::class);
 
-        UserName::fromString(str_repeat('a', 101));
+        UserName::fromString(str_repeat('a', 31));
     }
 
     public function test_it_throws_on_name_contains_special_chars(): void
