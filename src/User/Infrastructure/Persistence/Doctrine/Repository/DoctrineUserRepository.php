@@ -45,9 +45,12 @@ final class DoctrineUserRepository implements UserRepositoryInterface
 
     public function findByEmail(Email $email): ?User
     {
-        return $this->em
+        /** @var User|null $user */
+        $user = $this->em
             ->getRepository(User::class)
             ->findOneBy(['email' => $email]);
+
+        return $user;
     }
 
     public function existsByEmail(Email $email): bool

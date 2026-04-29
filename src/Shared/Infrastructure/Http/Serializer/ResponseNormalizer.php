@@ -13,7 +13,7 @@ final class ResponseNormalizer implements NormalizerInterface
         mixed $object,
         ?string $format = null,
         array $context = [],
-    ): array|string|int|float|bool|\ArrayObject|null {
+    ): array {
         if (!$object instanceof Response) {
             throw new \InvalidArgumentException(sprintf('Expected %s, %s given.', Response::class, get_debug_type($object)));
         }

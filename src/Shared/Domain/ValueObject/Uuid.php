@@ -10,7 +10,7 @@ abstract class Uuid
 {
     private readonly string $value;
 
-    public function __construct(string $value)
+    final public function __construct(string $value)
     {
         $this->ensureIsValid($value);
         $this->value = $value;

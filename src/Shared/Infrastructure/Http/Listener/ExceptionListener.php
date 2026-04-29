@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
+use Throwable;
 
 final class ExceptionListener
 {
@@ -44,7 +45,7 @@ final class ExceptionListener
         ));
     }
 
-    public function resolveException(\Throwable $exception): array
+    public function resolveException(Throwable $exception): array
     {
         return match (true) {
             $exception instanceof NotFoundException => [404, $exception->errorCode()],
@@ -57,7 +58,7 @@ final class ExceptionListener
         };
     }
 
-    public function log(\Throwable $exception, int $statusCode): void
+    public function log(Throwable $exception, int $statusCode): void
     {
         if ($statusCode >= 500) {
             $this->logger->error($exception->getMessage(), [

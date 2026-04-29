@@ -8,6 +8,7 @@ use App\Shared\Domain\Bus\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Http\Filter\FiltersBuilder;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use App\User\Application\Query\GetUsers\GetUsersQuery;
+use App\User\Application\Query\GetUsers\UsersResponse;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,9 +34,12 @@ final class GetUsersController
 
     public function __invoke(Request $request): JsonResponse
     {
-        $filters = FiltersBuilder::fromRequest($request,self::ALLOWED_FILTERS);
+        $filters = FiltersBuilder::fromRequest($request, self::ALLOWED_FILTERS);
 
         $result = $this->queryBus->ask(new GetUsersQuery($filters));
+        if (!$result instanceof UsersResponse) {
+            throw new \RuntimeException(sprintf('Expected %s, %s given.', UsersResponse::class, get_debug_type($result)));
+        }
 
         return $this->apiResponse->paginated(
             data: $result->users,

@@ -4,8 +4,6 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
-- Fix the testing config (Function and Methods deprecated or not found)
-- Auto format Queries
 - Set up Prometheus
 - Set up Grafana
 - Set up Shared\Services for the email for example

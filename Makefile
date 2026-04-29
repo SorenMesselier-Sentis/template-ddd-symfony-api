@@ -101,6 +101,9 @@ init: build up install db-create db-migrate
 bc:
 	$(CONSOLE) make:bounded-context $(name)
 
+phpstan:
+	$(PHP) vendor/bin/phpstan analyse
+
 test:
 	$(PHP) vendor/bin/phpunit
 

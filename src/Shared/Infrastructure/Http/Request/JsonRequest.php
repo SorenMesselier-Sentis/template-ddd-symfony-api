@@ -6,7 +6,6 @@ namespace App\Shared\Infrastructure\Http\Request;
 
 use App\Shared\Domain\Exception\MissingFieldException;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Serializer\SerializerInterface;
 
 abstract class JsonRequest
 {
@@ -14,7 +13,6 @@ abstract class JsonRequest
 
     public function __construct(
         RequestStack $requestStack,
-        SerializerInterface $serializer,
     ) {
         $request = $requestStack->getCurrentRequest();
         $this->data = json_decode($request->getContent(), true) ?? [];
@@ -22,9 +20,6 @@ abstract class JsonRequest
         $this->validate();
     }
 
-    /**
-     * @return void
-     */
     abstract protected function rules(): array;
 
     private function validate(): void

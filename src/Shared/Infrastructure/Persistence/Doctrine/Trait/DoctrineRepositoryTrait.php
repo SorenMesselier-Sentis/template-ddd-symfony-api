@@ -4,23 +4,26 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Persistence\Doctrine\Trait;
 
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
 trait DoctrineRepositoryTrait
 {
-    protected function saveEntity(EntityManager $em, object $entity): void
+    protected function saveEntity(EntityManagerInterface $em, object $entity): void
     {
         $em->persist($entity);
         $em->flush();
     }
 
-    protected function deleteEntity(EntityManager $em, object $entity): void
+    protected function deleteEntity(EntityManagerInterface $em, object $entity): void
     {
         $em->remove($entity);
         $em->flush();
     }
 
+    /**
+     * @return list<mixed>
+     */
     protected function paginate(QueryBuilder $qb, int $page, int $perPage): array
     {
         return $qb

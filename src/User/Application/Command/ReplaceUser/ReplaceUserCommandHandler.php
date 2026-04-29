@@ -7,13 +7,13 @@ namespace App\User\Application\Command\ReplaceUser;
 use App\Shared\Domain\Bus\Event\EventBusInterface;
 use App\Shared\Domain\Logging\LoggerInterface;
 use App\Shared\Domain\ValueObject\Email;
+use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\Exception\UserNotFoundException;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use UserAlreadyExistsException;
 
 #[AsMessageHandler(bus: 'command.bus')]
 final class ReplaceUserCommandHandler

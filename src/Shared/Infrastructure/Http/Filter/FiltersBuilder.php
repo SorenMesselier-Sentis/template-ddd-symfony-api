@@ -14,7 +14,7 @@ final class FiltersBuilder
 {
     /**
      * Allowed fields to be filtered they need to be defined by the context (the controller)
-     * @param array<int,mixed> $allowedFilters
+     * @param array<string,mixed> $allowedFilters
      */
     public static function fromRequest(Request $request, array $allowedFilters): Filters
     {
@@ -37,8 +37,8 @@ final class FiltersBuilder
     }
 
     /**
-     * @param array<int,mixed> $params
-     * @param array<int,mixed> $filters
+     * @param array<string,mixed> $params
+     * @param array<Filter> $filters
      */
     private static function buildEqual(array $params, string $field, array &$filters): void
     {
@@ -48,8 +48,8 @@ final class FiltersBuilder
     }
 
     /**
-     * @param array<int,mixed> $params
-     * @param array<int,mixed> $filters
+     * @param array<string,mixed> $params
+     * @param array<Filter> $filters
      */
     private static function buildRange(array $params, string $field, array &$filters): void
     {
@@ -63,8 +63,8 @@ final class FiltersBuilder
     }
 
     /**
-     * @param array<int,mixed> $params
-     * @param array<int,mixed> $filters
+     * @param array<string,mixed> $params
+     * @param array<Filter> $filters
      */
     private static function buildIn(array $params, string $field, array &$filters): void
     {
@@ -78,7 +78,7 @@ final class FiltersBuilder
     }
 
     /**
-     * @param array<int,mixed> $params
+     * @param array<string,mixed> $params
      */
     private static function buildOrder(array $params): Order
     {
@@ -90,7 +90,7 @@ final class FiltersBuilder
     }
 
     /**
-     * @param array<int,mixed> $params
+     * @param array<string,mixed> $params
      */
     private static function buildPagination(array $params): Pagination
     {

@@ -176,7 +176,7 @@ final class MakeBoundedContextCommand extends Command
         $this->writeFiles($testsDir, $files);
     }
     /**
-     * @param array<int,mixed> $files
+     * @param array<string, non-empty-string> $files
      */
     private function writeFiles(string $baseDir, array $files): void
     {
