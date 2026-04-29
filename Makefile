@@ -97,3 +97,6 @@ messenger-stats:
 	$(CONSOLE) messenger:stats
 
 init: build up install db-create db-migrate
+
+bc:
+	$(CONSOLE) make:bounded-context $(name)

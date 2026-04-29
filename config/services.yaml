@@ -11,6 +11,11 @@ services:
             - '../src/*/Domain/ValueObject/'
             - '../src/*/Domain/Exception/'
 
+    # Commands
+    App\Shared\Infrastructure\Console\MakeBoundedContextCommand:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     # Normalizers
     App\Shared\Infrastructure\Http\Serializer\ValueObjectNormalizer:
         tags: [serializer.normalizer]
