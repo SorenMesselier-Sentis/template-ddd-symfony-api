@@ -58,6 +58,7 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         return $this->findByEmail($email) !== null;
     }
 
+    /** @return array<int, User> */
     public function findByFilters(Filters $filters): array
     {
         $qb = $this->em->getRepository(User::class)

@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 abstract class JsonRequest
 {
+    /** @var array<string, mixed> */
     protected array $data;
 
     public function __construct(
@@ -20,6 +21,7 @@ abstract class JsonRequest
         $this->validate();
     }
 
+    /** @return array<string, bool> */
     abstract protected function rules(): array;
 
     private function validate(): void

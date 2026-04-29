@@ -18,7 +18,7 @@ use DateTimeImmutable;
 
 final class User
 {
-    /**@var DomainEvent[] */
+    /** @var array<int, DomainEvent> */
     private array $domainEvents = [];
 
     private function __construct(
