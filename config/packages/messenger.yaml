@@ -1,6 +1,7 @@
 framework:
     messenger:
         default_bus: command.bus
+        failure_transport: async.dead_letter
         buses:
             command.bus:
                 middleware:
@@ -34,6 +35,8 @@ framework:
                         type: direct
                     queues:
                         dead_letter: ~
+                retry_strategy:
+                    max_retries: 0
 
         routing:
             'App\Shared\Domain\Bus\Command\Command': sync

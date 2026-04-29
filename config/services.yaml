@@ -40,6 +40,16 @@ services:
         arguments:
             $eventBus: '@event.bus'
 
+    App\Shared\Infrastructure\Messaging\Outbox\OutboxEventBus:
+        arguments:
+            $connection: '@doctrine.dbal.default_connection'
+
+    App\Shared\Infrastructure\Messaging\Outbox\OutboxRelay:
+        arguments:
+            $connection: '@doctrine.dbal.default_connection'
+            $eventBus: '@event.bus'
+            $logger: '@App\Shared\Domain\Logging\LoggerInterface'
+
     # Logger
     App\Shared\Infrastructure\Logging\MonologLogger:
         arguments:
@@ -47,7 +57,7 @@ services:
 
     # Domain interfaces → alias to implementations
     App\Shared\Domain\Bus\Event\EventBusInterface:
-        alias: App\Shared\Infrastructure\Bus\Event\MessengerEventBus
+        alias: App\Shared\Infrastructure\Messaging\Outbox\OutboxEventBus
 
     App\Shared\Domain\Bus\Command\CommandBusInterface:
         alias: App\Shared\Infrastructure\Bus\Command\MessengerCommandBus

@@ -96,6 +96,18 @@ messenger-stop:
 messenger-stats:
 	$(CONSOLE) messenger:stats
 
+messenger-failed-show:
+	$(CONSOLE) messenger:failed:show
+
+messenger-failed-retry:
+	$(CONSOLE) messenger:failed:retry --force
+
+messenger-failed-remove:
+	$(CONSOLE) messenger:failed:remove --all --force
+
+outbox-relay:
+	$(CONSOLE) app:outbox:relay
+
 init: build up install db-fresh
 
 bc:

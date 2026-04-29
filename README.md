@@ -162,8 +162,12 @@ make db-fresh     # db-reset + db-fixtures in one command
 ```bash
 make consume          # start the event consumer
 make consume-dl       # start the dead letter consumer
+make outbox-relay     # publish persisted outbox events to the event bus
 make messenger-stop   # gracefully stop all workers
 make messenger-stats  # display transport stats
+make messenger-failed-show   # list failed messages
+make messenger-failed-retry  # retry all failed messages
+make messenger-failed-remove # remove all failed messages
 ```
 
 ### Generating a new Bounded Context
@@ -380,14 +384,17 @@ curl -s -X DELETE http://localhost:8080/api/v1/users/<id>
 CommandHandler
   → repository->save(aggregate)
   → eventBus->publish(...aggregate->pullDomainEvents())
-      → RabbitMQ exchange "events" (topic)
-          → queue "events.<context>" (binding: <context>.#)
-              → MessageHandler
+      → transactional outbox table (same DB transaction)
+          → outbox relay command
+              → RabbitMQ exchange "events" (topic)
+                  → queue "events.<context>" (binding: <context>.#)
+                      → MessageHandler
 
 On failure after 3 retries:
-  → exchange "dead_letter"
-      → queue "dead_letter"
-          → DeadLetterMessageHandler
+  → failure_transport "async.dead_letter"
+      → exchange "dead_letter"
+          → queue "dead_letter"
+              → DeadLetterMessageHandler
 ```
 
 ## Testing
