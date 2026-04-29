@@ -175,8 +175,9 @@ final class MakeBoundedContextCommand extends Command
 
         $this->writeFiles($testsDir, $files);
     }
+
     /**
-     * @param array<string, non-empty-string> $files
+     * @param array<string, string> $files
      */
     private function writeFiles(string $baseDir, array $files): void
     {
@@ -190,8 +191,6 @@ final class MakeBoundedContextCommand extends Command
     // =========================================================
     // Templates — Domain
     // =========================================================
-
-
     private function templateEntity(string $name): string
     {
         return <<<PHP

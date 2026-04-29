@@ -36,13 +36,13 @@ abstract class AbstractUuidType extends Type
         if ($value === null) {
             return null;
         }
-
+    
         $class = static::uuidClass();
-
-        if (is_a($value, $class, true)) {
+    
+        if ($value instanceof $class) {
             return $value;
         }
-
+    
         return $class::fromString((string) $value);
     }
 

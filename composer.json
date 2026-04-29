@@ -82,6 +82,7 @@
         }
     },
     "require-dev": {
+        "deptrac/deptrac": "^4.6",
         "doctrine/doctrine-fixtures-bundle": "^4.3",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-doctrine": "^2.0",
