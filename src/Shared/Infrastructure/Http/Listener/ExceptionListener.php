@@ -14,13 +14,13 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
-use Throwable;
 
 final class ExceptionListener
 {
     public function __construct(
-        private readonly LoggerInterface $logger
-    ) {}
+        private readonly LoggerInterface $logger,
+    ) {
+    }
 
     public function onKernelException(ExceptionEvent $event): void
     {
@@ -39,7 +39,7 @@ final class ExceptionListener
                 'error' => [
                     'code' => $errorCode,
                     'message' => $exception->getMessage(),
-                ]
+                ],
             ],
             status: $statusCode,
         ));
@@ -48,11 +48,11 @@ final class ExceptionListener
     /**
      * @return array{0: int, 1: string}
      */
-    public function resolveException(Throwable $exception): array
+    public function resolveException(\Throwable $exception): array
     {
         return match (true) {
             $exception instanceof NotFoundException => [404, $exception->errorCode()],
-            $exception instanceof AlreadyExistsException  => [409, $exception->errorCode()],
+            $exception instanceof AlreadyExistsException => [409, $exception->errorCode()],
             $exception instanceof InvalidArgumentException => [400, $exception->errorCode()],
             $exception instanceof UnauthorizedException => [401, $exception->errorCode()],
             $exception instanceof DomainException => [422, $exception->errorCode()],
@@ -61,7 +61,7 @@ final class ExceptionListener
         };
     }
 
-    public function log(Throwable $exception, int $statusCode): void
+    public function log(\Throwable $exception, int $statusCode): void
     {
         if ($statusCode >= 500) {
             $this->logger->error($exception->getMessage(), [
@@ -73,7 +73,7 @@ final class ExceptionListener
         }
 
         $this->logger->warning($exception->getMessage(), [
-            'exception' => $exception::class
+            'exception' => $exception::class,
         ]);
     }
 }

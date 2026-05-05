@@ -8,5 +8,6 @@ final class DeadLetterMessage
 {
     public function __construct(
         public readonly mixed $originalMessage,
-    ) {}
+    ) {
+    }
 }

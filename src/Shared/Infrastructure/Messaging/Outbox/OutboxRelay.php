@@ -16,7 +16,8 @@ final class OutboxRelay
         private readonly Connection $connection,
         private readonly MessageBusInterface $eventBus,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function relay(int $limit = 100): int
     {
@@ -41,7 +42,7 @@ final class OutboxRelay
                 'id' => (string) $message['id'],
             ]);
 
-            $published++;
+            ++$published;
         }
 
         if ($published > 0) {
@@ -84,11 +85,7 @@ final class OutboxRelay
             }
 
             if (!array_key_exists($name, $payload)) {
-                throw new \RuntimeException(sprintf(
-                    'Missing outbox payload key "%s" for "%s".',
-                    $name,
-                    $eventClass
-                ));
+                throw new \RuntimeException(sprintf('Missing outbox payload key "%s" for "%s".', $name, $eventClass));
             }
 
             $arguments[] = $payload[$name];
@@ -97,12 +94,8 @@ final class OutboxRelay
         $event = $reflection->newInstanceArgs($arguments);
 
         if (!$event instanceof DomainEvent) {
-            throw new \RuntimeException(sprintf(
-                'Class "%s" must implement %s.',
-                $eventClass,
-                DomainEvent::class
-            ));
-            }
+            throw new \RuntimeException(sprintf('Class "%s" must implement %s.', $eventClass, DomainEvent::class));
+        }
 
         return $event;
     }

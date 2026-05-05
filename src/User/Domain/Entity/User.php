@@ -14,7 +14,6 @@ use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
 use App\User\Domain\ValueObject\UserStatus;
-use DateTimeImmutable;
 
 final class User
 {
@@ -28,9 +27,10 @@ final class User
         private Email $email,
         private HashedPassword $password,
         private UserStatus $status,
-        private readonly DateTimeImmutable $createdAt,
-        private DateTimeImmutable $updatedAt,
-    ) {}
+        private readonly \DateTimeImmutable $createdAt,
+        private \DateTimeImmutable $updatedAt,
+    ) {
+    }
 
     public static function create(
         UserId $id,
@@ -39,7 +39,7 @@ final class User
         Email $email,
         HashedPassword $password,
     ): self {
-        $now = new DateTimeImmutable();
+        $now = new \DateTimeImmutable();
         $user = new self(
             id: $id,
             firstName: $firstName,
@@ -127,7 +127,7 @@ final class User
 
     private function touch(): void
     {
-        $this->updatedAt = new DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     // ====================================
@@ -164,12 +164,12 @@ final class User
         return $this->status;
     }
 
-    public function createdAt(): DateTimeImmutable
+    public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function updatedAt(): DateTimeImmutable
+    public function updatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
     }

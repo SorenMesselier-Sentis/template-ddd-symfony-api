@@ -10,5 +10,6 @@ final class GetUserQuery implements Query
 {
     public function __construct(
         public readonly string $id,
-    ) {}
+    ) {
+    }
 }

@@ -19,27 +19,31 @@ final class PatchUserRequest extends JsonRequest
         ];
     }
 
-    public function firstName(): ?string {
+    public function firstName(): ?string
+    {
         return $this->data['firstName'] ?? null;
     }
 
-    public function lastName(): ?string {
+    public function lastName(): ?string
+    {
         return $this->data['lastName'] ?? null;
     }
 
-    public function email(): ?string {
+    public function email(): ?string
+    {
         return $this->data['email'] ?? null;
     }
 
-    public function password(): ?string {
+    public function password(): ?string
+    {
         return $this->data['password'] ?? null;
     }
 
     public function isEmpty(): bool
     {
-        return $this->firstName() === null
-            && $this->lastName() === null
-            && $this->email() === null
-            && $this->password() === null;
+        return null === $this->firstName()
+            && null === $this->lastName()
+            && null === $this->email()
+            && null === $this->password();
     }
 }

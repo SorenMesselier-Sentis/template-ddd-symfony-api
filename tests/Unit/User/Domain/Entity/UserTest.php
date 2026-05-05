@@ -9,13 +9,12 @@ use App\Tests\Unit\User\Domain\Mother\EmailMother;
 use App\Tests\Unit\User\Domain\Mother\UserMother;
 use App\Tests\Unit\User\Domain\Mother\UserNameMother;
 use App\User\Domain\Event\UserCreated;
-use App\User\Domain\Event\UserDeleted;
 use App\User\Domain\Event\UserUpdated;
 use App\User\Domain\ValueObject\UserStatus;
 
 final class UserTest extends UnitTestCase
 {
-    public function test_it_creates_a_user_with_correct_attributes(): void
+    public function testItCreatesAUserWithCorrectAttributes(): void
     {
         $firstName = UserNameMother::create('Jhon');
         $lastName = UserNameMother::create('Doe');
@@ -33,7 +32,7 @@ final class UserTest extends UnitTestCase
         $this->assertEquals(UserStatus::ACTIVE, $user->status());
     }
 
-    public function test_it_records_user_created_event_on_creation(): void
+    public function testItRecordsUserCreatedEventOnCreation(): void
     {
         $user = UserMother::create();
         $events = $user->pullDomainEvents();
@@ -42,7 +41,7 @@ final class UserTest extends UnitTestCase
         $this->assertInstanceOf(UserCreated::class, $events[0]);
     }
 
-    public function test_it_clears_domain_events_after_pull(): void
+    public function testItClearsDomainEventsAfterPull(): void
     {
         $user = UserMother::create();
         $user->pullDomainEvents();
@@ -50,7 +49,7 @@ final class UserTest extends UnitTestCase
         $this->assertEmpty($user->pullDomainEvents());
     }
 
-    public function test_it_updates_name(): void
+    public function testItUpdatesName(): void
     {
         $user = UserMother::create();
         $firstName = UserNameMother::create('Jane');
@@ -64,19 +63,5 @@ final class UserTest extends UnitTestCase
         $events = $user->pullDomainEvents();
         $this->assertCount(2, $events);
         $this->assertInstanceOf(UserUpdated::class, $events[1]);
-    }
-
-    public function test_it_soft_deletes(): void
-    {
-        $user = UserMother::create();
-        $user->pullDomainEvents();
-
-        $user->delete();
-
-        $this->assertEquals(UserStatus::DELETED, $user->status());
-
-        $events = $user->pullDomainEvents();
-        $this->assertCount(1, $events);
-        $this->assertInstanceOf(UserDeleted::class, $events[0]);
     }
 }

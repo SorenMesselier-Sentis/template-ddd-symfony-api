@@ -14,5 +14,6 @@ final class UpdateUserCommand implements Command
         public readonly ?string $lastName = null,
         public readonly ?string $email = null,
         public readonly ?string $password = null,
-    ) {}
+    ) {
+    }
 }

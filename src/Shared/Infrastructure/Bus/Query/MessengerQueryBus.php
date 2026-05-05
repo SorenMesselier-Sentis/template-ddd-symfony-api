@@ -13,8 +13,9 @@ use Symfony\Component\Messenger\Stamp\HandledStamp;
 final class MessengerQueryBus implements QueryBusInterface
 {
     public function __construct(
-        private readonly MessageBusInterface $queryBus
-    ) {}
+        private readonly MessageBusInterface $queryBus,
+    ) {
+    }
 
     public function ask(Query $query): Response
     {

@@ -12,7 +12,8 @@ final class GetUsersQueryHandler
 {
     public function __construct(
         private readonly UserRepositoryInterface $repository,
-    ) {}
+    ) {
+    }
 
     public function __invoke(GetUsersQuery $query): UsersResponse
     {
@@ -20,7 +21,7 @@ final class GetUsersQueryHandler
         $total = $this->repository->countByFilters($query->filters);
 
         return new UsersResponse(
-            users: array_map(fn($user) => new UserItemResponse($user), $users),
+            users: array_map(fn ($user) => new UserItemResponse($user), $users),
             total: $total,
             page: $query->filters->pagination->page,
             perPage: $query->filters->pagination->limit,

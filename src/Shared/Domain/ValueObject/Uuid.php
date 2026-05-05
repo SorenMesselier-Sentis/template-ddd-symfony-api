@@ -39,9 +39,7 @@ abstract class Uuid
     public function ensureIsValid(string $value): void
     {
         if (!SymfonyUuid::isValid($value)) {
-            throw new \InvalidArgumentException(
-            sprintf('"%s" is not a valid UUID.', $value)
-            );
+            throw new \InvalidArgumentException(sprintf('"%s" is not a valid UUID.', $value));
         }
     }
 

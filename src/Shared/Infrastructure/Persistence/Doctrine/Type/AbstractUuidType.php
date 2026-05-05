@@ -17,7 +17,7 @@ use Doctrine\DBAL\Types\Type;
 abstract class AbstractUuidType extends Type
 {
     /**
-     * Doctrine unique type name
+     * Doctrine unique type name.
      */
     abstract protected static function typeName(): string;
 
@@ -33,22 +33,22 @@ abstract class AbstractUuidType extends Type
 
     public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?Uuid
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
-    
+
         $class = static::uuidClass();
-    
+
         if ($value instanceof $class) {
             return $value;
         }
-    
+
         return $class::fromString((string) $value);
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
 

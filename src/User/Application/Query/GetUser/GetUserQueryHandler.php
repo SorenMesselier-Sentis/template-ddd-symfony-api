@@ -14,13 +14,14 @@ final class GetUserQueryHandler
 {
     public function __construct(
         private readonly UserRepositoryInterface $repository,
-    ) {}
+    ) {
+    }
 
     public function __invoke(GetUserQuery $query): UserResponse
     {
         $user = $this->repository->findById(UserId::fromString($query->id));
 
-        if ($user === null) {
+        if (null === $user) {
             throw UserNotFoundException::withId($query->id);
         }
 

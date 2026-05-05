@@ -119,6 +119,13 @@ deptrac:
 phpstan:
 	$(PHP) vendor/bin/phpstan analyse
 
+cs-fix:
+	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
+
+cs-check:
+	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff
+
+
 test:
 	$(PHP) vendor/bin/phpunit
 

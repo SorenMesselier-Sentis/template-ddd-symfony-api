@@ -11,5 +11,6 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class UserCreatedMessageHandler
 {
     public function __invoke(UserCreated $event): void
-    {}
+    {
+    }
 }

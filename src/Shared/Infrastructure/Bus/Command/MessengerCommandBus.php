@@ -11,8 +11,9 @@ use Symfony\Component\Messenger\MessageBusInterface;
 final class MessengerCommandBus implements CommandBusInterface
 {
     public function __construct(
-        private readonly MessageBusInterface $commandBus
-    ) {}
+        private readonly MessageBusInterface $commandBus,
+    ) {
+    }
 
     public function dispatch(Command $command): void
     {

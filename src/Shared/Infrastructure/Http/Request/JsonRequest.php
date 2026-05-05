@@ -28,9 +28,7 @@ abstract class JsonRequest
     {
         foreach ($this->rules() as $field => $required) {
             if ($required && empty($this->data[$field])) {
-                throw new MissingFieldException(
-                    sprintf('Field "%s" is required.', $field)
-                );
+                throw new MissingFieldException(sprintf('Field "%s" is required.', $field));
             }
         }
     }

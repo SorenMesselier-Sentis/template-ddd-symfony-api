@@ -22,7 +22,8 @@ final class UpdateUserCommandHandler
         private readonly UserRepositoryInterface $repository,
         private readonly EventBusInterface $eventbus,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(UpdateUserCommand $command): void
     {
@@ -30,18 +31,18 @@ final class UpdateUserCommandHandler
 
         $user = $this->repository->findById(UserId::fromString($command->id));
 
-        if ($user === null) {
+        if (null === $user) {
             throw UserNotFoundException::withId($command->id);
         }
 
-        if ($command->firstName !== null || $command->lastName !== null) {
+        if (null !== $command->firstName || null !== $command->lastName) {
             $user->updateName(
                 firstName: UserName::fromString($command->firstName ?? $user->firstName()->value()),
                 lastName: UserName::fromString($command->lastName ?? $user->lastName()->value()),
             );
         }
 
-        if ($command->email !== null) {
+        if (null !== $command->email) {
             $email = Email::fromString($command->email);
 
             if ($this->repository->existsByEmail($email) && $command->email !== $user->email()->value()) {
@@ -51,7 +52,7 @@ final class UpdateUserCommandHandler
             $user->updateEmail($email);
         }
 
-        if ($command->password !== null) {
+        if (null !== $command->password) {
             $user->updatePassword(HashedPassword::fromPlainPassword($command->password));
         }
 

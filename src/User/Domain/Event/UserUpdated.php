@@ -10,8 +10,7 @@ final class UserUpdated extends DomainEvent
 {
     public function __construct(
         string $aggregateId,
-    )
-    {
+    ) {
         parent::__construct($aggregateId);
     }
 

@@ -11,8 +11,9 @@ use Symfony\Component\Messenger\MessageBusInterface;
 final class MessengerEventBus implements EventBusInterface
 {
     public function __construct(
-        private readonly MessageBusInterface $eventBus
-    ) {}
+        private readonly MessageBusInterface $eventBus,
+    ) {
+    }
 
     public function publish(DomainEvent ...$events): void
     {

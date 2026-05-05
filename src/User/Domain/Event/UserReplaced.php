@@ -11,7 +11,7 @@ final class UserReplaced extends DomainEvent
     public function __construct(
         string $aggregateId,
     ) {
-       parent::__construct($aggregateId);
+        parent::__construct($aggregateId);
     }
 
     public static function eventName(): string

@@ -19,7 +19,7 @@ final class HashedPasswordType extends Type
 
     public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?HashedPassword
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
 
@@ -28,7 +28,7 @@ final class HashedPasswordType extends Type
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
 

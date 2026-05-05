@@ -21,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
 #[OA\Response(response: 200, description: 'List of users')]
 final class GetUsersController
 {
-    Private const ALLOWED_FILTERS = [
+    private const ALLOWED_FILTERS = [
         'email' => 'equal',
         'firstName' => 'equal',
         'lastName' => 'equal',
@@ -30,7 +30,8 @@ final class GetUsersController
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly ApiResponse $apiResponse,
-    ) {}
+    ) {
+    }
 
     public function __invoke(Request $request): JsonResponse
     {

@@ -19,7 +19,9 @@ final class DoctrineUserRepository implements UserRepositoryInterface
 {
     use DoctrineRepositoryTrait;
 
-    public function __construct(private readonly EntityManagerInterface $em) {}
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
+    }
 
     public function save(User $user): void
     {
@@ -36,7 +38,7 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         /** @var User|null $user */
         $user = $this->em->find(User::class, $id);
 
-        if ($user !== null && $user->status() === UserStatus::DELETED) {
+        if (null !== $user && UserStatus::DELETED === $user->status()) {
             return null;
         }
 
@@ -55,7 +57,7 @@ final class DoctrineUserRepository implements UserRepositoryInterface
 
     public function existsByEmail(Email $email): bool
     {
-        return $this->findByEmail($email) !== null;
+        return null !== $this->findByEmail($email);
     }
 
     /** @return array<int, User> */

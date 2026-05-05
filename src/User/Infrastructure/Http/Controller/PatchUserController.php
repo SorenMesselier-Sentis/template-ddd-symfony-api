@@ -34,7 +34,8 @@ final class PatchUserController
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly ApiResponse $apiResponse,
-    ) {}
+    ) {
+    }
 
     public function __invoke(string $id, PatchUserRequest $request): JsonResponse
     {

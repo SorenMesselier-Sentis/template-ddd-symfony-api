@@ -39,7 +39,7 @@ final class CreateUserCommandHandlerTest extends UnitTestCase
         );
     }
 
-    public function test_it_creates_a_user(): void
+    public function testItCreatesAUser(): void
     {
         $command = new CreateUserCommand(
             id: UserId::random()->value(),
@@ -66,7 +66,7 @@ final class CreateUserCommandHandlerTest extends UnitTestCase
         ($this->handler)($command);
     }
 
-    public function test_it_throws_when_email_already_exists(): void
+    public function testItThrowsWhenEmailAlreadyExists(): void
     {
         $this->expectException(UserAlreadyExistsException::class);
 

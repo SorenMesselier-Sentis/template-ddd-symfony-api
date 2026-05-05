@@ -36,7 +36,7 @@ abstract class IntegrationTestCase extends TestCase
         $connection->executeStatement('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
     }
 
-    protected function tearDown():void
+    protected function tearDown(): void
     {
         $this->em->close();
     }

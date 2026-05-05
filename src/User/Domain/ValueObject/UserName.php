@@ -34,26 +34,20 @@ final class UserName
 
     private function ensureIsValid(string $value): void
     {
-        if ($value === '') {
+        if ('' === $value) {
             throw new InvalidUserNameException('User name cannot be empty.');
         }
 
         if (mb_strlen($value) < 3) {
-            throw new InvalidUserNameException(
-                'User name must be at least 3 characters long.'
-            );
+            throw new InvalidUserNameException('User name must be at least 3 characters long.');
         }
 
         if (mb_strlen($value) > 30) {
-            throw new InvalidUserNameException(
-                'User name cannot exceed 30 characters.'
-            );
+            throw new InvalidUserNameException('User name cannot exceed 30 characters.');
         }
 
         if (!preg_match('/^[a-z0-9_]+$/', $value)) {
-            throw new InvalidUserNameException(
-                'User name can only contain lowercase letters, numbers and underscores.'
-            );
+            throw new InvalidUserNameException('User name can only contain lowercase letters, numbers and underscores.');
         }
     }
 }

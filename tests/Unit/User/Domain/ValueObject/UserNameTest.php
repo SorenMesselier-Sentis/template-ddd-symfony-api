@@ -10,35 +10,35 @@ use App\User\Domain\ValueObject\UserName;
 
 final class UserNameTest extends UnitTestCase
 {
-    public function test_it_creates_a_valid_name(): void
+    public function testItCreatesAValidName(): void
     {
         $name = UserName::fromString('John');
 
         $this->assertEquals('john', $name->value());
     }
 
-    public function test_it_trims_whitespace(): void
+    public function testItTrimsWhitespace(): void
     {
         $name = UserName::fromString('  John  ');
 
         $this->assertEquals('john', $name->value());
     }
 
-    public function test_it_throws_on_empty_name(): void
+    public function testItThrowsOnEmptyName(): void
     {
         $this->expectException(InvalidUserNameException::class);
 
         UserName::fromString('');
     }
 
-    public function test_it_throws_on_name_too_long(): void
+    public function testItThrowsOnNameTooLong(): void
     {
         $this->expectException(InvalidUserNameException::class);
 
         UserName::fromString(str_repeat('a', 31));
     }
 
-    public function test_it_throws_on_name_contains_special_chars(): void
+    public function testItThrowsOnNameContainsSpecialChars(): void
     {
         $this->expectException(InvalidUserNameException::class);
 

@@ -35,7 +35,8 @@ final class GetUserController
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly ApiResponse $apiResponse,
-    ) {}
+    ) {
+    }
 
     public function __invoke(string $id): JsonResponse
     {

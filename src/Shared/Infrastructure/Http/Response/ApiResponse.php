@@ -9,10 +9,10 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 final class ApiResponse
 {
-
     public function __construct(
         private readonly SerializerInterface $serializer,
-    ) {}
+    ) {
+    }
 
     public function success(mixed $data = null, int $status = 200): JsonResponse
     {

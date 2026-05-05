@@ -22,7 +22,8 @@ final class ReplaceUserCommandHandler
         private readonly UserRepositoryInterface $repository,
         private readonly EventBusInterface $eventBus,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(ReplaceUserCommand $command): void
     {
@@ -30,7 +31,7 @@ final class ReplaceUserCommandHandler
 
         $user = $this->repository->findById(UserId::fromString($command->id));
 
-        if ($user === null) {
+        if (null === $user) {
             throw UserNotFoundException::withId($command->id);
         }
 

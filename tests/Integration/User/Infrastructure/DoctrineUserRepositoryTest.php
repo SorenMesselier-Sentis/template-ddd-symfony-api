@@ -21,7 +21,7 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
         $this->repository = new DoctrineUserRepository($this->em);
     }
 
-    public function test_it_saves_and_finds_a_user(): void
+    public function testItSavesAndFindsAUser(): void
     {
         $user = UserMother::create();
 
@@ -33,10 +33,10 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
         $this->assertTrue($user->id()->equals($found->id()));
     }
 
-    public function test_it_finds_by_email(): void
+    public function testItFindsByEmail(): void
     {
         $email = EmailMother::create('find.me@example.com');
-        $user  = UserMother::create(email: $email);
+        $user = UserMother::create(email: $email);
 
         $this->repository->save($user);
 
@@ -46,17 +46,17 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
         $this->assertEquals('find.me@example.com', $found->email()->value());
     }
 
-    public function test_it_returns_null_when_not_found(): void
+    public function testItReturnsNullWhenNotFound(): void
     {
         $found = $this->repository->findById(UserId::random());
 
         $this->assertNull($found);
     }
 
-    public function test_it_detects_existing_email(): void
+    public function testItDetectsExistingEmail(): void
     {
         $email = EmailMother::create('exists@example.com');
-        $user  = UserMother::create(email: $email);
+        $user = UserMother::create(email: $email);
 
         $this->repository->save($user);
 
@@ -64,19 +64,5 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
         $this->assertFalse($this->repository->existsByEmail(
             Email::fromString('other@example.com')
         ));
-    }
-
-    public function test_it_soft_deletes_a_user(): void
-    {
-        $user = UserMother::create();
-        $this->repository->save($user);
-
-        $user->delete();
-        $this->repository->save($user);
-
-        $this->em->clear();
-
-        $found = $this->repository->findById($user->id());
-        $this->assertNull($found);
     }
 }

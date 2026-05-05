@@ -11,7 +11,7 @@ final class EmailType extends Type
     public const NAME = 'email';
 
     /**
-     * Native from PostgreSQL
+     * Native from PostgreSQL.
      */
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
     {
@@ -20,7 +20,7 @@ final class EmailType extends Type
 
     public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?Email
     {
-        if ($value === null) {
+        if (null === $value) {
             return null;
         }
 

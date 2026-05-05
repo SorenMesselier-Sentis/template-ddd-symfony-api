@@ -79,7 +79,7 @@ final class MakeBoundedContextCommand extends Command
             "Domain/Event/{$name}Deleted.php" => $this->templateDomainEvent($name, 'Deleted'),
 
             // Exception
-            "Domain/Exception/{$name}NotFoundException.php"    => $this->templateNotFoundException($name),
+            "Domain/Exception/{$name}NotFoundException.php" => $this->templateNotFoundException($name),
             "Domain/Exception/{$name}AlreadyExistsException.php" => $this->templateAlreadyExistsException($name),
         ];
 
@@ -92,27 +92,27 @@ final class MakeBoundedContextCommand extends Command
 
         $files = [
             // Create
-            "Application/Command/Create{$name}/Create{$name}Command.php"        => $this->templateCommand($name, 'Create'),
+            "Application/Command/Create{$name}/Create{$name}Command.php" => $this->templateCommand($name, 'Create'),
             "Application/Command/Create{$name}/Create{$name}CommandHandler.php" => $this->templateCommandHandler($name, 'Create'),
 
             // Update
-            "Application/Command/Update{$name}/Update{$name}Command.php"        => $this->templateCommand($name, 'Update'),
+            "Application/Command/Update{$name}/Update{$name}Command.php" => $this->templateCommand($name, 'Update'),
             "Application/Command/Update{$name}/Update{$name}CommandHandler.php" => $this->templateCommandHandler($name, 'Update'),
 
             // Delete
-            "Application/Command/Delete{$name}/Delete{$name}Command.php"        => $this->templateCommand($name, 'Delete'),
+            "Application/Command/Delete{$name}/Delete{$name}Command.php" => $this->templateCommand($name, 'Delete'),
             "Application/Command/Delete{$name}/Delete{$name}CommandHandler.php" => $this->templateCommandHandler($name, 'Delete'),
 
             // Get one
-            "Application/Query/Get{$name}/Get{$name}Query.php"         => $this->templateQuery($name),
-            "Application/Query/Get{$name}/Get{$name}QueryHandler.php"  => $this->templateQueryHandler($name),
-            "Application/Query/Get{$name}/{$name}Response.php"         => $this->templateResponse($name),
+            "Application/Query/Get{$name}/Get{$name}Query.php" => $this->templateQuery($name),
+            "Application/Query/Get{$name}/Get{$name}QueryHandler.php" => $this->templateQueryHandler($name),
+            "Application/Query/Get{$name}/{$name}Response.php" => $this->templateResponse($name),
 
             // Get collection
-            "Application/Query/Get{$name}s/Get{$name}sQuery.php"        => $this->templateCollectionQuery($name),
+            "Application/Query/Get{$name}s/Get{$name}sQuery.php" => $this->templateCollectionQuery($name),
             "Application/Query/Get{$name}s/Get{$name}sQueryHandler.php" => $this->templateCollectionQueryHandler($name),
-            "Application/Query/Get{$name}s/{$name}sResponse.php"        => $this->templateCollectionResponse($name),
-            "Application/Query/Get{$name}s/{$name}ItemResponse.php"     => $this->templateItemResponse($name),
+            "Application/Query/Get{$name}s/{$name}sResponse.php" => $this->templateCollectionResponse($name),
+            "Application/Query/Get{$name}s/{$name}ItemResponse.php" => $this->templateItemResponse($name),
         ];
 
         $this->writeFiles($srcDir, $files);
@@ -136,17 +136,17 @@ final class MakeBoundedContextCommand extends Command
             "Infrastructure/Persistence/Doctrine/Type/{$name}IdType.php" => $this->templateDoctrineType($name),
 
             // Http Controllers
-            "Infrastructure/Http/Controller/Create{$name}Controller.php"  => $this->templateController($name, 'Create', 'POST',   "/{$table}",      201),
-            "Infrastructure/Http/Controller/Get{$name}Controller.php"     => $this->templateController($name, 'Get',    'GET',    "/{$table}/{id}", 200),
-            "Infrastructure/Http/Controller/Get{$name}sController.php"    => $this->templateCollectionController($name, $table),
-            "Infrastructure/Http/Controller/Patch{$name}Controller.php"   => $this->templateController($name, 'Patch',  'PATCH',  "/{$table}/{id}", 204),
-            "Infrastructure/Http/Controller/Put{$name}Controller.php"     => $this->templateController($name, 'Put',    'PUT',    "/{$table}/{id}", 204),
-            "Infrastructure/Http/Controller/Delete{$name}Controller.php"  => $this->templateController($name, 'Delete', 'DELETE', "/{$table}/{id}", 204),
+            "Infrastructure/Http/Controller/Create{$name}Controller.php" => $this->templateController($name, 'Create', 'POST', "/{$table}", 201),
+            "Infrastructure/Http/Controller/Get{$name}Controller.php" => $this->templateController($name, 'Get', 'GET', "/{$table}/{id}", 200),
+            "Infrastructure/Http/Controller/Get{$name}sController.php" => $this->templateCollectionController($name, $table),
+            "Infrastructure/Http/Controller/Patch{$name}Controller.php" => $this->templateController($name, 'Patch', 'PATCH', "/{$table}/{id}", 204),
+            "Infrastructure/Http/Controller/Put{$name}Controller.php" => $this->templateController($name, 'Put', 'PUT', "/{$table}/{id}", 204),
+            "Infrastructure/Http/Controller/Delete{$name}Controller.php" => $this->templateController($name, 'Delete', 'DELETE', "/{$table}/{id}", 204),
 
             // Http Requests
             "Infrastructure/Http/Request/Create{$name}Request.php" => $this->templateRequest($name, 'Create'),
-            "Infrastructure/Http/Request/Patch{$name}Request.php"  => $this->templateRequest($name, 'Patch'),
-            "Infrastructure/Http/Request/Put{$name}Request.php"    => $this->templateRequest($name, 'Put'),
+            "Infrastructure/Http/Request/Patch{$name}Request.php" => $this->templateRequest($name, 'Patch'),
+            "Infrastructure/Http/Request/Put{$name}Request.php" => $this->templateRequest($name, 'Put'),
 
             // Fixture
             "Infrastructure/Fixture/{$name}Fixture.php" => $this->templateFixture($name),
@@ -164,10 +164,10 @@ final class MakeBoundedContextCommand extends Command
 
         $files = [
             // Unit
-            "Unit/{$name}/Domain/Entity/{$name}Test.php"                          => $this->templateEntityTest($name),
-            "Unit/{$name}/Domain/Mother/{$name}Mother.php"                        => $this->templateMother($name),
-            "Unit/{$name}/Domain/Mother/{$name}IdMother.php"                      => $this->templateIdMother($name),
-            "Unit/{$name}/Application/Create{$name}CommandHandlerTest.php"        => $this->templateCommandHandlerTest($name),
+            "Unit/{$name}/Domain/Entity/{$name}Test.php" => $this->templateEntityTest($name),
+            "Unit/{$name}/Domain/Mother/{$name}Mother.php" => $this->templateMother($name),
+            "Unit/{$name}/Domain/Mother/{$name}IdMother.php" => $this->templateIdMother($name),
+            "Unit/{$name}/Application/Create{$name}CommandHandlerTest.php" => $this->templateCommandHandlerTest($name),
 
             // Integration
             "Integration/{$name}/Infrastructure/Doctrine{$name}RepositoryTest.php" => $this->templateRepositoryTest($name),
@@ -843,7 +843,7 @@ final class MakeBoundedContextCommand extends Command
 
     private function templateRequest(string $name, string $action): string
     {
-        $required = $action === 'Patch' ? 'false' : 'true';
+        $required = 'Patch' === $action ? 'false' : 'true';
 
         return <<<PHP
         <?php
@@ -1068,7 +1068,6 @@ final class MakeBoundedContextCommand extends Command
         PHP;
     }
 
-
     private function templateRepositoryTest(string $name): string
     {
         $lower = $this->toSnakeCase($name);
@@ -1125,7 +1124,7 @@ final class MakeBoundedContextCommand extends Command
 
     private function printNextSteps(string $name): void
     {
-        $lower    = $this->toSnakeCase($name);
+        $lower = $this->toSnakeCase($name);
         $typeName = $lower.'_id';
 
         $this->io->section('Next steps');

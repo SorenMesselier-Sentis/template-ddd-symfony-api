@@ -10,8 +10,9 @@ use Psr\Log\LoggerInterface as PsrLoggerInterface;
 final class MonologLogger implements LoggerInterface
 {
     public function __construct(
-        private readonly PsrLoggerInterface $logger
-    ) {}
+        private readonly PsrLoggerInterface $logger,
+    ) {
+    }
 
     public function info(string $message, array $context = []): void
     {

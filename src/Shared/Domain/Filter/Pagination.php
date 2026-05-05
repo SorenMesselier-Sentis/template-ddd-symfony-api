@@ -12,7 +12,7 @@ final class Pagination
         public readonly int $page = 1,
         public readonly int $limit = 20,
     ) {
-        $this->offset = ($page -1) * $limit;
+        $this->offset = ($page - 1) * $limit;
     }
 
     public static function fromRequest(int $page, int $limit): self

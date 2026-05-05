@@ -18,15 +18,16 @@ final class DeleteUserCommandHandler
         private readonly UserRepositoryInterface $repository,
         private readonly EventBusInterface $bus,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(DeleteUserCommand $command): void
     {
         $this->logger->info('Deleting user', ['id' => $command->id]);
 
-        $user =$this->repository->findById(UserId::fromString($command->id));
+        $user = $this->repository->findById(UserId::fromString($command->id));
 
-        if ($user === null) {
+        if (null === $user) {
             throw UserNotFoundException::withId($command->id);
         }
 

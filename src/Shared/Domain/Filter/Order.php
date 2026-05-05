@@ -8,8 +8,9 @@ final class Order
 {
     public function __construct(
         public readonly string $field,
-        public readonly OrderType $type
-    ) {}
+        public readonly OrderType $type,
+    ) {
+    }
 
     public static function fromString(string $sort): self
     {

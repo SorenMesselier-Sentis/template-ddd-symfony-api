@@ -13,9 +13,8 @@ final class ValueObjectNormalizer implements NormalizerInterface
     public function normalize(
         mixed $object,
         ?string $format = null,
-        array $context = []
-    ): string
-    {
+        array $context = [],
+    ): string {
         return $object->value();
     }
 

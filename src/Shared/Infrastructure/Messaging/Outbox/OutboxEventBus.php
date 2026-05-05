@@ -12,7 +12,8 @@ final class OutboxEventBus implements EventBusInterface
 {
     public function __construct(
         private readonly Connection $connection,
-    ) {}
+    ) {
+    }
 
     public function publish(DomainEvent ...$events): void
     {

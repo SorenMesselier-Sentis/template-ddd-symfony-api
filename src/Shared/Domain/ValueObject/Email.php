@@ -32,15 +32,11 @@ final class Email
     private function ensureIsValid(string $value): void
     {
         if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            throw new \InvalidArgumentException(
-                sprintf('"%s" is not a valid email address.', $value)
-            );
+            throw new \InvalidArgumentException(sprintf('"%s" is not a valid email address.', $value));
         }
 
         if (mb_strlen($value) > 254) {
-            throw new \InvalidArgumentException(
-                sprintf('Email address "%s" exceeds the maximum length of 254 characters.', $value)
-            );
+            throw new \InvalidArgumentException(sprintf('Email address "%s" exceeds the maximum length of 254 characters.', $value));
         }
     }
 }

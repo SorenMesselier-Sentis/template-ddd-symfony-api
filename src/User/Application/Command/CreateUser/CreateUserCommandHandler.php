@@ -8,10 +8,10 @@ use App\Shared\Domain\Bus\Event\EventBusInterface;
 use App\Shared\Domain\Logging\LoggerInterface;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Entity\User;
+use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
-use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\ValueObject\UserName;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -22,7 +22,8 @@ final class CreateUserCommandHandler
         private readonly UserRepositoryInterface $repository,
         private readonly EventBusInterface $eventBus,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(CreateUserCommand $command): void
     {
@@ -39,7 +40,6 @@ final class CreateUserCommandHandler
             email: Email::fromString($command->email),
             password: HashedPassword::fromPlainPassword($command->password),
         );
-
 
         $this->repository->save($user);
         $this->eventBus->publish(...$user->pullDomainEvents());

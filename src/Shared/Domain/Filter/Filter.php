@@ -10,7 +10,8 @@ final class Filter
         public readonly string $field,
         public readonly mixed $value,
         public readonly FilterOperator $operator,
-    ) {}
+    ) {
+    }
 
     public static function equal(string $field, mixed $value): self
     {

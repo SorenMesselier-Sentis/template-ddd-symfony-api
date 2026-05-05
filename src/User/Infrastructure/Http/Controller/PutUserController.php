@@ -35,7 +35,8 @@ final class PutUserController
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly ApiResponse $apiResponse,
-    ) {}
+    ) {
+    }
 
     public function __invoke(string $id, PutUserRequest $request): JsonResponse
     {

@@ -49,7 +49,8 @@ final class CreateUserController
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly ApiResponse $apiResponse,
-    ) {}
+    ) {
+    }
 
     public function __invoke(CreateUserRequest $request): JsonResponse
     {
