@@ -4,7 +4,6 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
-- Set up Monolog x Sentry
 - Set up Prometheus
 - Set up Grafana
 - Add the soft delete possibility

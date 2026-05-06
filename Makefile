@@ -120,11 +120,10 @@ phpstan:
 	$(PHP) vendor/bin/phpstan analyse
 
 cs-fix:
-	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
+	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php
 
 cs-check:
-	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff
-
+	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
 
 test:
 	$(PHP) vendor/bin/phpunit
