@@ -13,6 +13,8 @@ use App\Shared\Domain\Logging\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 
 final class ExceptionListener
@@ -56,6 +58,8 @@ final class ExceptionListener
             $exception instanceof InvalidArgumentException => [400, $exception->errorCode()],
             $exception instanceof UnauthorizedException => [401, $exception->errorCode()],
             $exception instanceof DomainException => [422, $exception->errorCode()],
+            $exception instanceof NotFoundHttpException => [404, 'route.not_found'],
+            $exception instanceof MethodNotAllowedHttpException => [405, 'method.not_allowed'],
             $exception instanceof HttpExceptionInterface => [$exception->getStatusCode(), 'http_error'],
             default => [500, 'internal_server_error'],
         };
