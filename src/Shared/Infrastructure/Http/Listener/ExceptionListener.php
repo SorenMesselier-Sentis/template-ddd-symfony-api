@@ -10,6 +10,8 @@ use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
 use App\Shared\Domain\Exception\UnauthorizedException;
 use App\Shared\Domain\Logging\LoggerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Exception\ExpiredTokenException;
+use Lexik\Bundle\JWTAuthenticationBundle\Exception\InvalidTokenException as LexikInvalidTokenException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -57,6 +59,8 @@ final class ExceptionListener
             $exception instanceof AlreadyExistsException => [409, $exception->errorCode()],
             $exception instanceof InvalidArgumentException => [400, $exception->errorCode()],
             $exception instanceof UnauthorizedException => [401, $exception->errorCode()],
+            $exception instanceof ExpiredTokenException => [401, 'authentication.token_expired'],
+            $exception instanceof LexikInvalidTokenException => [401, 'authentication.invalid_token'],
             $exception instanceof DomainException => [422, $exception->errorCode()],
             $exception instanceof NotFoundHttpException => [404, 'route.not_found'],
             $exception instanceof MethodNotAllowedHttpException => [405, 'method.not_allowed'],

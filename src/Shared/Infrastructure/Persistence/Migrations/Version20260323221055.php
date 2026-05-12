@@ -24,6 +24,7 @@ final class Version20260323221055 extends AbstractMigration
                 email VARCHAR(254) NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 status VARCHAR(20) NOT NULL DEFAULT 'is_active',
+                roles JSON NOT NULL DEFAULT '["ROLE_USER"]',
                 created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
                 updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
                 PRIMARY KEY (id)

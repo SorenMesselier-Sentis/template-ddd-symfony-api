@@ -13,6 +13,7 @@ use App\User\Domain\Event\UserUpdated;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
+use App\User\Domain\ValueObject\UserRole;
 use App\User\Domain\ValueObject\UserStatus;
 
 final class User
@@ -20,24 +21,23 @@ final class User
     /** @var array<int, DomainEvent> */
     private array $domainEvents = [];
 
-    private function __construct(
-        private readonly UserId $id,
-        private UserName $firstName,
-        private UserName $lastName,
-        private Email $email,
-        private HashedPassword $password,
-        private UserStatus $status,
-        private readonly \DateTimeImmutable $createdAt,
-        private \DateTimeImmutable $updatedAt,
-    ) {
+    /**
+     * @param array<int,mixed> $roles
+     */
+    private function __construct(private readonly UserId $id, private UserName $firstName, private UserName $lastName, private Email $email, private HashedPassword $password, private UserStatus $status, private array $roles, private readonly \DateTimeImmutable $createdAt, private \DateTimeImmutable $updatedAt)
+    {
     }
 
+    /**
+     * @param array<int,mixed> $roles
+     */
     public static function create(
         UserId $id,
         UserName $firstName,
         UserName $lastName,
         Email $email,
         HashedPassword $password,
+        array $roles = [UserRole::USER],
     ): self {
         $now = new \DateTimeImmutable();
         $user = new self(
@@ -47,6 +47,7 @@ final class User
             email: $email,
             password: $password,
             status: UserStatus::ACTIVE,
+            roles: $roles,
             createdAt: $now,
             updatedAt: $now,
         );
@@ -162,6 +163,14 @@ final class User
     public function status(): UserStatus
     {
         return $this->status;
+    }
+
+    /**
+     * @return array<int,mixed>
+     */
+    public function roles(): array
+    {
+        return $this->roles;
     }
 
     public function createdAt(): \DateTimeImmutable

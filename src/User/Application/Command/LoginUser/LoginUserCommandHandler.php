@@ -7,7 +7,7 @@ namespace App\User\Application\Command\LoginUser;
 use App\Shared\Domain\Logging\LoggerInterface;
 use App\User\Domain\Exception\InvalidCredentialsException;
 use App\User\Domain\Repository\UserRepositoryInterface;
-use App\User\Domain\Service\TokenGeneratorInterface;
+use App\User\Domain\Service\TokenServiceInterface;
 use App\User\Domain\ValueObject\UserStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -16,7 +16,7 @@ final class LoginUserCommandHandler
 {
     public function __construct(
         private readonly UserRepositoryInterface $repository,
-        private readonly TokenGeneratorInterface $tokenGenerator,
+        private readonly TokenServiceInterface $tokenService,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -39,8 +39,8 @@ final class LoginUserCommandHandler
             throw InvalidCredentialsException::create();
         }
 
-        $accessToken = $this->tokenGenerator->generateAccessToken($user);
-        $refreshToken = $this->tokenGenerator->generateRefreshToken($user);
+        $accessToken = $this->tokenService->generateAccessToken($user);
+        $refreshToken = $this->tokenService->generateRefreshToken($user);
 
         $this->logger->info('User logged in', ['id' => $user->id()->value()]);
 

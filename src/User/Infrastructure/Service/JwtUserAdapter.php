@@ -14,7 +14,6 @@ final class JwtUserAdapter implements UserInterface
     ) {
     }
 
-    /** @return string */
     public function getUserIdentifier(): string
     {
         return $this->user->email()->value();

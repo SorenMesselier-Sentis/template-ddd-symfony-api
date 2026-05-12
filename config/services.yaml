@@ -17,13 +17,13 @@ services:
             $projectDir: '%kernel.project_dir%'
 
     # JWT
-    App\User\Infrastructure\Service\JwtTokenGenerator:
+    App\User\Infrastructure\Service\JwtTokenService:
         arguments:
-            $accessTokenTtl: '%env(int:JWT_TTL)%'
+            $accessTokenTtl: '%env(int:JWT_ACCESS_TOKEN_TTL)%'
             $refreshTokenTtl: '%env(int:JWT_REFRESH_TTL)%'
 
-    App\User\Domain\Service\TokenGeneratorInterface:
-        alias: App\User\Infrastructure\Service\JwtTokenGenerator
+    App\User\Domain\Service\TokenServiceInterface:
+        alias: App\User\Infrastructure\Service\JwtTokenService
 
     # Normalizers
     App\Shared\Infrastructure\Http\Serializer\ValueObjectNormalizer:
