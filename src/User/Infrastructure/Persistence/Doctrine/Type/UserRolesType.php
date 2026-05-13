@@ -71,15 +71,8 @@ final class UserRolesType extends Type
             return null;
         }
 
-        if (!\is_array($value)) {
-            throw SerializationFailed::new($value, 'json', 'Expected a list of UserRole.');
-        }
-
         $strings = [];
         foreach ($value as $role) {
-            if (!$role instanceof UserRole) {
-                throw SerializationFailed::new($value, 'json', 'Each element must be a UserRole enum.');
-            }
             $strings[] = $role->value;
         }
 
