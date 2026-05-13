@@ -6,21 +6,21 @@ services:
 
     # Autowire src/ folder
     App\:
-        resource: '../src/'
+        resource: "../src/"
         exclude:
-            - '../src/*/Domain/ValueObject/'
-            - '../src/*/Domain/Exception/'
+            - "../src/*/Domain/ValueObject/"
+            - "../src/*/Domain/Exception/"
 
     # Commands
     App\Shared\Infrastructure\Console\MakeBoundedContextCommand:
         arguments:
-            $projectDir: '%kernel.project_dir%'
+            $projectDir: "%kernel.project_dir%"
 
     # JWT
     App\User\Infrastructure\Service\JwtTokenService:
         arguments:
-            $accessTokenTtl: '%env(int:JWT_ACCESS_TOKEN_TTL)%'
-            $refreshTokenTtl: '%env(int:JWT_REFRESH_TTL)%'
+            $accessTokenTtl: "%env(int:JWT_ACCESS_TOKEN_TTL)%"
+            $refreshTokenTtl: "%env(int:JWT_REFRESH_TTL)%"
 
     App\User\Domain\Service\TokenServiceInterface:
         alias: App\User\Infrastructure\Service\JwtTokenService
@@ -34,35 +34,35 @@ services:
     # API Response
     App\Shared\Infrastructure\Http\Response\ApiResponse:
         arguments:
-            $serializer: '@serializer'
+            $serializer: "@serializer"
 
     # Bus implementations
     App\Shared\Infrastructure\Bus\Command\MessengerCommandBus:
         arguments:
-            $commandBus: '@command.bus'
+            $commandBus: "@command.bus"
 
     App\Shared\Infrastructure\Bus\Query\MessengerQueryBus:
         arguments:
-            $queryBus: '@query.bus'
+            $queryBus: "@query.bus"
 
     App\Shared\Infrastructure\Bus\Event\MessengerEventBus:
         arguments:
-            $eventBus: '@event.bus'
+            $eventBus: "@event.bus"
 
     App\Shared\Infrastructure\Messaging\Outbox\OutboxEventBus:
         arguments:
-            $connection: '@doctrine.dbal.default_connection'
+            $connection: "@doctrine.dbal.default_connection"
 
     App\Shared\Infrastructure\Messaging\Outbox\OutboxRelay:
         arguments:
-            $connection: '@doctrine.dbal.default_connection'
-            $eventBus: '@event.bus'
+            $connection: "@doctrine.dbal.default_connection"
+            $eventBus: "@event.bus"
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
 
     # Logger
     App\Shared\Infrastructure\Logging\MonologLogger:
         arguments:
-            $logger: '@logger'
+            $logger: "@logger"
 
     # Domain interfaces → alias to implementations
     App\Shared\Domain\Bus\Event\EventBusInterface:
@@ -82,12 +82,19 @@ services:
         arguments:
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
         tags:
-            - {name: kernel.event_listener, event: kernel.exception, priority: 100}
+            - {
+                  name: kernel.event_listener,
+                  event: kernel.exception,
+                  priority: 100,
+              }
 
     App\Shared\Infrastructure\Http\Listener\ApiHeadersListener:
         tags:
-            - {name: kernel.event_listener, event: kernel.response}
+            - { name: kernel.event_listener, event: kernel.response }
 
     # Repositories
     App\User\Domain\Repository\UserRepositoryInterface:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository
+
+    App\User\Domain\Repository\RefreshTokenRepositoryInterface:
+        alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineRefreshTokenRepository

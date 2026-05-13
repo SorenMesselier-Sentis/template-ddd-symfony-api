@@ -22,14 +22,14 @@ final class User
     private array $domainEvents = [];
 
     /**
-     * @param array<int,mixed> $roles
+     * @param list<UserRole> $roles
      */
     private function __construct(private readonly UserId $id, private UserName $firstName, private UserName $lastName, private Email $email, private HashedPassword $password, private UserStatus $status, private array $roles, private readonly \DateTimeImmutable $createdAt, private \DateTimeImmutable $updatedAt)
     {
     }
 
     /**
-     * @param array<int,mixed> $roles
+     * @param list<UserRole> $roles
      */
     public static function create(
         UserId $id,
@@ -166,7 +166,7 @@ final class User
     }
 
     /**
-     * @return array<int,mixed>
+     * @return list<UserRole>
      */
     public function roles(): array
     {

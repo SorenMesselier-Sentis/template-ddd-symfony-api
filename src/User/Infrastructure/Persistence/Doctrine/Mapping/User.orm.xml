@@ -13,7 +13,7 @@
         <field name="email" type="email" column="email" length="254" nullable="false"/>
         <field name="password" type="hashed_password" column="password" length="255" nullable="false"/>
         <field name="status" type="user_status" column="status" length="20" nullable="false"/>
-        <field name="roles" type="json" column="roles" nullable="false"/>
+        <field name="roles" type="user_roles" column="roles" nullable="false"/>
         <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
         <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="false"/>
 

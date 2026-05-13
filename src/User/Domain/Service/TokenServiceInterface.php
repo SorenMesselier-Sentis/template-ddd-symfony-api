@@ -16,4 +16,6 @@ interface TokenServiceInterface
     public function generateRefreshToken(User $user): RefreshToken;
 
     public function decodeAccessToken(string $token): TokenClaims;
+
+    public function decodeRefreshToken(string $token): TokenClaims;
 }

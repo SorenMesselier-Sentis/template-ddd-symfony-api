@@ -35,7 +35,7 @@ final class JwtTokenService implements TokenServiceInterface
                 'sub' => $user->id()->value(),
                 'email' => $user->email()->value(),
                 'roles' => array_map(
-                    fn(UserRole $role) => $role->value,
+                    static fn (UserRole $role): string => $role->value,
                     $user->roles(),
                 ),
                 'iat' => $issuedAt,
@@ -75,6 +75,29 @@ final class JwtTokenService implements TokenServiceInterface
             roles: $payload['roles'],
             iat: $payload['iat'],
             exp: $payload['exp'],
+        );
+    }
+
+    public function decodeRefreshToken(string $token): TokenClaims
+    {
+        try {
+            $payload = $this->jwtManager->parse($token);
+        } catch (ExpiredTokenException) {
+            throw TokenExpiredException::create();
+        } catch (LexikInvalidTokenException) {
+            throw InvalidTokenException::create();
+        }
+
+        if (!isset($payload['type']) || 'refresh' !== $payload['type']) {
+            throw InvalidTokenException::create();
+        }
+
+        return new TokenClaims(
+            sub: $payload['sub'],
+            email: $payload['email'] ?? '',
+            roles: $payload['roles'] ?? [],
+            iat: $payload['iat'] ?? 0,
+            exp: $payload['exp'] ?? 0,
         );
     }
 }

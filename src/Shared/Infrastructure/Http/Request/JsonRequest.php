@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Http\Request;
 
+use App\Shared\Domain\Exception\InvalidJsonException;
 use App\Shared\Domain\Exception\MissingFieldException;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -16,8 +17,23 @@ abstract class JsonRequest
         RequestStack $requestStack,
     ) {
         $request = $requestStack->getCurrentRequest();
-        $this->data = json_decode($request->getContent(), true) ?? [];
+        $content = $request->getContent();
 
+        if (empty($content)) {
+            throw new MissingFieldException('Request body is empty.');
+        }
+
+        $decoded = json_decode($content, true);
+
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new InvalidJsonException(sprintf('Invalid JSON: %s', json_last_error_msg()));
+        }
+
+        if (!\is_array($decoded)) {
+            throw new InvalidJsonException('JSON body must be a JSON object.');
+        }
+
+        $this->data = $decoded;
         $this->validate();
     }
 

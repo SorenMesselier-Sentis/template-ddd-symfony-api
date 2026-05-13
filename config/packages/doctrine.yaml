@@ -1,22 +1,28 @@
 doctrine:
     dbal:
         driver: pdo_pgsql
-        url: '%env(resolve:DATABASE_URL)%'
+        url: "%env(resolve:DATABASE_URL)%"
         types:
             user_id: App\User\Infrastructure\Persistence\Doctrine\Type\UserIdType
             email: App\Shared\Infrastructure\Persistence\Doctrine\Type\EmailType
             user_name: App\User\Infrastructure\Persistence\Doctrine\Type\UserNameType
             hashed_password: App\User\Infrastructure\Persistence\Doctrine\Type\HashedPasswordType
             user_status: App\User\Infrastructure\Persistence\Doctrine\Type\UserStatusType
+            user_roles: App\User\Infrastructure\Persistence\Doctrine\Type\UserRolesType
+            refresh_token_id: App\User\Infrastructure\Persistence\Doctrine\Type\RefreshTokenIdType
     orm:
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         mappings:
             User:
                 type: xml
-                dir: '%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping'
+                dir: "%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping"
                 prefix: App\User\Domain\Entity
                 is_bundle: false
-
+            refreshToken:
+                type: xml
+                dir: "%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping"
+                prefix: App\User\Domain\Entity
+                is_bundle: false
 when@prod:
     doctrine:
         orm:
