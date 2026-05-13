@@ -4,6 +4,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
+- Verify the PROTECTED_ROUTES strategy
 - Set up Prometheus
 - Set up Grafana
 - Add the soft delete possibility
@@ -271,6 +272,8 @@ Base path: `/api/v1`.
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `POST` | `/auth/logout` | Revoke a refresh token (requires `Authorization: Bearer` access token) |
+| `POST` | `/auth/refresh` | Rotate refresh token; returns a new token pair |
 | `POST` | `/users` | Create a user |
 | `GET` | `/users` | List users (filterable, sortable, paginated) |
 | `GET` | `/users/{id}` | Fetch a user by UUID |

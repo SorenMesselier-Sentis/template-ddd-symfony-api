@@ -88,6 +88,14 @@ services:
                   priority: 100,
               }
 
+    App\Shared\Infrastructure\Http\Listener\JwtAuthenticationListener:
+        tags:
+            - {
+                  name: kernel.event_listener,
+                  event: kernel.request,
+                  priority: 10,
+              }
+
     App\Shared\Infrastructure\Http\Listener\ApiHeadersListener:
         tags:
             - { name: kernel.event_listener, event: kernel.response }
