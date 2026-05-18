@@ -10,6 +10,9 @@ use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
 use App\Shared\Domain\Exception\UnauthorizedException;
 use App\Shared\Domain\Logging\LoggerInterface;
+use App\User\Domain\Exception\InvalidTokenException;
+use App\User\Domain\Exception\MissingTokenException;
+use App\User\Domain\Exception\TokenExpiredException;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\ExpiredTokenException;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\InvalidTokenException as LexikInvalidTokenException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -55,12 +58,15 @@ final class ExceptionListener
     public function resolveException(\Throwable $exception): array
     {
         return match (true) {
+            $exception instanceof TokenExpiredException => [401, $exception->errorCode()],
+            $exception instanceof InvalidTokenException => [401, $exception->errorCode()],
+            $exception instanceof MissingTokenException => [401, $exception->errorCode()],
+            $exception instanceof ExpiredTokenException => [401, 'token_expired'],
+            $exception instanceof LexikInvalidTokenException => [401, 'invalid_token'],
             $exception instanceof NotFoundException => [404, $exception->errorCode()],
             $exception instanceof AlreadyExistsException => [409, $exception->errorCode()],
             $exception instanceof InvalidArgumentException => [400, $exception->errorCode()],
             $exception instanceof UnauthorizedException => [401, $exception->errorCode()],
-            $exception instanceof ExpiredTokenException => [401, 'authentication.token_expired'],
-            $exception instanceof LexikInvalidTokenException => [401, 'authentication.invalid_token'],
             $exception instanceof DomainException => [422, $exception->errorCode()],
             $exception instanceof NotFoundHttpException => [404, 'route.not_found'],
             $exception instanceof MethodNotAllowedHttpException => [405, 'method.not_allowed'],
