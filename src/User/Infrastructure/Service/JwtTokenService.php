@@ -14,6 +14,7 @@ use App\User\Domain\ValueObject\TokenClaims;
 use App\User\Domain\ValueObject\UserRole;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\ExpiredTokenException;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\InvalidTokenException as LexikInvalidTokenException;
+use Lexik\Bundle\JWTAuthenticationBundle\Exception\JWTDecodeFailureException;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 
 final class JwtTokenService implements TokenServiceInterface
@@ -61,13 +62,7 @@ final class JwtTokenService implements TokenServiceInterface
 
     public function decodeAccessToken(string $token): TokenClaims
     {
-        try {
-            $payload = $this->jwtManager->parse($token);
-        } catch (ExpiredTokenException) {
-            throw TokenExpiredException::create();
-        } catch (LexikInvalidTokenException) {
-            throw InvalidTokenException::create();
-        }
+        $payload = $this->parsePayload($token);
 
         return new TokenClaims(
             sub: $payload['sub'],
@@ -80,13 +75,7 @@ final class JwtTokenService implements TokenServiceInterface
 
     public function decodeRefreshToken(string $token): TokenClaims
     {
-        try {
-            $payload = $this->jwtManager->parse($token);
-        } catch (ExpiredTokenException) {
-            throw TokenExpiredException::create();
-        } catch (LexikInvalidTokenException) {
-            throw InvalidTokenException::create();
-        }
+        $payload = $this->parsePayload($token);
 
         if (!isset($payload['type']) || 'refresh' !== $payload['type']) {
             throw InvalidTokenException::create();
@@ -99,5 +88,25 @@ final class JwtTokenService implements TokenServiceInterface
             iat: $payload['iat'] ?? 0,
             exp: $payload['exp'] ?? 0,
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function parsePayload(string $token): array
+    {
+        try {
+            return $this->jwtManager->parse($token);
+        } catch (ExpiredTokenException) {
+            throw TokenExpiredException::create();
+        } catch (LexikInvalidTokenException) {
+            throw InvalidTokenException::create();
+        } catch (JWTDecodeFailureException $e) {
+            if (JWTDecodeFailureException::EXPIRED_TOKEN === $e->getReason()) {
+                throw TokenExpiredException::create();
+            }
+
+            throw InvalidTokenException::create();
+        }
     }
 }

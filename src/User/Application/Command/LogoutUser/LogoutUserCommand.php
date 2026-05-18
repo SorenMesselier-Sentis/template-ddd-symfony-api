@@ -10,5 +10,6 @@ final class LogoutUserCommand implements Command
 {
     public function __construct(
         public readonly string $refreshToken,
-    ) {}
+    ) {
+    }
 }

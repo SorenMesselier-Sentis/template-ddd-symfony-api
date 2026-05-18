@@ -15,41 +15,41 @@ final class JwtAuthenticationListener
     ];
 
     public function __construct(
-            private readonly TokenServiceInterface $tokenService,
-        ) {}
+        private readonly TokenServiceInterface $tokenService,
+    ) {
+    }
 
-        public function onKernelRequest(RequestEvent $event): void
-        {
-            if (!$event->isMainRequest()) {
-                return;
-            }
-
-            $request = $event->getRequest();
-
-            if (!$this->isProtectedRoute($request->getPathInfo())) {
-                return;
-            }
-
-            $authHeader = $request->headers->get('Authorization', '');
-
-            if (!str_starts_with($authHeader, 'Bearer ')) {
-                throw InvalidTokenException::create();
-            }
-
-            $token = substr($authHeader, 7);
-
-            $this->tokenService->decodeAccessToken($token);
+    public function onKernelRequest(RequestEvent $event): void
+    {
+        if (!$event->isMainRequest()) {
+            return;
         }
 
-        private function isProtectedRoute(string $path): bool
-        {
-            foreach (self::PROTECTED_ROUTES as $route) {
-                if (str_starts_with($path, $route)) {
-                    return true;
-                }
-            }
+        $request = $event->getRequest();
 
-            return false;
+        if (!$this->isProtectedRoute($request->getPathInfo())) {
+            return;
         }
 
+        $authHeader = $request->headers->get('Authorization', '');
+
+        if (!str_starts_with($authHeader, 'Bearer ')) {
+            throw InvalidTokenException::create();
+        }
+
+        $token = substr($authHeader, 7);
+
+        $this->tokenService->decodeAccessToken($token);
+    }
+
+    private function isProtectedRoute(string $path): bool
+    {
+        foreach (self::PROTECTED_ROUTES as $route) {
+            if (str_starts_with($path, $route)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

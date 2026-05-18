@@ -15,7 +15,8 @@ final class LogoutUserCommandHandler
     public function __construct(
         private readonly RefreshTokenRepositoryInterface $refreshTokenRepository,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(LogoutUserCommand $command): void
     {
@@ -23,7 +24,7 @@ final class LogoutUserCommandHandler
 
         $storedToken = $this->refreshTokenRepository->findByToken($command->refreshToken);
 
-        if ($storedToken === null) {
+        if (null === $storedToken) {
             throw RefreshTokenNotFoundException::create();
         }
 
