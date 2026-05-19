@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Http\Listener;
 
+use App\Shared\Domain\Exception\ForbiddenException;
 use App\Shared\Infrastructure\Http\Security\PublicRoutes;
+use App\Shared\Infrastructure\Http\Security\RouteRoles;
 use App\User\Domain\Exception\InvalidTokenException;
 use App\User\Domain\Exception\MissingTokenException;
 use App\User\Domain\Service\TokenServiceInterface;
@@ -46,6 +48,12 @@ final class JwtAuthenticationListener
             throw InvalidTokenException::create();
         }
 
-        $this->tokenService->decodeAccessToken($token);
+        $claims = $this->tokenService->decodeAccessToken($token);
+
+        if (RouteRoles::requiresAdmin($method, $path)) {
+            if (!in_array('ROLE_ADMIN', $claims->roles, true)) {
+                throw ForbiddenException::create();
+            }
+        }
     }
 }

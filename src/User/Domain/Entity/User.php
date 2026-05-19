@@ -87,6 +87,20 @@ final class User
         $this->record(new UserUpdated($this->id->value()));
     }
 
+    /**
+     * @param array<int,mixed> $roles
+     */
+    public function updateRoles(array $roles): void
+    {
+        $this->roles = $roles;
+        $this->updatedAt = new \DateTimeImmutable();
+
+        $this->record(new UserUpdated(
+        aggregateId: $this->id->value(),
+        roles: array_map(fn(UserRole $role) => $role->value, $roles),
+        ));
+    }
+
     public function replace(
         UserName $firstName,
         UserName $lastName,

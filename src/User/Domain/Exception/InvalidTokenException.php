@@ -10,7 +10,7 @@ final class InvalidTokenException extends UnauthorizedException
 {
     public static function create(): self
     {
-        return new self('The access token is invalid');
+        return new self('The access token is invalid.');
     }
 
     public function errorCode(): string

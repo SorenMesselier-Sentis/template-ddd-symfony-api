@@ -6,6 +6,7 @@ namespace App\Shared\Infrastructure\Http\Listener;
 
 use App\Shared\Domain\Exception\AlreadyExistsException;
 use App\Shared\Domain\Exception\DomainException;
+use App\Shared\Domain\Exception\ForbiddenException;
 use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
 use App\Shared\Domain\Exception\UnauthorizedException;
@@ -61,6 +62,7 @@ final class ExceptionListener
             $exception instanceof TokenExpiredException => [401, $exception->errorCode()],
             $exception instanceof InvalidTokenException => [401, $exception->errorCode()],
             $exception instanceof MissingTokenException => [401, $exception->errorCode()],
+            $exception instanceof ForbiddenException => [403, $exception->errorCode()],
             $exception instanceof ExpiredTokenException => [401, 'token_expired'],
             $exception instanceof LexikInvalidTokenException => [401, 'invalid_token'],
             $exception instanceof NotFoundException => [404, $exception->errorCode()],
