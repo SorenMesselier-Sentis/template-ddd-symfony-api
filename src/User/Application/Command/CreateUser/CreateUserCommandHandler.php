@@ -10,6 +10,7 @@ use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Entity\User;
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\Repository\UserRepositoryInterface;
+use App\User\Domain\Security\UserContextInterface;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
@@ -22,12 +23,16 @@ final class CreateUserCommandHandler
         private readonly UserRepositoryInterface $repository,
         private readonly EventBusInterface $eventBus,
         private readonly LoggerInterface $logger,
+        private readonly UserContextInterface $userContext,
     ) {
     }
 
     public function __invoke(CreateUserCommand $command): void
     {
-        $this->logger->info('Creating user', ['email' => $command->email]);
+        $this->logger->info('Creating user', [
+            'email' => $command->email,
+            'createdBy' => $this->userContext->userId()->value(),
+        ]);
 
         if ($this->repository->existsByEmail(Email::fromString($command->email))) {
             throw UserAlreadyExistsException::withEmail($command->email);

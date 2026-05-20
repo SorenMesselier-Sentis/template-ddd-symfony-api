@@ -25,6 +25,10 @@ services:
     App\User\Domain\Service\TokenServiceInterface:
         alias: App\User\Infrastructure\Service\JwtTokenService
 
+    # Contexts
+    App\Shared\Domain\Security\UserContextInterface:
+        alias: App\Shared\Infrastructure\Security\HttpUserContext
+
     # Normalizers
     App\Shared\Infrastructure\Http\Serializer\ValueObjectNormalizer:
         tags: [serializer.normalizer]
