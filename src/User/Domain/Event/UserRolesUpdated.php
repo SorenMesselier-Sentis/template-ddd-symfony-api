@@ -8,6 +8,9 @@ use App\Shared\Domain\Bus\Event\DomainEvent;
 
 final class UserRolesUpdated extends DomainEvent
 {
+    /**
+     * @param list<string> $roles
+     */
     public function __construct(
         string $aggregateId,
         public readonly array $roles,

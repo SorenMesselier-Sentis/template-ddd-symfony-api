@@ -11,7 +11,7 @@ final class Version20260323221055 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create the User table';
+        return 'Add users aggregate persistence.';
     }
 
     public function up(Schema $schema): void
@@ -23,7 +23,7 @@ final class Version20260323221055 extends AbstractMigration
                 last_name VARCHAR(100) NOT NULL,
                 email VARCHAR(254) NOT NULL,
                 password VARCHAR(255) NOT NULL,
-                status VARCHAR(20) NOT NULL DEFAULT 'is_active',
+                status VARCHAR(20) NOT NULL DEFAULT 'active',
                 roles JSON NOT NULL DEFAULT '["ROLE_USER"]',
                 created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
                 updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,

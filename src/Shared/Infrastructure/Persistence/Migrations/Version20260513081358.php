@@ -7,14 +7,11 @@ namespace App\Shared\Infrastructure\Persistence\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
-/**
- * Auto-generated Migration: Please modify to your needs!
- */
 final class Version20260513081358 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return '';
+        return 'Add refresh token storage for JWT rotation.';
     }
 
     public function up(Schema $schema): void

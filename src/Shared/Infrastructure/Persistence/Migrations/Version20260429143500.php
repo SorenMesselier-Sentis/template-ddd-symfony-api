@@ -11,7 +11,7 @@ final class Version20260429143500 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create outbox_messages table for transactional outbox.';
+        return 'Add transactional outbox for domain events.';
     }
 
     public function up(Schema $schema): void

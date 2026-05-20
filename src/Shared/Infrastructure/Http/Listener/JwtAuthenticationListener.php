@@ -16,7 +16,8 @@ final class JwtAuthenticationListener
 {
     public function __construct(
         private readonly TokenServiceInterface $tokenService,
-    ) {}
+    ) {
+    }
 
     public function onKernelRequest(RequestEvent $event): void
     {

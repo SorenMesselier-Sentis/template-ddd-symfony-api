@@ -9,6 +9,7 @@ use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserCreated;
 use App\User\Domain\Event\UserDeleted;
 use App\User\Domain\Event\UserReplaced;
+use App\User\Domain\Event\UserRolesUpdated;
 use App\User\Domain\Event\UserUpdated;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
@@ -88,16 +89,16 @@ final class User
     }
 
     /**
-     * @param array<int,mixed> $roles
+     * @param list<UserRole> $roles
      */
     public function updateRoles(array $roles): void
     {
         $this->roles = $roles;
         $this->updatedAt = new \DateTimeImmutable();
 
-        $this->record(new UserUpdated(
-        aggregateId: $this->id->value(),
-        roles: array_map(fn(UserRole $role) => $role->value, $roles),
+        $this->record(new UserRolesUpdated(
+            aggregateId: $this->id->value(),
+            roles: array_map(fn (UserRole $role) => $role->value, $roles),
         ));
     }
 

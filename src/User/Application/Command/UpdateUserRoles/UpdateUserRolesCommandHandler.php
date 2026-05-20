@@ -19,7 +19,8 @@ final class UpdateUserRolesCommandHandler
         private readonly UserRepositoryInterface $repository,
         private readonly EventBusInterface $eventBus,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(UpdateUserRolesCommand $command): void
     {
@@ -27,12 +28,12 @@ final class UpdateUserRolesCommandHandler
 
         $user = $this->repository->findById(UserId::fromString($command->id));
 
-        if ($user === null) {
+        if (null === $user) {
             throw UserNotFoundException::withId($command->id);
         }
 
         $roles = array_map(
-            fn(string $role) => UserRole::from($role),
+            fn (string $role) => UserRole::from($role),
             $command->roles,
         );
 
@@ -41,13 +42,13 @@ final class UpdateUserRolesCommandHandler
             $roles[] = UserRole::USER;
         }
 
-        $user->updateRoles($roles);
+        $user->updateRoles(array_values($roles));
 
         $this->repository->save($user);
         $this->eventBus->publish(...$user->pullDomainEvents());
 
         $this->logger->info('User roles updated', [
-            'id'    => $command->id,
+            'id' => $command->id,
             'roles' => $command->roles,
         ]);
     }
