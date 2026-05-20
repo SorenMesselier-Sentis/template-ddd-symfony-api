@@ -21,7 +21,6 @@ final class ReplaceUserCommandHandlerTest extends UnitTestCase
     /** @var UserRepositoryInterface&MockObject */
     private UserRepositoryInterface $repository;
 
-    /** @var EventBusInterface&MockObject */
     private EventBusInterface $eventBus;
 
     private LoggerInterface $logger;
@@ -30,7 +29,7 @@ final class ReplaceUserCommandHandlerTest extends UnitTestCase
     protected function setUp(): void
     {
         $this->repository = $this->createMock(UserRepositoryInterface::class);
-        $this->eventBus = $this->createMock(EventBusInterface::class);
+        $this->eventBus = $this->createStub(EventBusInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
 
         $this->handler = new ReplaceUserCommandHandler(
@@ -51,6 +50,14 @@ final class ReplaceUserCommandHandlerTest extends UnitTestCase
             password: 'newpassword1',
         );
 
+        /** @var EventBusInterface&MockObject $eventBus */
+        $eventBus = $this->createMock(EventBusInterface::class);
+        $handler = new ReplaceUserCommandHandler(
+            $this->repository,
+            $eventBus,
+            $this->logger,
+        );
+
         $this->repository
             ->expects($this->once())
             ->method('findById')
@@ -65,11 +72,11 @@ final class ReplaceUserCommandHandlerTest extends UnitTestCase
             ->expects($this->once())
             ->method('save');
 
-        $this->eventBus
+        $eventBus
             ->expects($this->once())
             ->method('publish');
 
-        ($this->handler)($command);
+        ($handler)($command);
 
         $this->assertEquals('alice', $user->firstName()->value());
         $this->assertEquals('alice@example.com', $user->email()->value());

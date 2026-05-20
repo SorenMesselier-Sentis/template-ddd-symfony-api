@@ -26,10 +26,8 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
     /** @var RefreshTokenRepositoryInterface&MockObject */
     private RefreshTokenRepositoryInterface $refreshTokenRepository;
 
-    /** @var UserRepositoryInterface&MockObject */
     private UserRepositoryInterface $userRepository;
 
-    /** @var TokenServiceInterface&MockObject */
     private TokenServiceInterface $tokenService;
 
     private LoggerInterface $logger;
@@ -38,8 +36,8 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
     protected function setUp(): void
     {
         $this->refreshTokenRepository = $this->createMock(RefreshTokenRepositoryInterface::class);
-        $this->userRepository = $this->createMock(UserRepositoryInterface::class);
-        $this->tokenService = $this->createMock(TokenServiceInterface::class);
+        $this->userRepository = $this->createStub(UserRepositoryInterface::class);
+        $this->tokenService = $this->createStub(TokenServiceInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
 
         $this->handler = new RefreshTokenCommandHandler(
@@ -59,25 +57,36 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
         );
         $command = new RefreshTokenCommand(refreshToken: 'valid-refresh-token');
 
+        /** @var UserRepositoryInterface&MockObject $userRepository */
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        /** @var TokenServiceInterface&MockObject $tokenService */
+        $tokenService = $this->createMock(TokenServiceInterface::class);
+        $handler = new RefreshTokenCommandHandler(
+            $this->refreshTokenRepository,
+            $userRepository,
+            $tokenService,
+            $this->logger,
+        );
+
         $this->refreshTokenRepository
             ->expects($this->once())
             ->method('findByToken')
             ->with('valid-refresh-token')
             ->willReturn($storedToken);
 
-        $this->userRepository
+        $userRepository
             ->expects($this->once())
             ->method('findById')
             ->with($user->id())
             ->willReturn($user);
 
-        $this->tokenService
+        $tokenService
             ->expects($this->once())
             ->method('generateAccessToken')
             ->with($user)
             ->willReturn(new AccessToken('new-access-token', 3600));
 
-        $this->tokenService
+        $tokenService
             ->expects($this->once())
             ->method('generateRefreshToken')
             ->with($user)
@@ -87,7 +96,7 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
             ->expects($this->exactly(2))
             ->method('save');
 
-        $response = ($this->handler)($command);
+        $response = ($handler)($command);
 
         $this->assertTrue($storedToken->isRevoked());
         $this->assertEquals('new-access-token', $response->accessToken);
@@ -146,12 +155,21 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
         $storedToken = RefreshTokenMother::create(token: 'orphan-token');
         $command = new RefreshTokenCommand(refreshToken: 'orphan-token');
 
+        /** @var UserRepositoryInterface&MockObject $userRepository */
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        $handler = new RefreshTokenCommandHandler(
+            $this->refreshTokenRepository,
+            $userRepository,
+            $this->tokenService,
+            $this->logger,
+        );
+
         $this->refreshTokenRepository
             ->expects($this->once())
             ->method('findByToken')
             ->willReturn($storedToken);
 
-        $this->userRepository
+        $userRepository
             ->expects($this->once())
             ->method('findById')
             ->willReturn(null);
@@ -160,7 +178,7 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
             ->expects($this->once())
             ->method('save');
 
-        ($this->handler)($command);
+        ($handler)($command);
     }
 
     public function testItThrowsWhenAccountIsInactive(): void
@@ -177,12 +195,21 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
         );
         $command = new RefreshTokenCommand(refreshToken: 'inactive-account-token');
 
+        /** @var UserRepositoryInterface&MockObject $userRepository */
+        $userRepository = $this->createMock(UserRepositoryInterface::class);
+        $handler = new RefreshTokenCommandHandler(
+            $this->refreshTokenRepository,
+            $userRepository,
+            $this->tokenService,
+            $this->logger,
+        );
+
         $this->refreshTokenRepository
             ->expects($this->once())
             ->method('findByToken')
             ->willReturn($storedToken);
 
-        $this->userRepository
+        $userRepository
             ->expects($this->once())
             ->method('findById')
             ->willReturn($user);
@@ -191,6 +218,6 @@ final class RefreshTokenCommandHandlerTest extends UnitTestCase
             ->expects($this->once())
             ->method('save');
 
-        ($this->handler)($command);
+        ($handler)($command);
     }
 }

@@ -12,6 +12,7 @@ use App\User\Application\Command\CreateUser\CreateUserCommand;
 use App\User\Application\Command\CreateUser\CreateUserCommandHandler;
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\Repository\UserRepositoryInterface;
+use App\User\Domain\Security\UserContextInterface;
 use App\User\Domain\ValueObject\UserId;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -23,6 +24,8 @@ final class CreateUserCommandHandlerTest extends UnitTestCase
     /** @var EventBusInterface&MockObject */
     private EventBusInterface $eventBus;
 
+    private UserContextInterface $userContext;
+
     private LoggerInterface $logger;
     private CreateUserCommandHandler $handler;
 
@@ -31,11 +34,17 @@ final class CreateUserCommandHandlerTest extends UnitTestCase
         $this->repository = $this->createMock(UserRepositoryInterface::class);
         $this->eventBus = $this->createMock(EventBusInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
+        $this->userContext = $this->createStub(UserContextInterface::class);
+
+        $this->userContext
+            ->method('userId')
+            ->willReturn(UserId::random());
 
         $this->handler = new CreateUserCommandHandler(
             $this->repository,
             $this->eventBus,
             $this->logger,
+            $this->userContext,
         );
     }
 

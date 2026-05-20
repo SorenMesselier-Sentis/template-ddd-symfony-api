@@ -7,16 +7,15 @@ namespace App\Tests\Unit\User\Application;
 use App\Shared\Domain\Bus\Event\EventBusInterface;
 use App\Shared\Domain\Logging\LoggerInterface;
 use App\Tests\Unit\UnitTestCase;
-use App\Tests\Unit\User\Domain\Mother\EmailMother;
 use App\Tests\Unit\User\Domain\Mother\UserMother;
-use App\User\Application\Command\UpdateUser\UpdateUserCommand;
-use App\User\Application\Command\UpdateUser\UpdateUserCommandHandler;
-use App\User\Domain\Exception\UserAlreadyExistsException;
+use App\User\Application\Command\UpdateUserRoles\UpdateUserRolesCommand;
+use App\User\Application\Command\UpdateUserRoles\UpdateUserRolesCommandHandler;
 use App\User\Domain\Exception\UserNotFoundException;
 use App\User\Domain\Repository\UserRepositoryInterface;
+use App\User\Domain\ValueObject\UserRole;
 use PHPUnit\Framework\MockObject\MockObject;
 
-final class UpdateUserCommandHandlerTest extends UnitTestCase
+final class UpdateUserRolesCommandHandlerTest extends UnitTestCase
 {
     /** @var UserRepositoryInterface&MockObject */
     private UserRepositoryInterface $repository;
@@ -24,7 +23,7 @@ final class UpdateUserCommandHandlerTest extends UnitTestCase
     private EventBusInterface $eventBus;
 
     private LoggerInterface $logger;
-    private UpdateUserCommandHandler $handler;
+    private UpdateUserRolesCommandHandler $handler;
 
     protected function setUp(): void
     {
@@ -32,25 +31,24 @@ final class UpdateUserCommandHandlerTest extends UnitTestCase
         $this->eventBus = $this->createStub(EventBusInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
 
-        $this->handler = new UpdateUserCommandHandler(
+        $this->handler = new UpdateUserRolesCommandHandler(
             $this->repository,
             $this->eventBus,
             $this->logger,
         );
     }
 
-    public function testItUpdatesUserName(): void
+    public function testItUpdatesUserRoles(): void
     {
         $user = UserMother::create();
-        $command = new UpdateUserCommand(
+        $command = new UpdateUserRolesCommand(
             id: $user->id()->value(),
-            firstName: 'Jane',
-            lastName: 'Smith',
+            roles: [UserRole::ADMIN->value, UserRole::USER->value],
         );
 
         /** @var EventBusInterface&MockObject $eventBus */
         $eventBus = $this->createMock(EventBusInterface::class);
-        $handler = new UpdateUserCommandHandler(
+        $handler = new UpdateUserRolesCommandHandler(
             $this->repository,
             $eventBus,
             $this->logger,
@@ -71,27 +69,21 @@ final class UpdateUserCommandHandlerTest extends UnitTestCase
 
         ($handler)($command);
 
-        $this->assertEquals('jane', $user->firstName()->value());
-        $this->assertEquals('smith', $user->lastName()->value());
+        $this->assertEquals([UserRole::ADMIN, UserRole::USER], $user->roles());
     }
 
-    public function testItUpdatesUserEmail(): void
+    public function testItAppendsUserRoleWhenMissing(): void
     {
         $user = UserMother::create();
-        $command = new UpdateUserCommand(
+        $command = new UpdateUserRolesCommand(
             id: $user->id()->value(),
-            email: 'updated@example.com',
+            roles: [UserRole::ADMIN->value],
         );
 
         $this->repository
             ->expects($this->once())
             ->method('findById')
             ->willReturn($user);
-
-        $this->repository
-            ->expects($this->once())
-            ->method('existsByEmail')
-            ->willReturn(false);
 
         $this->repository
             ->expects($this->once())
@@ -99,45 +91,22 @@ final class UpdateUserCommandHandlerTest extends UnitTestCase
 
         ($this->handler)($command);
 
-        $this->assertEquals('updated@example.com', $user->email()->value());
+        $this->assertEquals([UserRole::ADMIN, UserRole::USER], $user->roles());
     }
 
     public function testItThrowsWhenUserNotFound(): void
     {
         $this->expectException(UserNotFoundException::class);
 
-        $command = new UpdateUserCommand(
+        $command = new UpdateUserRolesCommand(
             id: UserMother::create()->id()->value(),
-            firstName: 'Jane',
+            roles: [UserRole::ADMIN->value],
         );
 
         $this->repository
             ->expects($this->once())
             ->method('findById')
             ->willReturn(null);
-
-        ($this->handler)($command);
-    }
-
-    public function testItThrowsWhenEmailAlreadyExists(): void
-    {
-        $this->expectException(UserAlreadyExistsException::class);
-
-        $user = UserMother::create(email: EmailMother::create('current@example.com'));
-        $command = new UpdateUserCommand(
-            id: $user->id()->value(),
-            email: 'taken@example.com',
-        );
-
-        $this->repository
-            ->expects($this->once())
-            ->method('findById')
-            ->willReturn($user);
-
-        $this->repository
-            ->expects($this->once())
-            ->method('existsByEmail')
-            ->willReturn(true);
 
         $this->repository
             ->expects($this->never())

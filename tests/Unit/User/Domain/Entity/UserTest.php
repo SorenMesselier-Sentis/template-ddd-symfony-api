@@ -12,7 +12,9 @@ use App\Tests\Unit\User\Domain\Mother\UserNameMother;
 use App\User\Domain\Event\UserCreated;
 use App\User\Domain\Event\UserDeleted;
 use App\User\Domain\Event\UserReplaced;
+use App\User\Domain\Event\UserRolesUpdated;
 use App\User\Domain\Event\UserUpdated;
+use App\User\Domain\ValueObject\UserRole;
 use App\User\Domain\ValueObject\UserStatus;
 
 final class UserTest extends UnitTestCase
@@ -127,5 +129,18 @@ final class UserTest extends UnitTestCase
         $events = $user->pullDomainEvents();
         $this->assertCount(2, $events);
         $this->assertInstanceOf(UserDeleted::class, $events[1]);
+    }
+
+    public function testItUpdatesRoles(): void
+    {
+        $user = UserMother::create();
+
+        $user->updateRoles([UserRole::ADMIN, UserRole::USER]);
+
+        $this->assertEquals([UserRole::ADMIN, UserRole::USER], $user->roles());
+
+        $events = $user->pullDomainEvents();
+        $this->assertCount(2, $events);
+        $this->assertInstanceOf(UserRolesUpdated::class, $events[1]);
     }
 }

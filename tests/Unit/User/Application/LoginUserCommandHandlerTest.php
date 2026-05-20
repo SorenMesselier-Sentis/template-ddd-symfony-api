@@ -25,10 +25,8 @@ final class LoginUserCommandHandlerTest extends UnitTestCase
     /** @var UserRepositoryInterface&MockObject */
     private UserRepositoryInterface $repository;
 
-    /** @var RefreshTokenRepositoryInterface&MockObject */
     private RefreshTokenRepositoryInterface $refreshTokenRepository;
 
-    /** @var TokenServiceInterface&MockObject */
     private TokenServiceInterface $tokenService;
 
     private LoggerInterface $logger;
@@ -37,8 +35,8 @@ final class LoginUserCommandHandlerTest extends UnitTestCase
     protected function setUp(): void
     {
         $this->repository = $this->createMock(UserRepositoryInterface::class);
-        $this->refreshTokenRepository = $this->createMock(RefreshTokenRepositoryInterface::class);
-        $this->tokenService = $this->createMock(TokenServiceInterface::class);
+        $this->refreshTokenRepository = $this->createStub(RefreshTokenRepositoryInterface::class);
+        $this->tokenService = $this->createStub(TokenServiceInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
 
         $this->handler = new LoginUserCommandHandler(
@@ -61,29 +59,40 @@ final class LoginUserCommandHandlerTest extends UnitTestCase
             password: 'secret1234',
         );
 
+        /** @var RefreshTokenRepositoryInterface&MockObject $refreshTokenRepository */
+        $refreshTokenRepository = $this->createMock(RefreshTokenRepositoryInterface::class);
+        /** @var TokenServiceInterface&MockObject $tokenService */
+        $tokenService = $this->createMock(TokenServiceInterface::class);
+        $handler = new LoginUserCommandHandler(
+            $this->repository,
+            $refreshTokenRepository,
+            $tokenService,
+            $this->logger,
+        );
+
         $this->repository
             ->expects($this->once())
             ->method('findByEmail')
             ->with($email)
             ->willReturn($user);
 
-        $this->tokenService
+        $tokenService
             ->expects($this->once())
             ->method('generateAccessToken')
             ->with($user)
             ->willReturn(new AccessToken('access-token', 3600));
 
-        $this->tokenService
+        $tokenService
             ->expects($this->once())
             ->method('generateRefreshToken')
             ->with($user)
             ->willReturn(new RefreshTokenValueObject('refresh-token', 2592000));
 
-        $this->refreshTokenRepository
+        $refreshTokenRepository
             ->expects($this->once())
             ->method('save');
 
-        $response = ($this->handler)($command);
+        $response = ($handler)($command);
 
         $this->assertEquals('access-token', $response->accessToken);
         $this->assertEquals(3600, $response->accessTokenExpiresIn);

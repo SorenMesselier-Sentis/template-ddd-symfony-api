@@ -19,7 +19,6 @@ final class DeleteUserCommandHandlerTest extends UnitTestCase
     /** @var UserRepositoryInterface&MockObject */
     private UserRepositoryInterface $repository;
 
-    /** @var EventBusInterface&MockObject */
     private EventBusInterface $eventBus;
 
     private LoggerInterface $logger;
@@ -28,7 +27,7 @@ final class DeleteUserCommandHandlerTest extends UnitTestCase
     protected function setUp(): void
     {
         $this->repository = $this->createMock(UserRepositoryInterface::class);
-        $this->eventBus = $this->createMock(EventBusInterface::class);
+        $this->eventBus = $this->createStub(EventBusInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
 
         $this->handler = new DeleteUserCommandHandler(
@@ -43,6 +42,14 @@ final class DeleteUserCommandHandlerTest extends UnitTestCase
         $user = UserMother::create();
         $command = new DeleteUserCommand(id: $user->id()->value());
 
+        /** @var EventBusInterface&MockObject $eventBus */
+        $eventBus = $this->createMock(EventBusInterface::class);
+        $handler = new DeleteUserCommandHandler(
+            $this->repository,
+            $eventBus,
+            $this->logger,
+        );
+
         $this->repository
             ->expects($this->once())
             ->method('findById')
@@ -53,11 +60,11 @@ final class DeleteUserCommandHandlerTest extends UnitTestCase
             ->method('delete')
             ->with($user);
 
-        $this->eventBus
+        $eventBus
             ->expects($this->once())
             ->method('publish');
 
-        ($this->handler)($command);
+        ($handler)($command);
     }
 
     public function testItThrowsWhenUserNotFound(): void
