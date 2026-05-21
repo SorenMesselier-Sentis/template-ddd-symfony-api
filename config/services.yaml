@@ -96,13 +96,23 @@ services:
         tags:
             - { name: kernel.event_listener, event: kernel.response }
 
-    # Mailer
-    App\Shared\Infrastructure\Service\Email\SymfonyMailerEmailService:
+    # Email
+    App\Shared\Infrastructure\Email\SymfonyMailerEmailSender:
         arguments:
             $defaultFrom: "%env(MAILER_FROM)%"
 
-    App\Shared\Domain\Service\Email\EmailServiceInterface:
-        alias: App\Shared\Infrastructure\Service\Email\SymfonyMailerEmailService
+    App\Shared\Domain\Email\EmailSenderInterface:
+        alias: App\Shared\Infrastructure\Email\SymfonyMailerEmailSender
+
+    # Notifications
+    App\Shared\Infrastructure\Notification\ChannelNotificationSender:
+        arguments:
+            $handlers:
+                - '@App\Shared\Infrastructure\Notification\Handler\EmailChannelNotificationHandler'
+                - '@App\Shared\Infrastructure\Notification\Handler\InAppChannelNotificationHandler'
+
+    App\Shared\Domain\Notification\NotificationSenderInterface:
+        alias: App\Shared\Infrastructure\Notification\ChannelNotificationSender
 
     # Repositories
     App\User\Domain\Repository\UserRepositoryInterface:

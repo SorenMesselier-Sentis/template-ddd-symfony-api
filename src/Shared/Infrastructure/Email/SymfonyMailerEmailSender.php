@@ -2,23 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Shared\Infrastructure\Service\Email;
+namespace App\Shared\Infrastructure\Email;
 
+use App\Shared\Domain\Email\EmailMessage;
+use App\Shared\Domain\Email\EmailSenderInterface;
 use App\Shared\Domain\Exception\EmailDeliveryException;
 use App\Shared\Domain\Logging\LoggerInterface;
-use App\Shared\Domain\Service\Email\EmailMessage;
-use App\Shared\Domain\Service\Email\EmailServiceInterface;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email as SymfonyEmail;
 
-final class SymfonyMailerEmailService implements EmailServiceInterface
+final class SymfonyMailerEmailSender implements EmailSenderInterface
 {
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly LoggerInterface $logger,
         private readonly string $defaultFrom,
-    ) {}
+    ) {
+    }
 
     public function send(EmailMessage $message): void
     {
@@ -38,10 +39,7 @@ final class SymfonyMailerEmailService implements EmailServiceInterface
                 'exception' => $e->getMessage(),
             ]);
 
-            throw EmailDeliveryException::create(
-                recipient: $message->to()->value(),
-                previous: $e,
-            );
+            throw EmailDeliveryException::create(recipient: $message->to()->value(), previous: $e);
         }
     }
 
