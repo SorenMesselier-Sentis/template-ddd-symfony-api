@@ -16,13 +16,15 @@ security:
             pattern: ^/api
             stateless: true
             provider: app_user_provider
+            entry_point: App\User\Infrastructure\Security\JsonAuthenticationEntryPoint
             custom_authenticators:
                 - App\User\Infrastructure\Security\JwtAuthenticator
 
     access_control:
         - { path: ^/api/v1/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/auth/refresh, roles: PUBLIC_ACCESS }
-        - { path: ^/api/docs, roles: PUBLIC_ACCESS }
+        - { path: ^/api/doc, roles: PUBLIC_ACCESS }
+        - { path: ^/api/doc\.json, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

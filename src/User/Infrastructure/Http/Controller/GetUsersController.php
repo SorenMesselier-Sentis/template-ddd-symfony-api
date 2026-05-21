@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users', methods: ['GET'])]
-#[OA\Get(path: '/api/v1/users', summary: 'List users', tags: ['Users'])]
+#[OA\Get(path: '/users', summary: 'List users', tags: ['Users'])]
 #[OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', default: 1))]
 #[OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer', default: 20))]
 #[OA\Response(response: 200, description: 'List of users')]

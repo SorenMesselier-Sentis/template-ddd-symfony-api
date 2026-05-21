@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/auth/logout', methods: ['POST'])]
 #[OA\Post(
-    path: '/api/v1/auth/logout',
+    path: '/auth/logout',
     summary: 'Logout (revoke a refresh token)',
     description: 'Requires a valid access token in `Authorization` and the refresh token to revoke in the body. Returns 204 with an empty body on success.',
     tags: ['Authentication'],

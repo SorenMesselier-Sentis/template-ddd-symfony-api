@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users/{id}', methods: ['GET'])]
-#[OA\Get(path: '/api/v1/users/{id}', summary: 'Get a user', tags: ['Users'])]
+#[OA\Get(path: '/users/{id}', summary: 'Get a user', tags: ['Users'])]
 #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
 #[OA\Response(
     response: 200,

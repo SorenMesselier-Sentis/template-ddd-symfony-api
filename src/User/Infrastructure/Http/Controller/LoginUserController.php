@@ -15,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/auth/login', methods: ['POST'])]
 #[OA\Post(
-    path: '/api/v1/auth/login',
+    path: '/auth/login',
     summary: 'Login a user',
     tags: ['Authentication'],
 )]

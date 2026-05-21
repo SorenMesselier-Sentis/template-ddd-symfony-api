@@ -15,7 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/auth/refresh', methods: ['POST'])]
 #[OA\Post(
-    path: '/api/v1/auth/refresh',
+    path: '/auth/refresh',
     summary: 'Refresh access and refresh tokens',
     description: 'Exchanges a valid, non-revoked, non-expired refresh token for a new pair. The previous refresh token is revoked (rotation). No `Authorization` header is required.',
     tags: ['Authentication'],

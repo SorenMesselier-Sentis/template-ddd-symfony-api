@@ -11,6 +11,7 @@ use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
 use App\Shared\Domain\Exception\UnauthorizedException;
 use App\Shared\Domain\Logging\LoggerInterface;
+use App\User\Domain\Exception\InsufficientPrivilegesException;
 use App\User\Domain\Exception\InvalidTokenException;
 use App\User\Domain\Exception\MissingTokenException;
 use App\User\Domain\Exception\TokenExpiredException;
@@ -22,6 +23,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 final class ExceptionListener
 {
@@ -62,7 +64,9 @@ final class ExceptionListener
             $exception instanceof TokenExpiredException => [401, $exception->errorCode()],
             $exception instanceof InvalidTokenException => [401, $exception->errorCode()],
             $exception instanceof MissingTokenException => [401, $exception->errorCode()],
+            $exception instanceof InsufficientPrivilegesException => [403, $exception->errorCode()],
             $exception instanceof ForbiddenException => [403, $exception->errorCode()],
+            $exception instanceof AccessDeniedException => [403, 'forbidden'],
             $exception instanceof ExpiredTokenException => [401, 'token_expired'],
             $exception instanceof LexikInvalidTokenException => [401, 'invalid_token'],
             $exception instanceof NotFoundException => [404, $exception->errorCode()],

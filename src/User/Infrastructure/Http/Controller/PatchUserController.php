@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users/{id}', methods: ['PATCH'])]
-#[OA\Patch(path: '/api/v1/users/{id}', summary: 'Partially update a user', tags: ['Users'])]
+#[OA\Patch(path: '/users/{id}', summary: 'Partially update a user', tags: ['Users'])]
 #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
 #[OA\RequestBody(
     content: new OA\JsonContent(

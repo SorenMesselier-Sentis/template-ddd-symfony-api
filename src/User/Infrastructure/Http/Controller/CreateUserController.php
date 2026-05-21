@@ -15,7 +15,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[Route('/users', methods: ['POST'])]
 #[OA\Post(
-    path: '/api/v1/users',
+    path: '/users',
     summary: 'Create a user',
     tags: ['Users'],
 )]
