@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users/{id}', methods: ['PUT'])]
-#[OA\Put(path: '/api/v1/users/{id}', summary: 'Replace a user', tags: ['Users'])]
+#[OA\Put(path: '/users/{id}', summary: 'Replace a user', tags: ['Users'])]
 #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
 #[OA\RequestBody(
     required: true,

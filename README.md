@@ -4,7 +4,6 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 ## TODO
 
-- Verify the PROTECTED_ROUTES strategy
 - Set up Prometheus
 - Set up Grafana
 - Add the soft delete possibility
@@ -92,7 +91,53 @@ src/
 
 **Soft delete** — entities are never physically removed. A `status` field tracks their lifecycle (`active`, `inactive`, `deleted`). Repositories automatically exclude deleted records from queries.
 
-**OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers and filtered to routes under `/api/v1` (see `config/packages/nelmio_api_doc.yaml`). Swagger UI is served at `/api/doc/` and loads the spec from the same bundle (no extra JSON route required).
+**OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers. Paths in attributes are relative to the API base (`/users`, `/auth/login`, …); the `/api/v1` prefix is configured once in `config/packages/nelmio_api_doc.yaml` (`servers`) and in `config/routes.yaml`. Swagger UI is served at `/api/doc` and the JSON spec at `/api/doc.json`. The health check (`GET /health`) is documented under the **Infrastructure** tag with the root server.
+
+### Security
+
+Authentication and authorization are split across layers:
+
+| Layer | Responsibility | Location |
+|---|---|---|
+| Infrastructure (HTTP) | Who is connected? Public vs authenticated routes | `config/packages/security.yaml`, `JwtAuthenticator`, `JsonAuthenticationEntryPoint` |
+| Application (User BC) | Which roles can run this use case? | `RoleRequirement`, `UserAuthorizer`, `AuthorizedMessage` on commands/queries |
+| Domain (User BC) | Vocabulary (`UserRole`, `UserContextInterface`, exceptions) | `src/User/Domain/` |
+
+**Public routes** (no JWT required) are declared only in `security.yaml`: login, refresh, and API documentation. On these routes, an invalid or stale `Authorization` header from the browser (e.g. Swagger UI) is ignored so the page still loads without a frontend.
+
+**Protected routes** require a valid JWT. The firewall authenticates the request; `HttpUserContext` reads the authenticated user from Symfony Security (roles come from the database via `SecurityUserProvider`).
+
+**Per-use-case authorization** is declared on the message, not on URL paths. Commands and queries that need authorization implement `AuthorizedMessage` and return a `RoleRequirement`:
+
+```php
+// Single role (admin only)
+public function roleRequirement(): RoleRequirement
+{
+    return RoleRequirement::admin();
+}
+
+// Multiple roles — user needs at least one (ANY)
+public function roleRequirement(): RoleRequirement
+{
+    return RoleRequirement::any(UserRole::ADMIN, UserRole::MANAGER);
+}
+
+// Multiple roles — user needs all of them (ALL)
+public function roleRequirement(): RoleRequirement
+{
+    return RoleRequirement::all(UserRole::ADMIN, UserRole::AUDITOR);
+}
+
+// Any authenticated user
+public function roleRequirement(): RoleRequirement
+{
+    return RoleRequirement::authenticated();
+}
+```
+
+`AuthorizeMessageMiddleware` on the command and query buses enforces the requirement before the handler runs.
+
+To add a new role, extend the `UserRole` enum in the User bounded context and use it in `RoleRequirement` on the relevant command or query. Do not add path-based rules in Shared.
 
 ## Getting started
 
@@ -262,11 +307,39 @@ php bin/console nelmio:apidoc:dump --format=json
 php bin/console nelmio:apidoc:dump --format=yaml
 ```
 
-To document new HTTP endpoints, add `OpenApi\Attributes` (for example `#[OA\Get]`, `#[OA\Post]`, `#[OA\RequestBody]`, `#[OA\Response]`) on the controller action next to the existing Symfony `#[Route]` attributes; see `src/User/Infrastructure/Http/Controller/` for examples.
+To document new HTTP endpoints, add `OpenApi\Attributes` on the controller with the **same path as `#[Route]`** (without the `/api/v1` prefix). See `src/User/Infrastructure/Http/Controller/` and `src/Shared/Infrastructure/Http/Controller/HealthCheckController.php` for examples.
 
 ## REST API
 
 Base path: `/api/v1`.
+
+### Health check (CI/CD)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/health` | None | Liveness/readiness probe for pipelines and orchestrators |
+
+Returns `200` when the API and database are reachable, `503` when the database check fails:
+
+```json
+{
+  "data": {
+    "status": "ok",
+    "checks": {
+      "api": "ok",
+      "database": "ok"
+    }
+  }
+}
+```
+
+Example for a deploy smoke test or GitHub Actions:
+
+```bash
+curl -sf http://localhost:8080/health
+```
+
+`-f` makes curl exit non-zero on HTTP 503, which fails the job if the stack is not ready.
 
 ### Endpoints
 

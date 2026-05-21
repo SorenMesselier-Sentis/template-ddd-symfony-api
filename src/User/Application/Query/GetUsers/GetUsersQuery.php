@@ -6,11 +6,18 @@ namespace App\User\Application\Query\GetUsers;
 
 use App\Shared\Domain\Bus\Query\Query;
 use App\Shared\Domain\Filter\Filters;
+use App\User\Application\Security\AuthorizedMessage;
+use App\User\Application\Security\RoleRequirement;
 
-final class GetUsersQuery implements Query
+final class GetUsersQuery implements Query, AuthorizedMessage
 {
     public function __construct(
         public readonly Filters $filters,
     ) {
+    }
+
+    public function roleRequirement(): RoleRequirement
+    {
+        return RoleRequirement::authenticated();
     }
 }

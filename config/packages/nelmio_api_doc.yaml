@@ -5,9 +5,12 @@ nelmio_api_doc:
             description: REST API template built with Domain-Driven Design
             version: 1.0.0
         servers:
+            - url: http://localhost:8080/api/v1
+              description: API v1
             - url: http://localhost:8080
-              description: Local
+              description: Infrastructure
     areas:
         default:
             path_patterns:
                 - ^/api/v1
+                - ^/health$

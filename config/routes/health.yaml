@@ -1,0 +1,3 @@
+shared_controllers:
+    resource: ../../src/Shared/Infrastructure/Http/Controller/
+    type: attribute

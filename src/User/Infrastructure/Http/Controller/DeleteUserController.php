@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users/{id}', methods: ['DELETE'])]
-#[OA\Delete(path: '/api/v1/users/{id}', summary: 'Delete a user', tags: ['Users'])]
+#[OA\Delete(path: '/users/{id}', summary: 'Delete a user', tags: ['Users'])]
 #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
 #[OA\Response(response: 204, description: 'User deleted')]
 #[OA\Response(response: 404, description: 'User not found')]

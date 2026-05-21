@@ -138,3 +138,6 @@ test-integration:
 
 test-coverage:
 	$(PHP) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage
+
+mail:
+	open http://localhost:8025

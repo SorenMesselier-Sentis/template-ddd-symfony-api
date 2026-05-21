@@ -22,10 +22,16 @@ final class JwtAuthenticator extends AbstractAuthenticator
 {
     public function __construct(
         private readonly TokenServiceInterface $tokenService,
-    ) {}
+        private readonly PublicApiRequestMatcher $publicApiRequestMatcher,
+    ) {
+    }
 
     public function supports(Request $request): ?bool
     {
+        if ($this->publicApiRequestMatcher->matches($request)) {
+            return false;
+        }
+
         return $request->headers->has('Authorization');
     }
 
@@ -34,9 +40,7 @@ final class JwtAuthenticator extends AbstractAuthenticator
         $authHeader = $request->headers->get('Authorization', '');
 
         if (!str_starts_with($authHeader, 'Bearer ')) {
-            throw new CustomUserMessageAuthenticationException(
-                'invalid_token',
-            );
+            throw new CustomUserMessageAuthenticationException('invalid_token');
         }
 
         $token = trim(substr($authHeader, 7));

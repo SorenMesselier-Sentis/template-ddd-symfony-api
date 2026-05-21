@@ -40,6 +40,10 @@ final class CreateUserCommandHandlerTest extends UnitTestCase
             ->method('userId')
             ->willReturn(UserId::random());
 
+        $this->userContext
+            ->method('isAuthenticated')
+            ->willReturn(true);
+
         $this->handler = new CreateUserCommandHandler(
             $this->repository,
             $this->eventBus,

@@ -11,6 +11,6 @@ controllers:
     resource: routing.controllers
 
 api_v1:
-    resource: ../src/
+    resource: ../src/User/Infrastructure/Http/Controller/
     type: attribute
     prefix: /api/v1

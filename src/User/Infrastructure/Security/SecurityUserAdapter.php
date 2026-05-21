@@ -14,8 +14,7 @@ final class SecurityUserAdapter implements UserInterface, PasswordAuthenticatedU
 {
     public function __construct(
         private readonly User $user,
-    )
-    {
+    ) {
     }
 
     public function getUserIdentifier(): string
@@ -31,17 +30,18 @@ final class SecurityUserAdapter implements UserInterface, PasswordAuthenticatedU
     public function getRoles(): array
     {
         return array_map(
-            fn(UserRole $role) => $role->value,
+            fn (UserRole $role) => $role->value,
             $this->user->roles(),
         );
     }
 
     public function eraseCredentials(): void
-    {}
+    {
+    }
 
     public function isActive(): bool
     {
-        return $this->user->status() === UserStatus::ACTIVE;
+        return UserStatus::ACTIVE === $this->user->status();
     }
 
     public function getUser(): User
