@@ -10,6 +10,7 @@ final class UserDeleted extends DomainEvent
 {
     public function __construct(
         string $aggregateId,
+        public readonly string $email,
     ) {
         parent::__construct($aggregateId);
     }

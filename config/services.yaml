@@ -104,6 +104,9 @@ services:
     App\Shared\Domain\Email\EmailSenderInterface:
         alias: App\Shared\Infrastructure\Email\SymfonyMailerEmailSender
 
+    App\Shared\Domain\Email\EmailTemplateRendererInterface:
+        alias: App\Shared\Infrastructure\Email\TwigEmailTemplateRenderer
+
     # Notifications
     App\Shared\Infrastructure\Notification\ChannelNotificationSender:
         arguments:

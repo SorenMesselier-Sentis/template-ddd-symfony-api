@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace App\User\Infrastructure\EventHandler;
 
+use App\Shared\Domain\Email\EmailTemplateRendererInterface;
 use App\Shared\Domain\Exception\EmailDeliveryException;
 use App\Shared\Domain\Logging\LoggerInterface;
-use App\Shared\Domain\Service\Email\EmailMessage;
-use App\Shared\Domain\Service\Email\EmailSenderInterface;
+use App\Shared\Domain\Notification\EmailNotification;
+use App\Shared\Domain\Notification\NotificationSenderInterface;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserCreated;
+use App\User\Infrastructure\Email\UserEmailTemplate;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'event.bus')]
 final class SendWelcomeEmailOnUserCreated
 {
     public function __construct(
-        private readonly EmailSenderInterface $emailService,
+        private readonly NotificationSenderInterface $notificationSender,
+        private readonly EmailTemplateRendererInterface $emailTemplateRenderer,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -29,13 +32,21 @@ final class SendWelcomeEmailOnUserCreated
         ]);
 
         try {
-            $this->emailService->send(
-                EmailMessage::create(
-                    to: Email::fromString($event->email),
-                    subject: 'Welcome to the platform!',
-                    textBody: $this->buildTextBody($event),
-                    htmlBody: $this->buildHtmlBody($event),
-                )
+            $content = $this->emailTemplateRenderer->render(
+                UserEmailTemplate::WELCOME,
+                [
+                    'firstName' => $event->firstName,
+                    'lastName' => $event->lastName,
+                ],
+            );
+
+            $this->notificationSender->send(
+                EmailNotification::create(
+                    recipientEmail: Email::fromString($event->email),
+                    subject: $content->subject(),
+                    body: $content->textBody(),
+                    htmlBody: $content->htmlBody(),
+                ),
             );
 
             $this->logger->info('Welcome email sent', [
@@ -50,23 +61,5 @@ final class SendWelcomeEmailOnUserCreated
 
             throw $e;
         }
-    }
-
-    private function buildTextBody(UserCreated $event): string
-    {
-        return sprintf(
-            "Hello %s %s,\n\nWelcome to the platform! Your account is now active.\n\nBest regards,\nThe Team",
-            $event->firstName,
-            $event->lastName,
-        );
-    }
-
-    private function buildHtmlBody(UserCreated $event): string
-    {
-        return sprintf(
-            '<h1>Hello %s %s!</h1><p>Welcome to the platform! Your account is now active.</p><p>Best regards,<br>The Team</p>',
-            htmlspecialchars($event->firstName),
-            htmlspecialchars($event->lastName),
-        );
     }
 }

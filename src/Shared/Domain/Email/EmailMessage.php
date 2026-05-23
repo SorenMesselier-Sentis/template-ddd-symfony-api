@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Shared\Domain\Service\Email;
+namespace App\Shared\Domain\Email;
 
 use App\Shared\Domain\ValueObject\Email;
 

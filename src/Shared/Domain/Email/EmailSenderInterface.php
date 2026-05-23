@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Shared\Domain\Service\Email;
-
-use App\Shared\Domain\Service\Email\EmailMessage;
+namespace App\Shared\Domain\Email;
 
 interface EmailSenderInterface
 {

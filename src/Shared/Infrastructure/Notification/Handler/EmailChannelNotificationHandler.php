@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Notification\Handler;
 
-use App\Shared\Domain\Email\EmailMessage;
 use App\Shared\Domain\Email\EmailSenderInterface;
 use App\Shared\Domain\Notification\EmailNotification;
 use App\Shared\Domain\Notification\Notification;
@@ -24,13 +23,7 @@ final class EmailChannelNotificationHandler implements NotificationChannelHandle
             throw new \InvalidArgumentException(sprintf('Expected %s, got %s.', EmailNotification::class, $notification::class));
         }
 
-        $this->emailSender->send(
-            EmailMessage::create(
-                to: $notification->recipientEmail(),
-                subject: $notification->subject(),
-                textBody: $notification->body(),
-            ),
-        );
+        $this->emailSender->send($notification->toEmailMessage());
     }
 
     public function supports(): NotificationChannel
