@@ -122,7 +122,10 @@ final class User
         $this->status = UserStatus::DELETED;
         $this->touch();
 
-        $this->record(new UserDeleted($this->id->value()));
+        $this->record(new UserDeleted(
+            aggregateId: $this->id->value(),
+            email: $this->email->value(),
+        ));
     }
 
     /**

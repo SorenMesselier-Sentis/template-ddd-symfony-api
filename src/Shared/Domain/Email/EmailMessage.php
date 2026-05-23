@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Shared\Domain\Service\Email;
+namespace App\Shared\Domain\Email;
 
 use App\Shared\Domain\ValueObject\Email;
 
@@ -30,22 +30,6 @@ final class EmailMessage
             textBody: $textBody,
             htmlBody: $htmlBody,
             from: $from,
-        );
-    }
-
-    public static function createFromStrings(
-        string $to,
-        string $subject,
-        string $textBody,
-        ?string $htmlBody = null,
-        ?string $from = null,
-    ): self {
-        return new self(
-            to: Email::fromString($to),
-            subject: $subject,
-            textBody: $textBody,
-            htmlBody: $htmlBody,
-            from: null !== $from ? Email::fromString($from) : null,
         );
     }
 

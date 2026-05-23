@@ -1,0 +1,11 @@
+{% extends 'email/layout.html.twig' %}
+
+{% block title %}Your account has been deleted{% endblock %}
+
+{% block content %}
+    <h1 style="margin: 0 0 16px; font-size: 24px; color: #18181b;">Account deleted</h1>
+    <p style="margin: 0 0 16px;">
+        Your account associated with <strong>{{ email }}</strong> has been successfully deleted.
+    </p>
+    <p style="margin: 0;">If you did not request this, please contact our support team immediately.</p>
+{% endblock %}

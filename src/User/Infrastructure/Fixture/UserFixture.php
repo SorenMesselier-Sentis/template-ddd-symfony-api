@@ -9,6 +9,7 @@ use App\User\Domain\Entity\User;
 use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
+use App\User\Domain\ValueObject\UserRole;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
@@ -43,12 +44,17 @@ final class UserFixture extends Fixture
         ];
 
         foreach ($users as $data) {
+            $roles = self::REFERENCE_JOHN === $data['ref']
+                ? [UserRole::ADMIN, UserRole::USER]
+                : [UserRole::USER];
+
             $user = User::create(
                 id: UserId::random(),
                 firstName: UserName::fromString($data['firstName']),
                 lastName: UserName::fromString($data['lastName']),
                 email: Email::fromString($data['email']),
                 password: HashedPassword::fromPlainPassword($data['password']),
+                roles: $roles,
             );
 
             $manager->persist($user);

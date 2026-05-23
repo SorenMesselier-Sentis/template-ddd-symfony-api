@@ -31,7 +31,8 @@ final class DeleteUserCommandHandler
             throw UserNotFoundException::withId($command->id);
         }
 
-        $this->repository->delete($user);
+        $user->delete();
+        $this->repository->save($user);
         $this->bus->publish(...$user->pullDomainEvents());
 
         $this->logger->info('User deleted', ['id' => $command->id]);

@@ -15,7 +15,7 @@ final class PublicApiRequestMatcher
     {
         $path = $request->getPathInfo();
 
-        if (preg_match('#^/api/v1/auth/(login|refresh)$#', $path) === 1) {
+        if (1 === preg_match('#^/api/v1/auth/(login|refresh)$#', $path)) {
             return true;
         }
 

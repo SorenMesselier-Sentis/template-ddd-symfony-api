@@ -204,6 +204,16 @@ make db-fixtures  # load fixtures (dev only)
 make db-fresh     # db-reset + db-fixtures in one command
 ```
 
+### Email (local)
+
+Mailpit captures outgoing emails in development (SMTP `1025`, UI `8025`).
+
+```bash
+make mail         # open Mailpit UI in the browser
+```
+
+See [docs/testing-emails.md](docs/testing-emails.md) for the full flow (API → outbox → RabbitMQ → Twig templates → Mailpit).
+
 ### RabbitMQ
 
 ```bash

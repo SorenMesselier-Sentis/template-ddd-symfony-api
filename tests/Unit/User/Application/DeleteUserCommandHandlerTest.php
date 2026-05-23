@@ -57,7 +57,7 @@ final class DeleteUserCommandHandlerTest extends UnitTestCase
 
         $this->repository
             ->expects($this->once())
-            ->method('delete')
+            ->method('save')
             ->with($user);
 
         $eventBus
@@ -80,7 +80,7 @@ final class DeleteUserCommandHandlerTest extends UnitTestCase
 
         $this->repository
             ->expects($this->never())
-            ->method('delete');
+            ->method('save');
 
         ($this->handler)($command);
     }
