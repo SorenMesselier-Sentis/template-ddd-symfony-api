@@ -20,11 +20,7 @@ final class InAppChannelNotificationHandler implements NotificationChannelHandle
     public function handle(Notification $notification): void
     {
         if (!$notification instanceof InAppNotification) {
-            throw new \InvalidArgumentException(sprintf(
-                'Expected %s, got %s.',
-                InAppNotification::class,
-                $notification::class,
-            ));
+            throw new \InvalidArgumentException(sprintf('Expected %s, got %s.', InAppNotification::class, $notification::class));
         }
 
         $this->logger->info('In-app notification dispatched', [

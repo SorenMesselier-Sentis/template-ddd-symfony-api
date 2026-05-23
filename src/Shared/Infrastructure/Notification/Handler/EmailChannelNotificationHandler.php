@@ -21,11 +21,7 @@ final class EmailChannelNotificationHandler implements NotificationChannelHandle
     public function handle(Notification $notification): void
     {
         if (!$notification instanceof EmailNotification) {
-            throw new \InvalidArgumentException(sprintf(
-                'Expected %s, got %s.',
-                EmailNotification::class,
-                $notification::class,
-            ));
+            throw new \InvalidArgumentException(sprintf('Expected %s, got %s.', EmailNotification::class, $notification::class));
         }
 
         $this->emailSender->send(

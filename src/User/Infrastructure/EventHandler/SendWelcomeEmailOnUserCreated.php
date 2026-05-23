@@ -7,7 +7,7 @@ namespace App\User\Infrastructure\EventHandler;
 use App\Shared\Domain\Exception\EmailDeliveryException;
 use App\Shared\Domain\Logging\LoggerInterface;
 use App\Shared\Domain\Service\Email\EmailMessage;
-use App\Shared\Domain\Service\Email\EmailServiceInterface;
+use App\Shared\Domain\Service\Email\EmailSenderInterface;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserCreated;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -16,22 +16,23 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class SendWelcomeEmailOnUserCreated
 {
     public function __construct(
-        private readonly EmailServiceInterface $emailService,
+        private readonly EmailSenderInterface $emailService,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(UserCreated $event): void
     {
         $this->logger->info('Sending welcome email', [
             'userId' => $event->aggregateId(),
-            'email'  => $event->email,
+            'email' => $event->email,
         ]);
 
         try {
             $this->emailService->send(
                 EmailMessage::create(
                     to: Email::fromString($event->email),
-                    subject:  'Welcome to the platform!',
+                    subject: 'Welcome to the platform!',
                     textBody: $this->buildTextBody($event),
                     htmlBody: $this->buildHtmlBody($event),
                 )
