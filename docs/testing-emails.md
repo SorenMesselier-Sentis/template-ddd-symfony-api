@@ -1,33 +1,33 @@
-# Tester les e-mails (Twig + Mailpit)
+# Testing Emails (Twig + Mailpit)
 
-Ce guide décrit le flux complet pour déclencher et visualiser les e-mails en local.
+This guide describes the full workflow to trigger and view emails locally.
 
-## Prérequis
+## Prerequisites
 
-- Stack Docker démarrée : `make up`
-- Base initialisée : `make db-fresh` (charge les fixtures, dont un admin)
-- Variables mail dans `.env.local` (copie de `.env` si besoin) :
+* Docker stack running: `make up`
+* Database initialized: `make db-fresh` (loads fixtures, including an admin user)
+* Mail variables in `.env.local` (copy from `.env` if needed):
 
 ```bash
 MAILER_DSN=smtp://mailpit:1025
 MAILER_FROM=noreply@example.com
 ```
 
-> **Note :** depuis le conteneur PHP, l’hôte SMTP est `mailpit`, pas `localhost`.
+> **Note:** from the PHP container, the SMTP host is `mailpit`, not `localhost`.
 
-## Architecture du flux
+## Flow Architecture
 
 ```
-POST /api/v1/users  ou  DELETE /api/v1/users/{id}
+POST /api/v1/users  or  DELETE /api/v1/users/{id}
         │
         ▼
-CommandHandler → événement domaine → table outbox (même transaction)
+CommandHandler → domain event → outbox table (same transaction)
         │
         ▼
-make outbox-relay          # publie vers RabbitMQ
+make outbox-relay          # publishes to RabbitMQ
         │
         ▼
-make consume               # consomme la queue events.user
+make consume               # consumes the events.user queue
         │
         ▼
 SendWelcomeEmailOnUserCreated  /  SendAccountDeletionEmailOnUserDeleted
@@ -36,37 +36,37 @@ SendWelcomeEmailOnUserCreated  /  SendAccountDeletionEmailOnUserDeleted
 Twig (templates/email/…) → NotificationSender → Symfony Mailer → Mailpit
 ```
 
-## Démarrage des workers
+## Starting Workers
 
-Ouvrir **3 terminaux** :
+Open **3 terminals**:
 
 ```bash
-# Terminal 1 — consumer RabbitMQ (laisser tourner)
+# Terminal 1 — RabbitMQ consumer (keep running)
 make consume
 
-# Terminal 2 — relais outbox (à relancer après chaque action API, ou en boucle)
+# Terminal 2 — outbox relay (rerun after each API action or loop it)
 make outbox-relay
 
-# Terminal 3 — commandes curl / tests manuels
+# Terminal 3 — curl commands / manual tests
 ```
 
-Pour automatiser le relais outbox en continu :
+To automate the outbox relay continuously:
 
 ```bash
 watch -n 2 make outbox-relay
 ```
 
-## Compte admin (fixtures)
+## Admin Account (fixtures)
 
-| Champ    | Valeur                 |
-|----------|------------------------|
-| Email    | `john.doe@example.com` |
-| Password | `secret1234`           |
-| Rôles    | `ROLE_ADMIN`, `ROLE_USER` |
+| Field    | Value                     |
+| -------- | ------------------------- |
+| Email    | `john.doe@example.com`    |
+| Password | `secret1234`              |
+| Roles    | `ROLE_ADMIN`, `ROLE_USER` |
 
-## 1. E-mail de bienvenue (UserCreated)
+## 1. Welcome Email (UserCreated)
 
-### Connexion
+### Login
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
@@ -77,7 +77,7 @@ TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
 echo "$TOKEN"
 ```
 
-### Création d’un utilisateur
+### Create a user
 
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/users \
@@ -91,25 +91,25 @@ curl -s -X POST http://localhost:8080/api/v1/users \
   }'
 ```
 
-### Relais + vérification
+### Relay + verification
 
 ```bash
 make outbox-relay   # terminal 2
 ```
 
-Ouvrir Mailpit : http://localhost:8025 (ou `make mail`)
+Open Mailpit: [http://localhost:8025](http://localhost:8025) (or `make mail`)
 
-Vous devez voir un e-mail **Welcome to the platform!** envoyé à `alice.martin@example.com`.
+You should see a **“Welcome to the platform!”** email sent to `alice.martin@example.com`.
 
-Templates modifiables :
+Editable templates:
 
-- `templates/email/user/welcome.subject.twig`
-- `templates/email/user/welcome.txt.twig`
-- `templates/email/user/welcome.html.twig`
+* `templates/email/user/welcome.subject.twig`
+* `templates/email/user/welcome.txt.twig`
+* `templates/email/user/welcome.html.twig`
 
-## 2. E-mail de suppression de compte (UserDeleted)
+## 2. Account Deletion Email (UserDeleted)
 
-### Récupérer l’ID d’un utilisateur
+### Get a user ID
 
 ```bash
 USER_ID=$(curl -s "http://localhost:8080/api/v1/users?email=alice.martin@example.com" \
@@ -119,7 +119,7 @@ USER_ID=$(curl -s "http://localhost:8080/api/v1/users?email=alice.martin@example
 echo "$USER_ID"
 ```
 
-### Supprimer l’utilisateur
+### Delete the user
 
 ```bash
 curl -s -X DELETE "http://localhost:8080/api/v1/users/$USER_ID" \
@@ -127,46 +127,46 @@ curl -s -X DELETE "http://localhost:8080/api/v1/users/$USER_ID" \
   -w "\nHTTP %{http_code}\n"
 ```
 
-Réponse attendue : `HTTP 204`.
+Expected response: `HTTP 204`.
 
-### Relais + vérification
+### Relay + verification
 
 ```bash
 make outbox-relay
 ```
 
-Dans Mailpit : e-mail **Your account has been deleted** pour `alice.martin@example.com`.
+In Mailpit: email **“Your account has been deleted”** for `alice.martin@example.com`.
 
-Templates :
+Templates:
 
-- `templates/email/user/account_deletion.*.twig`
+* `templates/email/user/account_deletion.*.twig`
 
-## Dépannage
+## Troubleshooting
 
-| Symptomôme | Cause probable | Action |
-|------------|----------------|--------|
-| Pas d’e-mail dans Mailpit | Outbox non relayée | `make outbox-relay` |
-| Pas d’e-mail dans Mailpit | Consumer arrêté | `make consume` |
-| Erreur SMTP | Mauvais `MAILER_DSN` | `smtp://mailpit:1025` dans `.env.local` |
-| `401` sur POST /users | Token manquant ou non admin | Se connecter avec `john.doe@example.com` |
-| Message en failed | Voir la dead letter | `make messenger-failed-show` |
+| Symptom                 | Likely cause               | Action                                    |
+| ----------------------- | -------------------------- | ----------------------------------------- |
+| No email in Mailpit     | Outbox not relayed         | `make outbox-relay`                       |
+| No email in Mailpit     | Consumer stopped           | `make consume`                            |
+| SMTP error              | Wrong `MAILER_DSN`         | use `smtp://mailpit:1025` in `.env.local` |
+| `401` on POST /users    | Missing or non-admin token | login with `john.doe@example.com`         |
+| Message in failed state | Check dead letter queue    | `make messenger-failed-show`              |
 
-Logs PHP :
+PHP logs:
 
 ```bash
 make logs-php
 ```
 
-Statistiques Messenger :
+Messenger stats:
 
 ```bash
 make messenger-stats
 ```
 
-## Modifier le contenu sans redéployer
+## Modify content without redeploying
 
-1. Éditer les fichiers sous `templates/email/`
-2. Vider le cache si nécessaire : `make clear`
-3. Rejouer l’action API + `make outbox-relay`
+1. Edit files under `templates/email/`
+2. Clear cache if needed: `make clear`
+3. Re-run API action + `make outbox-relay`
 
-Les handlers ne contiennent plus de `sprintf` : seul Twig porte le contenu.
+Handlers no longer contain `sprintf`: Twig is solely responsible for email content.

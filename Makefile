@@ -108,6 +108,9 @@ messenger-failed-remove:
 outbox-relay:
 	$(CONSOLE) app:outbox:relay
 
+scheduler:
+	$(CONSOLE) messenger:consume scheduler_default --time-limit=3600 -vv
+
 init: build up install db-fresh
 
 bc:

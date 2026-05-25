@@ -63,6 +63,16 @@ services:
             $eventBus: "@event.bus"
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
 
+    App\Shared\Infrastructure\Messaging\Outbox\OutboxMessagesCleaner:
+        arguments:
+            $connection: "@doctrine.dbal.default_connection"
+            $logger: '@App\Shared\Domain\Logging\LoggerInterface'
+
+    # Scheduler
+    App\Shared\Infrastructure\Scheduler\Handler\CleanupStaleOutboxMessagesHandler:
+        arguments:
+            $retentionDays: "%env(int:OUTBOX_RETENTION_DAYS)%"
+
     # Logger
     App\Shared\Infrastructure\Logging\MonologLogger:
         arguments:

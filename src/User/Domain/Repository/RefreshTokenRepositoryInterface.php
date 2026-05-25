@@ -13,4 +13,11 @@ interface RefreshTokenRepositoryInterface
     public function findByToken(string $token): ?RefreshTokenEntity;
 
     public function revokeAllForUser(string $userId): void;
+
+    /**
+     * Removes every refresh token whose `expiresAt` is strictly earlier than `$now`.
+     *
+     * @return int Number of rows deleted.
+     */
+    public function deleteExpired(\DateTimeImmutable $now): int;
 }

@@ -38,4 +38,17 @@ final class DoctrineRefreshTokenRepository implements RefreshTokenRepositoryInte
             ->getQuery()
             ->execute();
     }
+
+    public function deleteExpired(\DateTimeImmutable $now): int
+    {
+        $deleted = $this->em->getRepository(RefreshTokenEntity::class)
+            ->createQueryBuilder('rt')
+            ->delete()
+            ->where('rt.expiresAt < :now')
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->execute();
+
+        return (int) $deleted;
+    }
 }

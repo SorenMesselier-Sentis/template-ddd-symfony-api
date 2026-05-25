@@ -6,9 +6,6 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 
 - Set up Prometheus
 - Set up Grafana
-- Add the soft delete possibility
-- Set up Shared\Services for the email for example
-- Set up Scheduler
 
 ## Stack
 
@@ -20,6 +17,8 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Database | PostgreSQL 16 |
 | Message Bus | Symfony Messenger |
 | Queue | RabbitMQ |
+| Scheduler | Symfony Scheduler (cron + periodic) |
+| Mailer | Symfony Mailer + Twig templates, Mailpit for dev |
 | Logging | Monolog |
 | Monitoring | Prometheus + Grafana |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
@@ -33,12 +32,17 @@ src/
 ├── Shared/                         # Cross-cutting concerns
 │   ├── Domain/
 │   │   ├── Bus/                    # Command, Query, Event bus interfaces
+│   │   ├── Email/                  # EmailSenderInterface, EmailMessage, EmailTemplateRendererInterface, RenderedEmailContent
+│   │   ├── Notification/           # Notification (interface), EmailNotification, InAppNotification, NotificationChannel, NotificationSenderInterface
 │   │   ├── Filter/                 # Filter, Filters, Order, Pagination value objects
 │   │   ├── ValueObject/            # Uuid, Email
-│   │   ├── Exception/              # Base domain exceptions
+│   │   ├── Exception/              # Base domain exceptions (incl. EmailDeliveryException, UnsupportedChannelException)
 │   │   └── Logging/                # Logger interface
 │   └── Infrastructure/
 │       ├── Bus/                    # Symfony Messenger implementations
+│       ├── Email/                  # SymfonyMailerEmailSender, TwigEmailTemplateRenderer
+│       ├── Notification/           # ChannelNotificationSender + per-channel Handler/
+│       ├── Scheduler/              # DefaultSchedule (#[AsSchedule('default')]) + Message/ + Handler/
 │       ├── Http/
 │       │   ├── Filter/             # FiltersBuilder — parses query string into Filters
 │       │   ├── Listener/           # ExceptionListener, ApiHeadersListener
@@ -46,7 +50,8 @@ src/
 │       │   └── Response/           # ApiResponse (success, created, paginated, noContent)
 │       ├── Logging/                # Monolog implementation
 │       ├── Monitoring/             # Prometheus, OpenTelemetry
-│       ├── Messaging/              # Dead letter handler
+│       ├── Messaging/
+│       │   └── Outbox/             # OutboxEventBus, OutboxRelay, OutboxMessagesCleaner
 │       └── Persistence/
 │           ├── Migrations/         # All migrations centralized here
 │           └── Doctrine/
@@ -62,8 +67,7 @@ src/
     │   └── Exception/
     ├── Application/                # Use cases
     │   ├── Command/
-    │   ├── Query/
-    │   └── EventHandler/
+    │   └── Query/
     └── Infrastructure/             # Framework & persistence
         ├── Fixture/                # Doctrine fixtures (dev & test)
         ├── Persistence/
@@ -71,10 +75,21 @@ src/
         │       ├── Mapping/        # XML mapping files
         │       └── Repository/
         ├── Messaging/              # RabbitMQ consumers
-        ├── Http/
-        │   ├── Controller/
-        │   └── Request/
-        └── EventSubscriber/
+        ├── EventHandler/           # Async handlers reacting to domain events (e.g. SendWelcomeEmailOnUserCreated)
+        ├── Email/                  # Per-BC template constants (e.g. UserEmailTemplate)
+        ├── Scheduler/              # Per-BC Scheduler handlers (e.g. CleanupExpiredRefreshTokensHandler)
+        └── Http/
+            ├── Controller/
+            └── Request/
+```
+
+Twig email templates live outside `src/`:
+
+```
+templates/email/
+├── layout.html.twig                # Shared HTML layout extended by every transactional email
+└── <context>/
+    └── <template>.{subject,txt,html}.twig
 ```
 
 ### Key design decisions
@@ -90,6 +105,20 @@ src/
 **Uniform API response format** — all responses go through `ApiResponse` which wraps data under a `data` key, errors under an `error` key, and paginated results include a `meta` block. Property names are serialized to `snake_case` automatically via Symfony's `CamelCaseToSnakeCaseNameConverter`.
 
 **Soft delete** — entities are never physically removed. A `status` field tracks their lifecycle (`active`, `inactive`, `deleted`). Repositories automatically exclude deleted records from queries.
+
+**Transactional email** — bounded contexts depend only on the domain port `EmailSenderInterface` (in `Shared/Domain/Email/`). The infrastructure implementation `SymfonyMailerEmailSender` wraps Symfony Mailer and uses the `MAILER_DSN` / `MAILER_FROM` environment variables. Twig templates follow a 3-file convention per template name — `<name>.subject.twig`, `<name>.txt.twig`, `<name>.html.twig` — rendered by `TwigEmailTemplateRenderer` and returned as an immutable `RenderedEmailContent`. Each bounded context references templates through a named-constant class (e.g. `UserEmailTemplate::WELCOME`) rather than raw strings.
+
+**Channel-agnostic notifications** — `NotificationSenderInterface` (in `Shared/Domain/Notification/`) lets the domain dispatch a `Notification` without knowing its delivery channel. `ChannelNotificationSender` resolves the right `NotificationChannelHandler` from the `NotificationChannel` enum (`email`, `in_app`). For the `email` channel, the handler delegates to `EmailSenderInterface` so the mailer stays a single integration point. This is the path used by `SendWelcomeEmailOnUserCreated` and `SendAccountDeletionEmailOnUserDeleted`, both registered as async `event.bus` handlers in `User/Infrastructure/EventHandler/`.
+
+**Scheduled recurring tasks** — `DefaultSchedule` (in `Shared/Infrastructure/Scheduler/`) is the single `#[AsSchedule('default')]` provider for the application. It is stateful (`stateful(cache)` + `processOnlyLastMissedRun(true)`), so missed ticks during a worker restart are recovered without flooding. The schedule currently registers three tasks:
+
+| Cadence | Task | Handler |
+|---|---|---|
+| every 10 seconds | `RelayOutboxMessages` — publishes pending `outbox_messages` rows to RabbitMQ via the existing `OutboxRelay` | `Shared/Infrastructure/Scheduler/Handler/RelayOutboxMessagesHandler` |
+| daily at 02:00 UTC | `CleanupExpiredRefreshTokens` — deletes expired refresh tokens via `RefreshTokenRepositoryInterface::deleteExpired()` | `User/Infrastructure/Scheduler/CleanupExpiredRefreshTokensHandler` |
+| daily at 03:00 UTC | `CleanupStaleOutboxMessages` — purges published outbox rows older than `OUTBOX_RETENTION_DAYS` (default 30) via `OutboxMessagesCleaner` | `Shared/Infrastructure/Scheduler/Handler/CleanupStaleOutboxMessagesHandler` |
+
+Handlers are registered on `command.bus` only (no auto-broadcast to other buses). Failures are logged via `LoggerInterface` and swallowed so a single bad tick never crashes the scheduler worker. The manual `make outbox-relay` and `app:outbox:relay` console command remain available for on-demand triggering.
 
 **OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers. Paths in attributes are relative to the API base (`/users`, `/auth/login`, …); the `/api/v1` prefix is configured once in `config/packages/nelmio_api_doc.yaml` (`servers`) and in `config/routes.yaml`. Swagger UI is served at `/api/doc` and the JSON spec at `/api/doc.json`. The health check (`GET /health`) is documented under the **Infrastructure** tag with the root server.
 
@@ -171,6 +200,13 @@ RABBITMQ_PASSWORD=your_password
 
 # Grafana
 GRAFANA_ADMIN_PASSWORD=your_password
+
+# Mailer (Mailpit by default in dev — override per environment)
+MAILER_DSN=smtp://mailpit:1025
+MAILER_FROM=noreply@example.com
+
+# Outbox cleanup retention (days). Values <1 fall back to 30 with a warning log.
+OUTBOX_RETENTION_DAYS=30
 ```
 
 See `.env` for the full list of available variables.
@@ -214,18 +250,21 @@ make mail         # open Mailpit UI in the browser
 
 See [docs/testing-emails.md](docs/testing-emails.md) for the full flow (API → outbox → RabbitMQ → Twig templates → Mailpit).
 
-### RabbitMQ
+### Messenger workers
 
 ```bash
-make consume          # start the event consumer
+make consume          # start the event consumer (drains RabbitMQ events.* queues)
 make consume-dl       # start the dead letter consumer
-make outbox-relay     # publish persisted outbox events to the event bus
+make scheduler        # start the Scheduler worker — drives outbox relay + daily cleanups
+make outbox-relay     # one-shot: publish persisted outbox events to the event bus
 make messenger-stop   # gracefully stop all workers
 make messenger-stats  # display transport stats
 make messenger-failed-show   # list failed messages
 make messenger-failed-retry  # retry all failed messages
 make messenger-failed-remove # remove all failed messages
 ```
+
+In production, `make consume` and `make scheduler` should be supervised as long-running processes (systemd, supervisord, etc.) — `make outbox-relay` is then only kept as an operator escape hatch for manual triggering. The `--time-limit=3600` in both targets is the standard Symfony pattern for safe restarts.
 
 ### Generating a new Bounded Context
 
@@ -472,16 +511,21 @@ CommandHandler
   → repository->save(aggregate)
   → eventBus->publish(...aggregate->pullDomainEvents())
       → transactional outbox table (same DB transaction)
-          → outbox relay command
+          → Scheduler tick (every 10s) → RelayOutboxMessagesHandler → OutboxRelay::relay()
+            (manual fallback: `make outbox-relay` / `app:outbox:relay`)
               → RabbitMQ exchange "events" (topic)
                   → queue "events.<context>" (binding: <context>.#)
-                      → MessageHandler
+                      → MessageHandler (incl. async EventHandler/ side-effects: emails, etc.)
 
 On failure after 3 retries:
   → failure_transport "async.dead_letter"
       → exchange "dead_letter"
           → queue "dead_letter"
               → DeadLetterMessageHandler
+
+Periodic maintenance (same Scheduler worker):
+  → daily 02:00 UTC → CleanupExpiredRefreshTokens → RefreshTokenRepositoryInterface::deleteExpired()
+  → daily 03:00 UTC → CleanupStaleOutboxMessages   → OutboxMessagesCleaner::purge(OUTBOX_RETENTION_DAYS)
 ```
 
 ## Testing
