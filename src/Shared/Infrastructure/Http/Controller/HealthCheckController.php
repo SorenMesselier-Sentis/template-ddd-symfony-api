@@ -33,13 +33,35 @@ use Symfony\Component\Routing\Attribute\Route;
                     ],
                     type: 'object',
                 ),
+                new OA\Property(
+                    property: 'checks_details',
+                    properties: [
+                        new OA\Property(
+                            property: 'api',
+                            properties: [
+                                new OA\Property(property: 'status', type: 'string', example: 'ok'),
+                                new OA\Property(property: 'duration_ms', type: 'integer', example: 1),
+                            ],
+                            type: 'object',
+                        ),
+                        new OA\Property(
+                            property: 'database',
+                            properties: [
+                                new OA\Property(property: 'status', type: 'string', example: 'ok'),
+                                new OA\Property(property: 'duration_ms', type: 'integer', example: 4),
+                            ],
+                            type: 'object',
+                        ),
+                    ],
+                    type: 'object',
+                ),
             ], type: 'object'),
         ]
     )
 )]
 #[OA\Response(
     response: 503,
-    description: 'Database unreachable',
+    description: 'At least one dependency is unreachable',
     content: new OA\JsonContent(
         properties: [
             new OA\Property(property: 'data', properties: [
@@ -49,6 +71,20 @@ use Symfony\Component\Routing\Attribute\Route;
                     properties: [
                         new OA\Property(property: 'api', type: 'string', example: 'ok'),
                         new OA\Property(property: 'database', type: 'string', example: 'error'),
+                    ],
+                    type: 'object',
+                ),
+                new OA\Property(
+                    property: 'checks_details',
+                    properties: [
+                        new OA\Property(
+                            property: 'database',
+                            properties: [
+                                new OA\Property(property: 'status', type: 'string', example: 'error'),
+                                new OA\Property(property: 'duration_ms', type: 'integer', example: 5),
+                            ],
+                            type: 'object',
+                        ),
                     ],
                     type: 'object',
                 ),
@@ -72,8 +108,9 @@ final class HealthCheckController
 
         return $this->apiResponse->success(
             data: [
-                'status' => $result->status,
+                'status' => $result->status->state()->value,
                 'checks' => $result->checks,
+                'checks_details' => $result->checksDetails,
             ],
             status: $result->httpStatusCode(),
         );

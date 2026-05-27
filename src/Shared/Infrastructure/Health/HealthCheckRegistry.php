@@ -45,22 +45,32 @@ final class HealthCheckRegistry
     public function run(): HealthCheckResult
     {
         $results = [];
+        $checksDetails = [];
 
         foreach ($this->checks as $check) {
+            $startedAt = microtime(true);
+
             try {
                 $status = $check->check();
             } catch (\Throwable $e) {
                 $status = HealthCheckStatus::error($e->getMessage());
             }
 
-            $results[$check->name()] = $status->state()->value;
+            $checkName = $check->name();
+            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
-            if ($status->detail()) {
-                $results[$check->name()] .= ': ' . $status->detail();
+            $results[$checkName] = $status->state()->value;
+            $checksDetails[$checkName] = [
+                'status' => $status->state()->value,
+                'duration_ms' => $durationMs,
+            ];
+
+            if ($status->detail() !== null) {
+                $checksDetails[$checkName]['detail'] = $status->detail();
             }
         }
 
-        return HealthCheckResult::fromChecks($results);
+        return HealthCheckResult::fromChecks($results, $checksDetails);
     }
 
     private function debugLog(string $hypothesisId, string $location, string $message, array $data = []): void

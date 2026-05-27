@@ -4,68 +4,98 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Shared\Infrastructure\Health;
 
-use App\Shared\Infrastructure\Health\HealthChecker;
+use App\Shared\Domain\Health\HealthCheckInterface;
+use App\Shared\Domain\Health\HealthCheckStatus;
+use App\Shared\Infrastructure\Health\HealthCheckRegistry;
 use App\Tests\Unit\UnitTestCase;
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Result;
-use PHPUnit\Framework\MockObject\MockObject;
 
 final class HealthCheckerTest extends UnitTestCase
 {
-    /** @var Connection&MockObject */
-    private Connection $connection;
-
-    private HealthChecker $healthChecker;
-
-    protected function setUp(): void
+    public function testItBuildsLegacyAndDetailedChecks(): void
     {
-        $this->connection = $this->createMock(Connection::class);
-        $this->healthChecker = new HealthChecker($this->connection);
-    }
+        $checks = [
+            $this->healthCheck('api', fn (): HealthCheckStatus => HealthCheckStatus::ok()),
+            $this->healthCheck('database', fn (): HealthCheckStatus => HealthCheckStatus::ok()),
+        ];
 
-    public function testItReturnsOkWhenDatabaseIsReachable(): void
-    {
-        $platform = $this->createStub(AbstractPlatform::class);
-        $platform->method('getDummySelectSQL')->willReturn('SELECT 1');
-
-        $this->connection
-            ->method('getDatabasePlatform')
-            ->willReturn($platform);
-
-        $this->connection
-            ->expects($this->once())
-            ->method('executeQuery')
-            ->with('SELECT 1')
-            ->willReturn($this->createStub(Result::class));
-
-        $result = $this->healthChecker->check();
+        $result = (new HealthCheckRegistry($checks))->run();
 
         $this->assertTrue($result->isHealthy());
         $this->assertSame(200, $result->httpStatusCode());
-        $this->assertSame('ok', $result->status);
+        $this->assertSame('ok', $result->status->state()->value);
         $this->assertSame(['api' => 'ok', 'database' => 'ok'], $result->checks);
+        $this->assertSame('ok', $result->checksDetails['database']['status']);
+        $this->assertIsInt($result->checksDetails['database']['duration_ms']);
     }
 
-    public function testItReturnsErrorWhenDatabaseIsUnreachable(): void
+    public function testItReturnsErrorAnd503WhenOneCheckFails(): void
     {
-        $platform = $this->createStub(AbstractPlatform::class);
-        $platform->method('getDummySelectSQL')->willReturn('SELECT 1');
+        $checks = [
+            $this->healthCheck('api', fn (): HealthCheckStatus => HealthCheckStatus::ok()),
+            $this->healthCheck('database', fn (): HealthCheckStatus => HealthCheckStatus::error('Connection refused')),
+        ];
 
-        $this->connection
-            ->method('getDatabasePlatform')
-            ->willReturn($platform);
-
-        $this->connection
-            ->expects($this->once())
-            ->method('executeQuery')
-            ->willThrowException(new \RuntimeException('Connection refused'));
-
-        $result = $this->healthChecker->check();
+        $result = (new HealthCheckRegistry($checks))->run();
 
         $this->assertFalse($result->isHealthy());
         $this->assertSame(503, $result->httpStatusCode());
-        $this->assertSame('error', $result->status);
+        $this->assertSame('error', $result->status->state()->value);
         $this->assertSame('error', $result->checks['database']);
+        $this->assertSame('Connection refused', $result->checksDetails['database']['detail']);
+    }
+
+    public function testItKeepsSequentialExecutionOrder(): void
+    {
+        $executedChecks = [];
+        $checks = [
+            $this->healthCheck('first', function () use (&$executedChecks): HealthCheckStatus {
+                $executedChecks[] = 'first';
+                return HealthCheckStatus::ok();
+            }),
+            $this->healthCheck('second', function () use (&$executedChecks): HealthCheckStatus {
+                $executedChecks[] = 'second';
+                return HealthCheckStatus::ok();
+            }),
+        ];
+
+        (new HealthCheckRegistry($checks))->run();
+
+        $this->assertSame(['first', 'second'], $executedChecks);
+    }
+
+    public function testItHandlesThrownExceptionsAsErrorStatus(): void
+    {
+        $checks = [
+            $this->healthCheck('database', static function (): HealthCheckStatus {
+                throw new \RuntimeException('DB down');
+            }),
+        ];
+
+        $result = (new HealthCheckRegistry($checks))->run();
+
+        $this->assertSame('error', $result->checks['database']);
+        $this->assertSame('DB down', $result->checksDetails['database']['detail']);
+    }
+
+    /** @param callable():HealthCheckStatus $callback */
+    private function healthCheck(string $name, callable $callback): HealthCheckInterface
+    {
+        return new class($name, $callback) implements HealthCheckInterface {
+            public function __construct(
+                private readonly string $name,
+                private readonly mixed $callback,
+            ) {
+            }
+
+            public function name(): string
+            {
+                return $this->name;
+            }
+
+            public function check(): HealthCheckStatus
+            {
+                return ($this->callback)();
+            }
+        };
     }
 }

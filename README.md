@@ -366,9 +366,10 @@ Base path: `/api/v1`.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/health` | None | Liveness/readiness probe for pipelines and orchestrators |
+| `GET` | `/health` | None | Readiness probe with dependency checks |
+| `GET` | `/health/live` | None | Liveness probe (process answers HTTP requests) |
 
-Returns `200` when the API and database are reachable, `503` when the database check fails:
+`/health` returns `200` when all checks are healthy and `503` when at least one check fails:
 
 ```json
 {
@@ -377,15 +378,36 @@ Returns `200` when the API and database are reachable, `503` when the database c
     "checks": {
       "api": "ok",
       "database": "ok"
+    },
+    "checks_details": {
+      "api": {
+        "status": "ok",
+        "duration_ms": 1
+      },
+      "database": {
+        "status": "ok",
+        "duration_ms": 4
+      }
     }
   }
 }
 ```
 
-Example for a deploy smoke test or GitHub Actions:
+`/health/live` always returns:
+
+```json
+{
+  "data": {
+    "status": "ok"
+  }
+}
+```
+
+Example for deploy smoke tests or GitHub Actions:
 
 ```bash
 curl -sf http://localhost:8080/health
+curl -sf http://localhost:8080/health/live
 ```
 
 `-f` makes curl exit non-zero on HTTP 503, which fails the job if the stack is not ready.

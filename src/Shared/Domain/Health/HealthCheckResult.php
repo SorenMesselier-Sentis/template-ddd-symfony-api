@@ -9,16 +9,18 @@ final class HealthCheckResult
     public function __construct(
         public readonly HealthCheckStatus $status,
         public readonly array $checks,
+        public readonly array $checksDetails = [],
     ) {
     }
 
-    public static function fromChecks(array $checks): self
+    public static function fromChecks(array $checks, array $checksDetails = []): self
     {
         $hasError = in_array('error', $checks, true);
 
         return new self(
             status: $hasError ? HealthCheckStatus::error('error') : HealthCheckStatus::ok('ok'),
             checks: $checks,
+            checksDetails: $checksDetails,
         );
     }
 
@@ -29,6 +31,6 @@ final class HealthCheckResult
 
     public function httpStatusCode(): int
     {
-        return $this->isHealthy() ? 200 : 500;
+        return $this->isHealthy() ? 200 : 503;
     }
 }
