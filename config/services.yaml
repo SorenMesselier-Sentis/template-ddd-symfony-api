@@ -1,3 +1,9 @@
+parameters:
+    metrics_storage_default: apcu
+    metrics_redis_host_default: 127.0.0.1
+    metrics_redis_port_default: 6379
+    metrics_redis_password_default: ''
+
 services:
     _defaults:
         autowire: true
@@ -97,6 +103,20 @@ services:
 
     App\Shared\Domain\Logging\LoggerInterface:
         alias: App\Shared\Infrastructure\Logging\MonologLogger
+
+    # Metrics
+    App\Shared\Infrastructure\Monitoring\Metrics\PrometheusCollectorRegistryFactory:
+        arguments:
+            $metricsStorage: "%env(default:metrics_storage_default:METRICS_STORAGE)%"
+            $redisHost: "%env(default:metrics_redis_host_default:METRICS_REDIS_HOST)%"
+            $redisPort: "%env(int:default:metrics_redis_port_default:METRICS_REDIS_PORT)%"
+            $redisPassword: "%env(default:metrics_redis_password_default:METRICS_REDIS_PASSWORD)%"
+
+    Prometheus\CollectorRegistry:
+        factory: ['@App\Shared\Infrastructure\Monitoring\Metrics\PrometheusCollectorRegistryFactory', 'create']
+
+    App\Shared\Domain\Monitoring\MetricsCollectorInterface:
+        alias: App\Shared\Infrastructure\Monitoring\Metrics\PrometheusMetricsCollector
 
     # Listeners
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:

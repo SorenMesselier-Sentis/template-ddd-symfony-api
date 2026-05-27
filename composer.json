@@ -16,6 +16,7 @@
         "lexik/jwt-authentication-bundle": "^3.2",
         "monolog/monolog": "^3.10",
         "nelmio/api-doc-bundle": "^5.10.2",
+        "promphp/prometheus_client_php": "^2.13",
         "symfony/amqp-messenger": "8.0.6",
         "symfony/asset": "8.0.*",
         "symfony/console": "8.0.*",
