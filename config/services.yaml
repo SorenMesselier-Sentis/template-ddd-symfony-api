@@ -3,6 +3,9 @@ services:
         autowire: true
         autoconfigure: true
         public: false
+    _instanceof:
+        App\Shared\Domain\Health\HealthCheckInterface:
+            tags: ['app.health_check']
 
     # Autowire src/ folder
     App\:
@@ -67,6 +70,10 @@ services:
         arguments:
             $connection: "@doctrine.dbal.default_connection"
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
+
+    App\Shared\Infrastructure\Health\HealthCheckRegistry:
+        arguments:
+            $checks: !tagged_iterator app.health_check
 
     # Scheduler
     App\Shared\Infrastructure\Scheduler\Handler\CleanupStaleOutboxMessagesHandler:
