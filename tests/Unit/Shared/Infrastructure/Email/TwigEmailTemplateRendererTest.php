@@ -13,7 +13,7 @@ use Twig\Loader\ArrayLoader;
 final class TwigEmailTemplateRendererTest extends TestCase
 {
     #[Test]
-    public function it_renders_subject_text_and_html_templates(): void
+    public function itRendersSubjectTextAndHtmlTemplates(): void
     {
         $renderer = new TwigEmailTemplateRenderer(new Environment(new ArrayLoader([
             'email/user/welcome.subject.twig' => 'Welcome {{ firstName }}!',

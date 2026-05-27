@@ -26,7 +26,7 @@ final class OutboxMessagesCleaner
      * {@see self::DEFAULT_RETENTION_DAYS} and logs a warning, so a misconfiguration
      * is surfaced operationally without crashing the worker.
      *
-     * @return int Number of rows deleted.
+     * @return int number of rows deleted
      */
     public function purge(int $retentionDays, \DateTimeImmutable $now): int
     {

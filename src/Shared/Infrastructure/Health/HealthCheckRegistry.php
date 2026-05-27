@@ -10,34 +10,12 @@ use App\Shared\Domain\Health\HealthCheckStatus;
 
 final class HealthCheckRegistry
 {
-    private const DEBUG_LOG_PATH = '/Users/taranis/Developer/Project/Templates/template-ddd-symfony/.cursor/debug-170cf4.log';
-    private const DEBUG_SESSION_ID = '170cf4';
-    private const DEBUG_RUN_ID = 'initial';
-
-
     /** @var HealthCheckInterface[] */
     private array $checks = [];
 
     public function __construct(iterable $checks)
     {
-        // #region agent log
-        $this->debugLog(
-            hypothesisId: 'H1',
-            location: 'HealthCheckRegistry.php:24',
-            message: 'Registry constructor started',
-            data: ['checksType' => get_debug_type($checks)],
-        );
-        // #endregion
-
-        foreach($checks as $check) {
-            // #region agent log
-            $this->debugLog(
-                hypothesisId: 'H2',
-                location: 'HealthCheckRegistry.php:34',
-                message: 'Resolved tagged health check',
-                data: ['resolvedType' => get_debug_type($check)],
-            );
-            // #endregion
+        foreach ($checks as $check) {
             $this->checks[] = $check;
         }
     }
@@ -53,7 +31,7 @@ final class HealthCheckRegistry
             try {
                 $status = $check->check();
             } catch (\Throwable $e) {
-                $status = HealthCheckStatus::error($e->getMessage());
+                $status = HealthCheckStatus::error($this->truncateDetail($e->getMessage()));
             }
 
             $checkName = $check->name();
@@ -65,28 +43,16 @@ final class HealthCheckRegistry
                 'duration_ms' => $durationMs,
             ];
 
-            if ($status->detail() !== null) {
-                $checksDetails[$checkName]['detail'] = $status->detail();
+            if (null !== $status->detail()) {
+                $checksDetails[$checkName]['detail'] = $this->truncateDetail($status->detail());
             }
         }
 
         return HealthCheckResult::fromChecks($results, $checksDetails);
     }
 
-    private function debugLog(string $hypothesisId, string $location, string $message, array $data = []): void
+    private function truncateDetail(string $detail): string
     {
-        @file_put_contents(
-            self::DEBUG_LOG_PATH,
-            (string) json_encode([
-                'sessionId' => self::DEBUG_SESSION_ID,
-                'runId' => self::DEBUG_RUN_ID,
-                'hypothesisId' => $hypothesisId,
-                'location' => $location,
-                'message' => $message,
-                'data' => $data,
-                'timestamp' => (int) (microtime(true) * 1000),
-            ]) . PHP_EOL,
-            FILE_APPEND,
-        );
+        return mb_substr($detail, 0, 200);
     }
 }

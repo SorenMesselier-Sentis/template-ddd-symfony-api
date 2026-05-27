@@ -24,12 +24,12 @@ final class HealthCheckStatus
 
     public function isOk(): bool
     {
-        return $this->state === HealthCheckState::OK;
+        return HealthCheckState::OK === $this->state;
     }
 
     public function isError(): bool
     {
-        return $this->state === HealthCheckState::ERROR;
+        return HealthCheckState::ERROR === $this->state;
     }
 
     public function state(): HealthCheckState

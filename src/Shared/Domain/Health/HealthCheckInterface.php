@@ -7,5 +7,6 @@ namespace App\Shared\Domain\Health;
 interface HealthCheckInterface
 {
     public function name(): string;
+
     public function check(): HealthCheckStatus;
 }

@@ -50,10 +50,12 @@ final class HealthCheckerTest extends UnitTestCase
         $checks = [
             $this->healthCheck('first', function () use (&$executedChecks): HealthCheckStatus {
                 $executedChecks[] = 'first';
+
                 return HealthCheckStatus::ok();
             }),
             $this->healthCheck('second', function () use (&$executedChecks): HealthCheckStatus {
                 $executedChecks[] = 'second';
+
                 return HealthCheckStatus::ok();
             }),
         ];
@@ -75,6 +77,18 @@ final class HealthCheckerTest extends UnitTestCase
 
         $this->assertSame('error', $result->checks['database']);
         $this->assertSame('DB down', $result->checksDetails['database']['detail']);
+    }
+
+    public function testItTruncatesErrorDetailTo200Characters(): void
+    {
+        $longMessage = str_repeat('x', 250);
+        $checks = [
+            $this->healthCheck('rabbitmq', static fn (): HealthCheckStatus => HealthCheckStatus::error($longMessage)),
+        ];
+
+        $result = (new HealthCheckRegistry($checks))->run();
+
+        $this->assertSame(200, mb_strlen($result->checksDetails['rabbitmq']['detail']));
     }
 
     /** @param callable():HealthCheckStatus $callback */

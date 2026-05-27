@@ -14,13 +14,13 @@ use Symfony\Component\Routing\Attribute\Route;
 #[OA\Get(
     path: '/health',
     summary: 'Health check',
-    description: 'Liveness/readiness probe for CI/CD and orchestrators. Returns 200 when the API and database are up, 503 when the database check fails. No authentication required.',
+    description: 'Readiness probe for CI/CD and orchestrators. Returns 200 when all registered dependency checks are healthy, 503 when one fails. No authentication required.',
     tags: ['Infrastructure'],
     servers: [new OA\Server(url: 'http://localhost:8080')],
 )]
 #[OA\Response(
     response: 200,
-    description: 'API and database are healthy',
+    description: 'API dependencies are healthy',
     content: new OA\JsonContent(
         properties: [
             new OA\Property(property: 'data', properties: [
@@ -30,6 +30,7 @@ use Symfony\Component\Routing\Attribute\Route;
                     properties: [
                         new OA\Property(property: 'api', type: 'string', example: 'ok'),
                         new OA\Property(property: 'database', type: 'string', example: 'ok'),
+                        new OA\Property(property: 'rabbitmq', type: 'string', example: 'ok'),
                     ],
                     type: 'object',
                 ),
@@ -52,6 +53,14 @@ use Symfony\Component\Routing\Attribute\Route;
                             ],
                             type: 'object',
                         ),
+                        new OA\Property(
+                            property: 'rabbitmq',
+                            properties: [
+                                new OA\Property(property: 'status', type: 'string', example: 'ok'),
+                                new OA\Property(property: 'duration_ms', type: 'integer', example: 3),
+                            ],
+                            type: 'object',
+                        ),
                     ],
                     type: 'object',
                 ),
@@ -70,7 +79,8 @@ use Symfony\Component\Routing\Attribute\Route;
                     property: 'checks',
                     properties: [
                         new OA\Property(property: 'api', type: 'string', example: 'ok'),
-                        new OA\Property(property: 'database', type: 'string', example: 'error'),
+                        new OA\Property(property: 'database', type: 'string', example: 'ok'),
+                        new OA\Property(property: 'rabbitmq', type: 'string', example: 'error'),
                     ],
                     type: 'object',
                 ),
@@ -78,10 +88,11 @@ use Symfony\Component\Routing\Attribute\Route;
                     property: 'checks_details',
                     properties: [
                         new OA\Property(
-                            property: 'database',
+                            property: 'rabbitmq',
                             properties: [
                                 new OA\Property(property: 'status', type: 'string', example: 'error'),
                                 new OA\Property(property: 'duration_ms', type: 'integer', example: 5),
+                                new OA\Property(property: 'detail', type: 'string', example: 'Connection refused'),
                             ],
                             type: 'object',
                         ),
@@ -94,7 +105,6 @@ use Symfony\Component\Routing\Attribute\Route;
 )]
 final class HealthCheckController
 {
-
     public function __construct(
         private readonly HealthCheckRegistry $registry,
         private readonly ApiResponse $apiResponse,
@@ -103,7 +113,6 @@ final class HealthCheckController
 
     public function __invoke(): JsonResponse
     {
-
         $result = $this->registry->run();
 
         return $this->apiResponse->success(

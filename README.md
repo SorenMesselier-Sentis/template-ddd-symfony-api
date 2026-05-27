@@ -412,6 +412,8 @@ curl -sf http://localhost:8080/health/live
 
 `-f` makes curl exit non-zero on HTTP 503, which fails the job if the stack is not ready.
 
+See [`docs/monitoring.md`](docs/monitoring.md) for readiness scope details and why SMTP checks are intentionally excluded.
+
 ### Endpoints
 
 | Method | Path | Description |

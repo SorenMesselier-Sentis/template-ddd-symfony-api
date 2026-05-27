@@ -17,7 +17,7 @@ interface RefreshTokenRepositoryInterface
     /**
      * Removes every refresh token whose `expiresAt` is strictly earlier than `$now`.
      *
-     * @return int Number of rows deleted.
+     * @return int number of rows deleted
      */
     public function deleteExpired(\DateTimeImmutable $now): int;
 }

@@ -5,6 +5,7 @@
     "prefer-stable": true,
     "require": {
         "php": ">=8.4",
+        "ext-amqp": "*",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "doctrine/dbal": "^4.4.3",

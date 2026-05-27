@@ -12,7 +12,8 @@ final class DatabaseHealthCheck implements HealthCheckInterface
 {
     public function __construct(
         private readonly Connection $connection,
-    ) {}
+    ) {
+    }
 
     public function name(): string
     {
