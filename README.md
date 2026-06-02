@@ -355,6 +355,19 @@ php bin/console nelmio:apidoc:dump --format=yaml
 
 To document new HTTP endpoints, add `OpenApi\Attributes` on the controller with the **same path as `#[Route]`** (without the `/api/v1` prefix). See `src/User/Infrastructure/Http/Controller/` and `src/Shared/Infrastructure/Http/Controller/HealthCheckController.php` for examples.
 
+### Insomnia collection (without OpenAPI coupling)
+
+If you want a fully editable HTTP client collection (custom env vars, token placeholders, free-form requests), import:
+
+- `docs/insomnia-collection.yaml`
+
+This file is an Insomnia native export (not OpenAPI-based) and includes:
+
+- base env vars (`base_url`, `access_token`, `refresh_token`, `user_id`)
+- auth requests (`login`, `refresh`, `logout`)
+- users CRUD requests
+- infrastructure requests (`/health`, `/health/live`, `/metrics`)
+
 ## REST API
 
 Base path: `/api/v1`.

@@ -1,0 +1,242 @@
+_type: export
+__export_format: 4
+__export_date: "2026-06-02T11:50:00.000Z"
+__export_source: "template-ddd-symfony"
+resources:
+  - _id: wrk_template_ddd_v2
+    _type: workspace
+    name: template-ddd-symfony API (v2)
+    description: >
+      Insomnia collection with folder-level Bearer auth and environment variables.
+    scope: collection
+
+  - _id: env_template_ddd_v2_base
+    _type: environment
+    parentId: wrk_template_ddd_v2
+    name: Base Environment
+    data:
+      base_url: http://localhost:8080
+      access_token: ""
+      refresh_token: ""
+      user_id: ""
+      email: john.doe@example.com
+      password: secret1234
+    color: null
+    isPrivate: false
+    metaSortKey: 100
+
+  - _id: fld_v2_auth
+    _type: request_group
+    parentId: wrk_template_ddd_v2
+    name: Auth
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 200
+    authentication: {}
+
+  - _id: fld_v2_users
+    _type: request_group
+    parentId: wrk_template_ddd_v2
+    name: Users
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 300
+    authentication:
+      type: bearer
+      token: "{{ _.access_token }}"
+
+  - _id: fld_v2_infra
+    _type: request_group
+    parentId: wrk_template_ddd_v2
+    name: Infrastructure
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 400
+    authentication: {}
+
+  - _id: req_v2_auth_login
+    _type: request
+    parentId: fld_v2_auth
+    name: Login
+    method: POST
+    url: "{{ _.base_url }}/api/v1/auth/login"
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "email": "{{ _.email }}",
+          "password": "{{ _.password }}"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 210
+
+  - _id: req_v2_auth_refresh
+    _type: request
+    parentId: fld_v2_auth
+    name: Refresh Token
+    method: POST
+    url: "{{ _.base_url }}/api/v1/auth/refresh"
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "refresh_token": "{{ _.refresh_token }}"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 220
+
+  - _id: req_v2_auth_logout
+    _type: request
+    parentId: fld_v2_auth
+    name: Logout
+    method: POST
+    url: "{{ _.base_url }}/api/v1/auth/logout"
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "refresh_token": "{{ _.refresh_token }}"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Accept
+        value: application/json
+    authentication:
+      type: bearer
+      token: "{{ _.access_token }}"
+    metaSortKey: 230
+
+  - _id: req_v2_users_create
+    _type: request
+    parentId: fld_v2_users
+    name: Create User
+    method: POST
+    url: "{{ _.base_url }}/api/v1/users"
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "firstName": "John",
+          "lastName": "Doe",
+          "email": "john.doe@example.com",
+          "password": "secret1234"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 310
+
+  - _id: req_v2_users_list
+    _type: request
+    parentId: fld_v2_users
+    name: List Users
+    method: GET
+    url: "{{ _.base_url }}/api/v1/users?page=1&per_page=20"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 320
+
+  - _id: req_v2_users_get
+    _type: request
+    parentId: fld_v2_users
+    name: Get User
+    method: GET
+    url: "{{ _.base_url }}/api/v1/users/{{ _.user_id }}"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 330
+
+  - _id: req_v2_users_patch
+    _type: request
+    parentId: fld_v2_users
+    name: Patch User
+    method: PATCH
+    url: "{{ _.base_url }}/api/v1/users/{{ _.user_id }}"
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "firstName": "Jane"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 340
+
+  - _id: req_v2_users_delete
+    _type: request
+    parentId: fld_v2_users
+    name: Delete User
+    method: DELETE
+    url: "{{ _.base_url }}/api/v1/users/{{ _.user_id }}"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 350
+
+  - _id: req_v2_health
+    _type: request
+    parentId: fld_v2_infra
+    name: Health
+    method: GET
+    url: "{{ _.base_url }}/health"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 410
+
+  - _id: req_v2_health_live
+    _type: request
+    parentId: fld_v2_infra
+    name: Health Live
+    method: GET
+    url: "{{ _.base_url }}/health/live"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 420
+
+  - _id: req_v2_metrics
+    _type: request
+    parentId: fld_v2_infra
+    name: Metrics
+    method: GET
+    url: "{{ _.base_url }}/metrics"
+    body: {}
+    headers:
+      - name: Accept
+        value: text/plain
+    authentication: {}
+    metaSortKey: 430
