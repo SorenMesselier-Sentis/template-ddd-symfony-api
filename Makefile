@@ -151,3 +151,13 @@ metrics:
 
 grafana:
 	open http://localhost:3000
+
+openapi-export-json:
+	mkdir -p var/openapi
+	$(CONSOLE) nelmio:apidoc:dump --format=json > var/openapi/openapi.json
+	@echo "OpenAPI JSON exported to var/openapi/openapi.json"
+
+openapi-export-yaml:
+	mkdir -p var/openapi
+	$(CONSOLE) nelmio:apidoc:dump --format=yaml > var/openapi/openapi.yaml
+	@echo "OpenAPI YAML exported to var/openapi/openapi.yaml"
