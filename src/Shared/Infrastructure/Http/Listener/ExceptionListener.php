@@ -10,11 +10,9 @@ use App\Shared\Domain\Exception\ForbiddenException;
 use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
 use App\Shared\Domain\Exception\UnauthorizedException;
+use App\Shared\Domain\Exception\ValidationException;
 use App\Shared\Domain\Logging\LoggerInterface;
-use App\User\Domain\Exception\InsufficientPrivilegesException;
-use App\User\Domain\Exception\InvalidTokenException;
-use App\User\Domain\Exception\MissingTokenException;
-use App\User\Domain\Exception\TokenExpiredException;
+use App\Shared\Infrastructure\Http\ExceptionMapperInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\ExpiredTokenException;
 use Lexik\Bundle\JWTAuthenticationBundle\Exception\InvalidTokenException as LexikInvalidTokenException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,8 +25,12 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 final class ExceptionListener
 {
+    /**
+     * @param iterable<ExceptionMapperInterface> $mappers
+     */
     public function __construct(
         private readonly LoggerInterface $logger,
+        private readonly iterable $mappers,
     ) {
     }
 
@@ -44,13 +46,24 @@ final class ExceptionListener
 
         $this->log($exception, $statusCode);
 
-        $event->setResponse(new JsonResponse(
-            data: [
-                'error' => [
-                    'code' => $errorCode,
-                    'message' => $exception->getMessage(),
+        $errorPayload = [
+            'code' => $errorCode,
+            'message' => $exception->getMessage(),
+        ];
+
+        if ($exception instanceof ValidationException) {
+            $errorPayload['errors'] = array_map(
+                static fn ($error) => [
+                    'field' => $error->field,
+                    'code' => $error->code,
+                    'message' => $error->message,
                 ],
-            ],
+                $exception->errors(),
+            );
+        }
+
+        $event->setResponse(new JsonResponse(
+            data: ['error' => $errorPayload],
             status: $statusCode,
         ));
     }
@@ -60,11 +73,14 @@ final class ExceptionListener
      */
     public function resolveException(\Throwable $exception): array
     {
+        foreach ($this->mappers as $mapper) {
+            if ($mapper->supports($exception)) {
+                return $mapper->resolve($exception);
+            }
+        }
+
         return match (true) {
-            $exception instanceof TokenExpiredException => [401, $exception->errorCode()],
-            $exception instanceof InvalidTokenException => [401, $exception->errorCode()],
-            $exception instanceof MissingTokenException => [401, $exception->errorCode()],
-            $exception instanceof InsufficientPrivilegesException => [403, $exception->errorCode()],
+            $exception instanceof ValidationException => [422, 'validation_error'],
             $exception instanceof ForbiddenException => [403, $exception->errorCode()],
             $exception instanceof AccessDeniedException => [403, 'forbidden'],
             $exception instanceof ExpiredTokenException => [401, 'token_expired'],
@@ -73,7 +89,7 @@ final class ExceptionListener
             $exception instanceof AlreadyExistsException => [409, $exception->errorCode()],
             $exception instanceof InvalidArgumentException => [400, $exception->errorCode()],
             $exception instanceof UnauthorizedException => [401, $exception->errorCode()],
-            $exception instanceof DomainException => [422, $exception->errorCode()],
+            $exception instanceof DomainException => [422, 'domain_error'],
             $exception instanceof NotFoundHttpException => [404, 'route.not_found'],
             $exception instanceof MethodNotAllowedHttpException => [405, 'method.not_allowed'],
             $exception instanceof HttpExceptionInterface => [$exception->getStatusCode(), 'http_error'],

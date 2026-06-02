@@ -15,34 +15,39 @@ use Symfony\Component\Uid\Uuid;
 
 #[Route('/users', methods: ['POST'])]
 #[OA\Post(
-    path: '/users',
+    path: '/api/v1/users',
+    operationId: 'postUsers',
     summary: 'Create a user',
+    description: 'Creates a new user. Requires admin role (`ROLE_ADMIN`).',
     tags: ['Users'],
+    security: [['bearer' => []]],
 )]
 #[OA\RequestBody(
     required: true,
     content: new OA\JsonContent(
         required: ['firstName', 'lastName', 'email', 'password'],
         properties: [
-            new OA\Property(property: 'firstName', type: 'string', example: 'John'),
-            new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
-            new OA\Property(property: 'email', type: 'string', example: 'john.doe@example.com'),
-            new OA\Property(property: 'password', type: 'string', example: 'secret1234'),
-        ]
-    )
+            new OA\Property(property: 'firstName', type: 'string', example: 'Alice'),
+            new OA\Property(property: 'lastName', type: 'string', example: 'Wonder'),
+            new OA\Property(property: 'email', type: 'string', format: 'email', example: 'alice@example.com'),
+            new OA\Property(property: 'password', type: 'string', format: 'password', example: 'secret1234'),
+        ],
+    ),
 )]
 #[OA\Response(
     response: 201,
     description: 'User created',
     content: new OA\JsonContent(
         properties: [
-            new OA\Property(property: 'data', properties: [
-                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-            ], type: 'object'),
-        ]
-    )
+            new OA\Property(
+                property: 'data',
+                properties: [new OA\Property(property: 'id', type: 'string', format: 'uuid')],
+                type: 'object',
+            ),
+        ],
+    ),
 )]
-#[OA\Response(response: 400, description: 'Missing field')]
+#[OA\Response(response: 403, description: 'Insufficient privileges')]
 #[OA\Response(response: 409, description: 'User already exists')]
 final class CreateUserController
 {

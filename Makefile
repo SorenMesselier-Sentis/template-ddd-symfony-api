@@ -140,6 +140,13 @@ test-integration:
 	APP_ENV=test $(CONSOLE) doctrine:migrations:migrate --no-interaction
 	$(PHP) vendor/bin/phpunit --testsuite=Integration
 
+test-http:
+	APP_ENV=test $(CONSOLE) doctrine:database:create --if-not-exists
+	APP_ENV=test $(CONSOLE) doctrine:migrations:migrate --no-interaction
+	$(PHP) vendor/bin/phpunit --testsuite=Http
+
+ci: phpstan deptrac test-unit test-integration test-http ## Run all CI quality gates
+
 test-coverage:
 	$(PHP) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage
 

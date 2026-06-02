@@ -1,18 +1,37 @@
 nelmio_api_doc:
+    html_config:
+        assets_mode: bundle
+
     documentation:
         info:
             title: Symfony DDD API
-            description: REST API template built with Domain-Driven Design
+            description: |
+                REST API template built with Domain-Driven Design.
+
+                **Authentication:** call `POST /api/v1/auth/login` first, then use **Authorize** with `Bearer <access_token>`.
+                Default fixture user: `john.doe@example.com` / `secret1234` (admin).
             version: 1.0.0
         servers:
-            - url: http://localhost:8080
-              description: API v1
-            - url: http://localhost:8080
-              description: Infrastructure
+            - url: 'http://localhost:%env(int:NGINX_PORT)%'
+              description: 'Local'
+        tags:
+            - name: Authentication
+              description: Login, token refresh, and logout (JWT + refresh token rotation)
+            - name: Users
+              description: User management (admin required for create; Bearer token required)
+            - name: Infrastructure
+              description: Health checks and metrics
+        components:
+            securitySchemes:
+                bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+                    description: JWT access token from POST /api/v1/auth/login
     areas:
         default:
             path_patterns:
-                - ^/api/v1
+                - ^/api/v\d+
                 - ^/health$
                 - ^/health/live$
                 - ^/metrics$

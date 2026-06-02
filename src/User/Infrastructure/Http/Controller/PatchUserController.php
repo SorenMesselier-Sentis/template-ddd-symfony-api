@@ -14,20 +14,27 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users/{id}', methods: ['PATCH'])]
-#[OA\Patch(path: '/users/{id}', summary: 'Partially update a user', tags: ['Users'])]
+#[OA\Patch(
+    path: '/api/v1/users/{id}',
+    operationId: 'patchUser',
+    summary: 'Partially update a user',
+    description: 'Updates only the fields sent in the body. At least one field is required.',
+    tags: ['Users'],
+    security: [['bearer' => []]],
+)]
 #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
 #[OA\RequestBody(
+    required: true,
     content: new OA\JsonContent(
         properties: [
-            new OA\Property(property: 'firstName', type: 'string'),
-            new OA\Property(property: 'lastName', type: 'string'),
-            new OA\Property(property: 'email', type: 'string'),
-            new OA\Property(property: 'password', type: 'string'),
-        ]
-    )
+            new OA\Property(property: 'firstName', type: 'string', example: 'John'),
+            new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
+            new OA\Property(property: 'email', type: 'string', format: 'email', example: 'john.doe@example.com'),
+            new OA\Property(property: 'password', type: 'string', format: 'password', example: 'newsecret1234'),
+        ],
+    ),
 )]
-#[OA\Response(response: 204, description: 'User updated')]
-#[OA\Response(response: 400, description: 'Empty patch or missing field')]
+#[OA\Response(response: 204, description: 'User updated (empty body)')]
 #[OA\Response(response: 404, description: 'User not found')]
 final class PatchUserController
 {

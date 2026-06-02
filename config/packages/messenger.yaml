@@ -6,16 +6,19 @@ framework:
             command.bus:
                 middleware:
                     - App\Shared\Infrastructure\Monitoring\Metrics\BusMetricsMiddleware
-                    - App\User\Infrastructure\Messaging\AuthorizeMessageMiddleware
+                    - App\Shared\Infrastructure\Monitoring\Tracing\TracerMiddleware
+                    - App\Shared\Infrastructure\Messaging\AuthorizeMessageMiddleware
                     - doctrine_transaction
             query.bus:
                 middleware:
                     - App\Shared\Infrastructure\Monitoring\Metrics\BusMetricsMiddleware
-                    - App\User\Infrastructure\Messaging\AuthorizeMessageMiddleware
+                    - App\Shared\Infrastructure\Monitoring\Tracing\TracerMiddleware
+                    - App\Shared\Infrastructure\Messaging\AuthorizeMessageMiddleware
             event.bus:
                 default_middleware: allow_no_handlers
                 middleware:
                     - App\Shared\Infrastructure\Monitoring\Metrics\BusMetricsMiddleware
+                    - App\Shared\Infrastructure\Monitoring\Tracing\TracerMiddleware
 
         transports:
             sync: 'sync://'

@@ -4,6 +4,8 @@ parameters:
     metrics_redis_port_default: 6379
     metrics_redis_password_default: ''
     app_version_default: unknown
+    cors_allowed_origins_default: ''
+    otel_exporter_otlp_endpoint_default: ''
 
 services:
     _defaults:
@@ -91,6 +93,18 @@ services:
     App\Shared\Infrastructure\Logging\MonologLogger:
         arguments:
             $logger: "@logger"
+            $requestContext: '@App\Shared\Infrastructure\Http\RequestContext'
+
+    App\Shared\Infrastructure\Logging\RequestIdProcessor:
+        tags:
+            - { name: monolog.processor }
+
+    App\Shared\Infrastructure\Monitoring\Tracing\TracerInterface:
+        factory: ['@App\Shared\Infrastructure\Monitoring\Tracing\TracerFactory', 'create']
+
+    App\Shared\Infrastructure\Monitoring\Tracing\TracerFactory:
+        arguments:
+            $otlpEndpoint: '%env(default:otel_exporter_otlp_endpoint_default:OTEL_EXPORTER_OTLP_ENDPOINT)%'
 
     # Domain interfaces → alias to implementations
     App\Shared\Domain\Bus\Event\EventBusInterface:
@@ -125,9 +139,13 @@ services:
         alias: App\Shared\Infrastructure\Monitoring\Metrics\PrometheusMetricsCollector
 
     # Listeners
+    App\User\Infrastructure\Http\UserExceptionMapper:
+        tags: ['app.exception_mapper']
+
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:
         arguments:
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
+            $mappers: !tagged_iterator app.exception_mapper
         tags:
             - {
                   name: kernel.event_listener,
@@ -135,8 +153,31 @@ services:
                   priority: 100,
               }
 
+    App\Shared\Domain\Security\MessageAuthorizerInterface:
+        alias: App\User\Application\Security\UserAuthorizer
+
     App\Shared\Infrastructure\Http\Listener\ApiHeadersListener:
+        arguments:
+            $appEnv: '%kernel.environment%'
         tags:
+            - { name: kernel.event_listener, event: kernel.response }
+
+    App\Shared\Infrastructure\Http\Listener\RequestCorrelationListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 250 }
+            - { name: kernel.event_listener, event: kernel.response }
+
+    App\Shared\Infrastructure\Http\Listener\RequestLogListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 199 }
+            - { name: kernel.event_listener, event: kernel.terminate }
+
+    App\Shared\Infrastructure\Http\Listener\CorsListener:
+        arguments:
+            $allowedOriginsRaw: '%env(default:cors_allowed_origins_default:CORS_ALLOWED_ORIGINS)%'
+            $allowedMethods: 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 200 }
             - { name: kernel.event_listener, event: kernel.response }
 
     # Email
