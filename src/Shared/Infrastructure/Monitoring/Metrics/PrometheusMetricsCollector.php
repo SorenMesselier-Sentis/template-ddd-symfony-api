@@ -27,12 +27,12 @@ final class PrometheusMetricsCollector implements MetricsCollectorInterface
             ->incBy($value, $this->labelValues($labels));
     }
 
-    public function observeHistogram(string $name, float $value, array $labels = []): void
+    public function observeHistogram(string $name, float $value, array $labels = [], ?array $buckets = null): void
     {
         $labelNames = $this->labelNames($labels);
 
         $this->registry
-            ->getOrRegisterHistogram(self::METRIC_NAMESPACE, $name, self::DEFAULT_HELP, $labelNames)
+            ->getOrRegisterHistogram(self::METRIC_NAMESPACE, $name, self::DEFAULT_HELP, $labelNames, $buckets)
             ->observe($value, $this->labelValues($labels));
     }
 

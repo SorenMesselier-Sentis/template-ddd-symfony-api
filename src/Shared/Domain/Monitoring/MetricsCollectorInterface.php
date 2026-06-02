@@ -13,8 +13,9 @@ interface MetricsCollectorInterface
 
     /**
      * @param array<string, string|int|float|bool> $labels
+     * @param list<float>|null                     $buckets prometheus histogram buckets; null uses library defaults when registering
      */
-    public function observeHistogram(string $name, float $value, array $labels = []): void;
+    public function observeHistogram(string $name, float $value, array $labels = [], ?array $buckets = null): void;
 
     /**
      * @param array<string, string|int|float|bool> $labels

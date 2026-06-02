@@ -57,6 +57,7 @@ db-create:
 	$(CONSOLE) doctrine:database:create --if-not-exists
 
 db-drop:
+	$(DOCKER_COMPOSE) exec -T postgres sh -lc 'psql -U "$$POSTGRES_USER" -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\''$$POSTGRES_DB'\'' AND pid <> pg_backend_pid();"'
 	$(CONSOLE) doctrine:database:drop --force --if-exists
 
 db-migrate:
@@ -144,3 +145,9 @@ test-coverage:
 
 mail:
 	open http://localhost:8025
+
+metrics:
+	open http://localhost:9090
+
+grafana:
+	open http://localhost:3000

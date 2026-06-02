@@ -34,6 +34,12 @@ RUN pecl install redis \
     && docker-php-ext-enable redis
 
 # =========================================================
+# Install APCu (Prometheus client default storage: METRICS_STORAGE=apcu)
+# =========================================================
+RUN pecl install apcu \
+    && docker-php-ext-enable apcu
+
+# =========================================================
 # Install PCOV (code coverage driver for PHPUnit)
 # =========================================================
 RUN pecl install pcov \

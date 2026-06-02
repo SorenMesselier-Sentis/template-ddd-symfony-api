@@ -2,11 +2,6 @@
 
 A production-ready REST API template built with Symfony 8 and Domain-Driven Design principles.
 
-## TODO
-
-- Set up Prometheus
-- Set up Grafana
-
 ## Stack
 
 | Layer | Technology |
@@ -20,7 +15,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Scheduler | Symfony Scheduler (cron + periodic) |
 | Mailer | Symfony Mailer + Twig templates, Mailpit for dev |
 | Logging | Monolog |
-| Monitoring | Prometheus + Grafana |
+| Monitoring | Prometheus + Grafana (preconfigured scrape targets + starter dashboard) |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
 
 ## Architecture
@@ -246,6 +241,8 @@ Mailpit captures outgoing emails in development (SMTP `1025`, UI `8025`).
 
 ```bash
 make mail         # open Mailpit UI in the browser
+make metrics      # open Prometheus UI
+make grafana      # open Grafana UI
 ```
 
 See [docs/testing-emails.md](docs/testing-emails.md) for the full flow (API → outbox → RabbitMQ → Twig templates → Mailpit).
@@ -408,11 +405,12 @@ Example for deploy smoke tests or GitHub Actions:
 ```bash
 curl -sf http://localhost:8080/health
 curl -sf http://localhost:8080/health/live
+curl -sf http://localhost:8080/metrics | head -20
 ```
 
 `-f` makes curl exit non-zero on HTTP 503, which fails the job if the stack is not ready.
 
-See [`docs/monitoring.md`](docs/monitoring.md) for readiness scope details and why SMTP checks are intentionally excluded.
+See [`docs/monitoring.md`](docs/monitoring.md) for readiness scope, `/metrics` scraping, and why SMTP checks are intentionally excluded.
 
 ### Endpoints
 
@@ -523,9 +521,11 @@ curl -s -X DELETE http://localhost:8080/api/v1/users/<id>
 |---|---|---|
 | API | http://localhost:8080 | — |
 | Swagger UI (OpenAPI) | http://localhost:8080/api/doc/ | — |
+| Metrics endpoint | http://localhost:8080/metrics | — |
 | RabbitMQ UI | http://localhost:15672 | app / see .env.local |
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin / see .env.local |
+| Mailpit UI | http://localhost:8025 | — |
 | PostgreSQL | localhost:5432 | app / see .env.local |
 
 ## Event flow

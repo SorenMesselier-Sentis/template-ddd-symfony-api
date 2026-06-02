@@ -15,24 +15,24 @@ use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/auth/refresh', methods: ['POST'])]
 #[OA\Post(
-    path: '/auth/refresh',
+    path: '/api/v1/auth/refresh',
     summary: 'Refresh access and refresh tokens',
     description: 'Exchanges a valid, non-revoked, non-expired refresh token for a new pair. The previous refresh token is revoked (rotation). No `Authorization` header is required.',
     tags: ['Authentication'],
-)]
-#[OA\RequestBody(
-    required: true,
-    content: new OA\JsonContent(
-        required: ['refresh_token'],
-        properties: [
-            new OA\Property(
-                property: 'refresh_token',
-                type: 'string',
-                description: 'Current refresh token',
-                example: 'dGhpcy1pcy1hLXJlZnJlc2gtdG9rZW4='
-            ),
-        ]
-    )
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['refresh_token'],
+            properties: [
+                new OA\Property(
+                    property: 'refresh_token',
+                    type: 'string',
+                    description: 'Current refresh token',
+                    example: 'dGhpcy1pcy1hLXJlZnJlc2gtdG9rZW4='
+                ),
+            ]
+        )
+    ),
 )]
 #[OA\Response(
     response: 200,

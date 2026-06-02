@@ -7,6 +7,7 @@ namespace App\User\Infrastructure\EventHandler;
 use App\Shared\Domain\Email\EmailTemplateRendererInterface;
 use App\Shared\Domain\Exception\EmailDeliveryException;
 use App\Shared\Domain\Logging\LoggerInterface;
+use App\Shared\Domain\Monitoring\MetricsCollectorInterface;
 use App\Shared\Domain\Notification\EmailNotification;
 use App\Shared\Domain\Notification\NotificationSenderInterface;
 use App\Shared\Domain\ValueObject\Email;
@@ -21,6 +22,7 @@ final class SendAccountDeletionEmailOnUserDeleted
         private readonly NotificationSenderInterface $notificationSender,
         private readonly EmailTemplateRendererInterface $emailTemplateRenderer,
         private readonly LoggerInterface $logger,
+        private readonly MetricsCollectorInterface $metrics,
     ) {
     }
 
@@ -50,11 +52,19 @@ final class SendAccountDeletionEmailOnUserDeleted
                 'userId' => $event->aggregateId(),
                 'email' => $event->email,
             ]);
+            $this->metrics->incrementCounter('emails_sent_total', [
+                'template' => 'account_deletion',
+                'status' => 'sent',
+            ]);
         } catch (EmailDeliveryException $e) {
             $this->logger->error('Failed to send account deletion email', [
                 'userId' => $event->aggregateId(),
                 'email' => $event->email,
                 'exception' => $e->getMessage(),
+            ]);
+            $this->metrics->incrementCounter('emails_sent_total', [
+                'template' => 'account_deletion',
+                'status' => 'failed',
             ]);
 
             throw $e;

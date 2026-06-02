@@ -6,6 +6,7 @@ namespace App\Shared\Infrastructure\Messaging\Outbox;
 
 use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\Logging\LoggerInterface;
+use App\Shared\Domain\Monitoring\MetricsCollectorInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -16,6 +17,7 @@ final class OutboxRelay
         private readonly Connection $connection,
         private readonly MessageBusInterface $eventBus,
         private readonly LoggerInterface $logger,
+        private readonly MetricsCollectorInterface $metrics,
     ) {
     }
 
@@ -41,6 +43,7 @@ final class OutboxRelay
             ], [
                 'id' => (string) $message['id'],
             ]);
+            $this->metrics->incrementCounter('outbox_messages_relayed_total');
 
             ++$published;
         }
@@ -50,6 +53,13 @@ final class OutboxRelay
         }
 
         return $published;
+    }
+
+    public function countUnpublishedMessages(): int
+    {
+        $count = $this->connection->fetchOne('SELECT COUNT(*) FROM outbox_messages WHERE published_at IS NULL');
+
+        return (int) $count;
     }
 
     private function rehydrateEvent(string $eventClass, string $aggregateId, string $payloadJson): DomainEvent

@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\Messaging\Outbox;
 
 use App\Shared\Domain\Logging\LoggerInterface;
+use App\Shared\Domain\Monitoring\MetricsCollectorInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 
 final class OutboxMessagesCleaner
 {
-    private const int DEFAULT_RETENTION_DAYS = 30;
+    public const int DEFAULT_RETENTION_DAYS = 30;
 
     public function __construct(
         private readonly Connection $connection,
         private readonly LoggerInterface $logger,
+        private readonly MetricsCollectorInterface $metrics,
     ) {
     }
 
@@ -38,6 +40,9 @@ final class OutboxMessagesCleaner
             [$cutoff->format('Y-m-d H:i:s')],
             [ParameterType::STRING],
         );
+        $this->metrics->incrementCounter('outbox_messages_purged_total', [
+            'retention_days' => $effectiveRetention,
+        ]);
 
         return (int) $deleted;
     }

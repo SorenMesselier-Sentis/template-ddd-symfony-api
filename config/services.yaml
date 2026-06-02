@@ -3,6 +3,7 @@ parameters:
     metrics_redis_host_default: 127.0.0.1
     metrics_redis_port_default: 6379
     metrics_redis_password_default: ''
+    app_version_default: unknown
 
 services:
     _defaults:
@@ -111,6 +112,11 @@ services:
             $redisHost: "%env(default:metrics_redis_host_default:METRICS_REDIS_HOST)%"
             $redisPort: "%env(int:default:metrics_redis_port_default:METRICS_REDIS_PORT)%"
             $redisPassword: "%env(default:metrics_redis_password_default:METRICS_REDIS_PASSWORD)%"
+
+    App\Shared\Infrastructure\Monitoring\Metrics\BuildInfoMetricsInitializer:
+        arguments:
+            $appVersion: "%env(default:app_version_default:APP_VERSION)%"
+            $appEnv: "%kernel.environment%"
 
     Prometheus\CollectorRegistry:
         factory: ['@App\Shared\Infrastructure\Monitoring\Metrics\PrometheusCollectorRegistryFactory', 'create']

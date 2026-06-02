@@ -15,29 +15,29 @@ use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/auth/login', methods: ['POST'])]
 #[OA\Post(
-    path: '/auth/login',
+    path: '/api/v1/auth/login',
     summary: 'Login a user',
     tags: ['Authentication'],
-)]
-#[OA\RequestBody(
-    required: true,
-    content: new OA\JsonContent(
-        required: ['email', 'password'],
-        properties: [
-            new OA\Property(
-                property: 'email',
-                type: 'string',
-                format: 'email',
-                example: 'john.doe@example.com'
-            ),
-            new OA\Property(
-                property: 'password',
-                type: 'string',
-                format: 'password',
-                example: 'secret1234'
-            ),
-        ]
-    )
+    requestBody: new OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            required: ['email', 'password'],
+            properties: [
+                new OA\Property(
+                    property: 'email',
+                    type: 'string',
+                    format: 'email',
+                    example: 'john.doe@example.com'
+                ),
+                new OA\Property(
+                    property: 'password',
+                    type: 'string',
+                    format: 'password',
+                    example: 'secret1234'
+                ),
+            ]
+        )
+    ),
 )]
 #[OA\Response(
     response: 200,

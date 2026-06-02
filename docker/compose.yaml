@@ -68,14 +68,28 @@ services:
         volumes:
             - rabbitmq_data:/var/lib/rabbitmq
             - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+            - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
         ports:
             - "${RABBITMQ_PORT}:5672"
             - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+        expose:
+            - "15692"
         healthcheck:
             test: ["CMD", "rabbitmq-diagnostics", "ping"]
             interval: 10s
             timeout: 5s
             retries: 5
+
+    # =========================================================
+    # PostgreSQL Exporter
+    # =========================================================
+    postgres_exporter:
+        image: quay.io/prometheuscommunity/postgres-exporter:latest
+        environment:
+            DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+        depends_on:
+            postgres:
+                condition: service_healthy
 
     # =========================================================
     # Prometheus
@@ -105,6 +119,7 @@ services:
             - grafana_data:/var/lib/grafana
             - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
             - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+            - ./grafana/dashboards:/var/lib/grafana/dashboards
         ports:
             - "${GRAFANA_PORT}:3000"
         depends_on:

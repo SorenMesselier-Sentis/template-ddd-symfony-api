@@ -7,6 +7,7 @@ namespace App\User\Infrastructure\EventHandler;
 use App\Shared\Domain\Email\EmailTemplateRendererInterface;
 use App\Shared\Domain\Exception\EmailDeliveryException;
 use App\Shared\Domain\Logging\LoggerInterface;
+use App\Shared\Domain\Monitoring\MetricsCollectorInterface;
 use App\Shared\Domain\Notification\EmailNotification;
 use App\Shared\Domain\Notification\NotificationSenderInterface;
 use App\Shared\Domain\ValueObject\Email;
@@ -21,6 +22,7 @@ final class SendWelcomeEmailOnUserCreated
         private readonly NotificationSenderInterface $notificationSender,
         private readonly EmailTemplateRendererInterface $emailTemplateRenderer,
         private readonly LoggerInterface $logger,
+        private readonly MetricsCollectorInterface $metrics,
     ) {
     }
 
@@ -52,11 +54,19 @@ final class SendWelcomeEmailOnUserCreated
             $this->logger->info('Welcome email sent', [
                 'userId' => $event->aggregateId(),
             ]);
+            $this->metrics->incrementCounter('emails_sent_total', [
+                'template' => 'welcome',
+                'status' => 'sent',
+            ]);
         } catch (EmailDeliveryException $e) {
             $this->logger->error('Failed to send welcome email', [
                 'userId' => $event->aggregateId(),
                 'email' => $event->email,
                 'exception' => $e->getMessage(),
+            ]);
+            $this->metrics->incrementCounter('emails_sent_total', [
+                'template' => 'welcome',
+                'status' => 'failed',
             ]);
 
             throw $e;

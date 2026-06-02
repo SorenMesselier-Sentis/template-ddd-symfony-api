@@ -25,6 +25,7 @@ security:
         - { path: ^/api/v1/auth/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc\.json, roles: PUBLIC_ACCESS }
+        - { path: ^/metrics$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
