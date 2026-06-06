@@ -912,7 +912,7 @@ final class MakeBoundedContextCommand extends Command
                     ->createQueryBuilder('e')
                     ->select('COUNT(e.id)');
 
-                DoctrineFilterApplier::apply(\$qb, \$filters, 'e');
+                DoctrineFilterApplier::applyFilters(\$qb, \$filters, 'e');
 
                 return (int) \$qb->getQuery()->getSingleScalarResult();
             }

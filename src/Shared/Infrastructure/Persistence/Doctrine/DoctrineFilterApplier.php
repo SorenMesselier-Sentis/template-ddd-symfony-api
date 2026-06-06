@@ -13,10 +13,23 @@ final class DoctrineFilterApplier
 {
     public static function apply(QueryBuilder $qb, Filters $filters, string $alias): QueryBuilder
     {
+        self::applyFilters($qb, $filters, $alias);
+        self::applyOrderAndPagination($qb, $filters, $alias);
+
+        return $qb;
+    }
+
+    public static function applyFilters(QueryBuilder $qb, Filters $filters, string $alias): QueryBuilder
+    {
         foreach ($filters->all() as $i => $filter) {
             self::applyFilter($qb, $filter, $alias, $i);
         }
 
+        return $qb;
+    }
+
+    public static function applyOrderAndPagination(QueryBuilder $qb, Filters $filters, string $alias): QueryBuilder
+    {
         $qb->orderBy(
             sprintf('%s.%s', $alias, $filters->order->field),
             $filters->order->type->value,

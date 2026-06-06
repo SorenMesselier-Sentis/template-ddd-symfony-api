@@ -54,6 +54,10 @@ final class FiltersBuilder
      */
     private static function buildRange(array $params, string $field, array &$filters): void
     {
+        if (!isset($params[$field]) || !is_array($params[$field])) {
+            return;
+        }
+
         if (isset($params[$field]['min']) && '' !== $params[$field]['min']) {
             $filters[] = Filter::min($field, $params[$field]['min']);
         }
@@ -97,7 +101,7 @@ final class FiltersBuilder
     {
         return Pagination::fromRequest(
             page: (int) ($params['page'] ?? 1),
-            limit: (int) ($params['limit'] ?? 20),
+            limit: (int) ($params['per_page'] ?? $params['limit'] ?? 20),
         );
     }
 }

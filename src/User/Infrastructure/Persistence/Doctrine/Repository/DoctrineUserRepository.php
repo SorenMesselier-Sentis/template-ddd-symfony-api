@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\User\Infrastructure\Persistence\Doctrine\Repository;
 
-use App\Shared\Domain\Filter\FilterOperator;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\ValueObject\Email;
 use App\Shared\Infrastructure\Persistence\Doctrine\DoctrineFilterApplier;
@@ -77,19 +76,11 @@ final class DoctrineUserRepository implements UserRepositoryInterface
     {
         $qb = $this->em->getRepository(User::class)
             ->createQueryBuilder('u')
-            ->select('COUNT(u.id)');
+            ->select('COUNT(u.id)')
+            ->andWhere('u.status != :deleted')
+            ->setParameter('deleted', UserStatus::DELETED->value);
 
-        foreach ($filters->all() as $i => $filter) {
-            $param = sprintf('filter_%s_%d', $filter->field, $i);
-            $field = sprintf('u.%s', $filter->field);
-
-            match ($filter->operator) {
-                FilterOperator::EQUAL => $qb
-                    ->andWhere(sprintf('%s = :%s', $field, $param))
-                    ->setParameter($param, $filter->value),
-                default => null,
-            };
-        }
+        DoctrineFilterApplier::applyFilters($qb, $filters, 'u');
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
