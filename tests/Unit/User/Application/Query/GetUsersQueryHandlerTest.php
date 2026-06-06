@@ -51,7 +51,7 @@ final class GetUsersQueryHandlerTest extends UnitTestCase
         $this->assertCount(2, $response->users);
         $this->assertEquals(42, $response->total);
         $this->assertEquals(2, $response->page);
-        $this->assertEquals(10, $response->perPage);
+        $this->assertEquals(10, $response->limit);
         $this->assertEquals($userA->id()->value(), $response->users[0]->id);
         $this->assertEquals($userB->email()->value(), $response->users[1]->email);
     }

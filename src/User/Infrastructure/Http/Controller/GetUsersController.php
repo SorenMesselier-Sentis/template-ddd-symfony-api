@@ -19,12 +19,12 @@ use Symfony\Component\Routing\Attribute\Route;
     path: '/api/v1/users',
     operationId: 'getUsers',
     summary: 'List users',
-    description: 'Returns a paginated list. Supports `page`, `per_page`, and filters `email`, `firstName`, `lastName`.',
+    description: 'Returns a paginated list. Supports `page`, `limit`, and filters `email`, `firstName`, `lastName`.',
     tags: ['Users'],
     security: [['bearer' => []]],
 )]
 #[OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', default: 1, minimum: 1))]
-#[OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer', default: 20, maximum: 100, minimum: 1))]
+#[OA\Parameter(name: 'limit', in: 'query', schema: new OA\Schema(type: 'integer', default: 20, maximum: 100, minimum: 1))]
 #[OA\Parameter(name: 'email', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
 #[OA\Parameter(name: 'firstName', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
 #[OA\Parameter(name: 'lastName', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
@@ -49,10 +49,21 @@ use Symfony\Component\Routing\Attribute\Route;
             new OA\Property(
                 property: 'meta',
                 properties: [
-                    new OA\Property(property: 'total', type: 'integer', example: 3),
                     new OA\Property(property: 'page', type: 'integer', example: 1),
-                    new OA\Property(property: 'per_page', type: 'integer', example: 20),
-                    new OA\Property(property: 'pages', type: 'integer', example: 1),
+                    new OA\Property(property: 'limit', type: 'integer', example: 10),
+                    new OA\Property(property: 'total_items', type: 'integer', example: 245),
+                    new OA\Property(property: 'total_pages', type: 'integer', example: 25),
+                    new OA\Property(property: 'has_next', type: 'boolean', example: true),
+                    new OA\Property(property: 'has_previous', type: 'boolean', example: false),
+                ],
+                type: 'object',
+            ),
+            new OA\Property(
+                property: 'links',
+                properties: [
+                    new OA\Property(property: 'self', type: 'string', example: '/v1/users?page=1&limit=10'),
+                    new OA\Property(property: 'next', type: 'string', nullable: true, example: '/v1/users?page=2&limit=10'),
+                    new OA\Property(property: 'previous', type: 'string', nullable: true, example: null),
                 ],
                 type: 'object',
             ),
@@ -86,7 +97,8 @@ final class GetUsersController
             data: $result->users,
             total: $result->total,
             page: $result->page,
-            perPage: $result->perPage,
+            limit: $result->limit,
+            request: $request,
         );
     }
 }

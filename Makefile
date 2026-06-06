@@ -3,7 +3,9 @@
 
 DOCKER_COMPOSE = docker compose -f docker/compose.yaml --env-file .env.local
 PHP = $(DOCKER_COMPOSE) exec php
+PHP_TEST = $(DOCKER_COMPOSE) exec -e APP_ENV=test php
 CONSOLE = $(PHP) bin/console
+CONSOLE_TEST = $(PHP_TEST) bin/console
 COMPOSER = $(PHP) composer
 
 GREEN = \033[0;32m
@@ -130,25 +132,25 @@ cs-check:
 	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
 
 test:
-	$(PHP) vendor/bin/phpunit
+	$(PHP_TEST) vendor/bin/phpunit
 
 test-unit:
-	$(PHP) vendor/bin/phpunit --testsuite=Unit
+	$(PHP_TEST) vendor/bin/phpunit --testsuite=Unit
 
 test-integration:
-	APP_ENV=test $(CONSOLE) doctrine:database:create --if-not-exists
-	APP_ENV=test $(CONSOLE) doctrine:migrations:migrate --no-interaction
-	$(PHP) vendor/bin/phpunit --testsuite=Integration
+	$(CONSOLE_TEST) doctrine:database:create --if-not-exists
+	$(CONSOLE_TEST) doctrine:migrations:migrate --no-interaction
+	$(PHP_TEST) vendor/bin/phpunit --testsuite=Integration
 
 test-http:
-	APP_ENV=test $(CONSOLE) doctrine:database:create --if-not-exists
-	APP_ENV=test $(CONSOLE) doctrine:migrations:migrate --no-interaction
-	$(PHP) vendor/bin/phpunit --testsuite=Http
+	$(CONSOLE_TEST) doctrine:database:create --if-not-exists
+	$(CONSOLE_TEST) doctrine:migrations:migrate --no-interaction
+	$(PHP_TEST) vendor/bin/phpunit --testsuite=Http
 
 ci: phpstan deptrac test-unit test-integration test-http ## Run all CI quality gates
 
 test-coverage:
-	$(PHP) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage
+	$(PHP_TEST) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage
 
 mail:
 	open http://localhost:8025

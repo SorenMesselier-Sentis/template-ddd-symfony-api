@@ -30,21 +30,7 @@ final class FiltersBuilderTest extends UnitTestCase
         $this->assertSame(FilterOperator::EQUAL, $filters->all()[0]->operator);
     }
 
-    public function testItReadsPerPageParameter(): void
-    {
-        $request = Request::create('/users', 'GET', [
-            'page' => 2,
-            'per_page' => 10,
-        ]);
-
-        $filters = FiltersBuilder::fromRequest($request, []);
-
-        $this->assertSame(2, $filters->pagination->page);
-        $this->assertSame(10, $filters->pagination->limit);
-        $this->assertSame(10, $filters->pagination->offset);
-    }
-
-    public function testItFallsBackToLimitParameter(): void
+    public function testItReadsLimitParameter(): void
     {
         $request = Request::create('/users', 'GET', [
             'page' => 2,
@@ -53,6 +39,7 @@ final class FiltersBuilderTest extends UnitTestCase
 
         $filters = FiltersBuilder::fromRequest($request, []);
 
+        $this->assertSame(2, $filters->pagination->page);
         $this->assertSame(5, $filters->pagination->limit);
         $this->assertSame(5, $filters->pagination->offset);
     }

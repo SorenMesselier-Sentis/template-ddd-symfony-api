@@ -15,7 +15,7 @@ final class UsersResponse implements Response
         public readonly array $users,
         public readonly int $total,
         public readonly int $page,
-        public readonly int $perPage,
+        public readonly int $limit,
     ) {
     }
 }

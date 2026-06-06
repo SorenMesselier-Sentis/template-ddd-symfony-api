@@ -774,7 +774,7 @@ final class MakeBoundedContextCommand extends Command
                     items:   array_map(fn(\$e) => new {$name}ItemResponse(\$e), \$entities),
                     total:   \$total,
                     page:    \$query->filters->pagination->page,
-                    perPage: \$query->filters->pagination->limit,
+                    limit: \$query->filters->pagination->limit,
                 );
             }
         }
@@ -798,7 +798,7 @@ final class MakeBoundedContextCommand extends Command
                 public readonly array \$items,
                 public readonly int   \$total,
                 public readonly int   \$page,
-                public readonly int   \$perPage,
+                public readonly int   \$limit,
             ) {}
         }
         PHP;
@@ -1178,7 +1178,8 @@ final class MakeBoundedContextCommand extends Command
                     data:    \$result->items,
                     total:   \$result->total,
                     page:    \$result->page,
-                    perPage: \$result->perPage,
+                    limit:   \$result->limit,
+                    request: \$request,
                 );
             }
         }
