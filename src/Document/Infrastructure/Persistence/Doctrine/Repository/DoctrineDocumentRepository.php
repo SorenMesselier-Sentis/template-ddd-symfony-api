@@ -35,4 +35,10 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
 
         return $document;
     }
+
+    public function findByIdIncludingDeleted(DocumentId $id): ?Document
+    {
+        /** @var Document|null $document */
+        return $this->em->find(Document::class, $id);
+    }
 }

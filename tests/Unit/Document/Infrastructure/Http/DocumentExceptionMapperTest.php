@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Document\Infrastructure\Http;
 
 use App\Document\Domain\Exception\BucketNotFoundException;
+use App\Document\Domain\Exception\DocumentNotFoundException;
 use App\Document\Domain\Exception\FileTooLargeException;
 use App\Document\Domain\Exception\InvalidMimeTypeException;
 use App\Document\Domain\Exception\InvalidMultipartFileSizeException;
 use App\Document\Domain\Exception\InvalidPartSizeException;
+use App\Document\Domain\Exception\InvalidPresignedUrlTtlException;
 use App\Document\Domain\Exception\UploadSessionNotFoundException;
 use App\Document\Infrastructure\Http\DocumentExceptionMapper;
 use App\Tests\Unit\UnitTestCase;
@@ -69,5 +71,21 @@ final class DocumentExceptionMapperTest extends UnitTestCase
 
         $this->assertTrue($this->mapper->supports($exception));
         $this->assertSame([422, 'document.invalid_multipart_file_size'], $this->mapper->resolve($exception));
+    }
+
+    public function testItMapsDocumentNotFoundTo404(): void
+    {
+        $exception = DocumentNotFoundException::withId('abc');
+
+        $this->assertTrue($this->mapper->supports($exception));
+        $this->assertSame([404, 'document.not_found'], $this->mapper->resolve($exception));
+    }
+
+    public function testItMapsInvalidPresignedUrlTtlTo422(): void
+    {
+        $exception = InvalidPresignedUrlTtlException::outOfRange(60, 604800);
+
+        $this->assertTrue($this->mapper->supports($exception));
+        $this->assertSame([422, 'document.invalid_presigned_url_ttl'], $this->mapper->resolve($exception));
     }
 }

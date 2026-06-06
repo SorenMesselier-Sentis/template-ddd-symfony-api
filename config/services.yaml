@@ -245,10 +245,22 @@ services:
         arguments:
             $minPartBytes: '%document_storage.min_part_bytes%'
 
+    App\Document\Application\Service\PresignedUrlTtlValidator:
+        arguments:
+            $minTtlSeconds: '%document_storage.presigned_url_min_ttl%'
+            $maxTtlSeconds: '%document_storage.presigned_url_max_ttl%'
+
+    App\Document\Application\Query\GetDocumentPresignedUrl\GetDocumentPresignedUrlQueryHandler:
+        arguments:
+            $defaultTtlSeconds: '%env(int:MINIO_PRESIGNED_URL_TTL)%'
+
     App\Document\Domain\Storage\DocumentStorageInterface:
         alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
 
     App\Document\Domain\Storage\MultipartDocumentStorageInterface:
+        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+
+    App\Document\Domain\Storage\DocumentPresignedUrlGeneratorInterface:
         alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
 
     App\Document\Domain\Storage\BucketExistenceCheckerInterface:

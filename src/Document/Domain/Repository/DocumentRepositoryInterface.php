@@ -12,4 +12,6 @@ interface DocumentRepositoryInterface
     public function save(Document $document): void;
 
     public function findById(DocumentId $id): ?Document;
+
+    public function findByIdIncludingDeleted(DocumentId $id): ?Document;
 }

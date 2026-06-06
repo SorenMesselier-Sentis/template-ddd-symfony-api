@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Document\Infrastructure\Storage;
 
+use App\Document\Domain\Storage\DocumentPresignedUrlGeneratorInterface;
 use App\Document\Domain\Storage\DocumentStorageInterface;
 use App\Document\Domain\Storage\MultipartDocumentStorageInterface;
+use App\Document\Domain\Entity\Document;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\MimeType;
 use App\Document\Domain\ValueObject\ObjectPath;
 use App\Document\Domain\ValueObject\PartNumber;
+use App\Document\Domain\ValueObject\PresignedUrl;
 use Aws\S3\S3Client;
 
-final class MinioDocumentStorageAdapter implements DocumentStorageInterface, MultipartDocumentStorageInterface
+final class MinioDocumentStorageAdapter implements DocumentStorageInterface, MultipartDocumentStorageInterface, DocumentPresignedUrlGeneratorInterface
 {
     private readonly S3Client $client;
 
@@ -103,5 +106,22 @@ final class MinioDocumentStorageAdapter implements DocumentStorageInterface, Mul
             'Key' => $objectPath->value(),
             'UploadId' => $uploadId,
         ]);
+    }
+
+    public function generatePresignedDownloadUrl(Document $document, int $ttlSeconds): PresignedUrl
+    {
+        $command = $this->client->getCommand('GetObject', [
+            'Bucket' => $document->bucketName()->value(),
+            'Key' => $document->objectPath()->value(),
+        ]);
+
+        $expiresAt = (new \DateTimeImmutable())->modify(sprintf('+%d seconds', $ttlSeconds));
+        $request = $this->client->createPresignedRequest($command, $expiresAt);
+
+        return new PresignedUrl(
+            url: (string) $request->getUri(),
+            expiresInSeconds: $ttlSeconds,
+            expiresAt: $expiresAt,
+        );
     }
 }
