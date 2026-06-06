@@ -8,14 +8,14 @@ use App\Shared\Infrastructure\Http\Request\JsonRequest;
 
 final class CreateUserRequest extends JsonRequest
 {
-    /** @return array<string, bool> */
+    /** @return array<string, bool|array{required?: bool, type?: string}> */
     protected function rules(): array
     {
         return [
-            'firstName' => true,
-            'lastName' => true,
-            'email' => true,
-            'password' => true,
+            'firstName' => ['required' => true, 'type' => 'string'],
+            'lastName' => ['required' => true, 'type' => 'string'],
+            'email' => ['required' => true, 'type' => 'email'],
+            'password' => ['required' => true, 'type' => 'string'],
         ];
     }
 

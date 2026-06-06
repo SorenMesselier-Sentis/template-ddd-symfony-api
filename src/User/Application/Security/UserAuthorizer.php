@@ -4,15 +4,26 @@ declare(strict_types=1);
 
 namespace App\User\Application\Security;
 
+use App\Shared\Domain\Security\AuthorizedMessageContract;
+use App\Shared\Domain\Security\MessageAuthorizerInterface;
 use App\User\Domain\Exception\InsufficientPrivilegesException;
 use App\User\Domain\Security\UserContextInterface;
 use App\User\Domain\ValueObject\UserRole;
 
-final class UserAuthorizer
+final class UserAuthorizer implements MessageAuthorizerInterface
 {
     public function __construct(
         private readonly UserContextInterface $userContext,
     ) {
+    }
+
+    public function authorize(AuthorizedMessageContract $message): void
+    {
+        if (!$message instanceof AuthorizedMessage) {
+            return;
+        }
+
+        $this->assert($message->roleRequirement());
     }
 
     public function assert(RoleRequirement $requirement): void

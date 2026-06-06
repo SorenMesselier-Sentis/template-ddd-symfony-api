@@ -1,0 +1,8 @@
+when@prod:
+    monolog:
+        handlers:
+            main:
+                type: stream
+                path: php://stdout
+                level: info
+                formatter: monolog.formatter.json

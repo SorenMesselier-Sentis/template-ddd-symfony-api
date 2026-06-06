@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\User\Infrastructure\Messaging;
+namespace App\Shared\Infrastructure\Messaging;
 
-use App\User\Application\Security\AuthorizedMessage;
-use App\User\Application\Security\UserAuthorizer;
+use App\Shared\Domain\Security\AuthorizedMessageContract;
+use App\Shared\Domain\Security\MessageAuthorizerInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
@@ -13,7 +13,7 @@ use Symfony\Component\Messenger\Middleware\StackInterface;
 final class AuthorizeMessageMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly UserAuthorizer $authorizer,
+        private readonly MessageAuthorizerInterface $authorizer,
     ) {
     }
 
@@ -21,8 +21,8 @@ final class AuthorizeMessageMiddleware implements MiddlewareInterface
     {
         $message = $envelope->getMessage();
 
-        if ($message instanceof AuthorizedMessage) {
-            $this->authorizer->assert($message->roleRequirement());
+        if ($message instanceof AuthorizedMessageContract) {
+            $this->authorizer->authorize($message);
         }
 
         return $stack->next()->handle($envelope, $stack);

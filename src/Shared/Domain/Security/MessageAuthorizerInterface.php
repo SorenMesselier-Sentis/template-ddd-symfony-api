@@ -1,0 +1,10 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Shared\Domain\Security;
+
+interface MessageAuthorizerInterface
+{
+    public function authorize(AuthorizedMessageContract $message): void;
+}

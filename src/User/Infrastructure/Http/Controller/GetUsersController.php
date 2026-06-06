@@ -15,10 +15,50 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users', methods: ['GET'])]
-#[OA\Get(path: '/users', summary: 'List users', tags: ['Users'])]
-#[OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', default: 1))]
-#[OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer', default: 20))]
-#[OA\Response(response: 200, description: 'List of users')]
+#[OA\Get(
+    path: '/api/v1/users',
+    operationId: 'getUsers',
+    summary: 'List users',
+    description: 'Returns a paginated list. Supports `page`, `per_page`, and filters `email`, `firstName`, `lastName`.',
+    tags: ['Users'],
+    security: [['bearer' => []]],
+)]
+#[OA\Parameter(name: 'page', in: 'query', schema: new OA\Schema(type: 'integer', default: 1, minimum: 1))]
+#[OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer', default: 20, maximum: 100, minimum: 1))]
+#[OA\Parameter(name: 'email', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
+#[OA\Parameter(name: 'firstName', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
+#[OA\Parameter(name: 'lastName', in: 'query', required: false, schema: new OA\Schema(type: 'string'))]
+#[OA\Response(
+    response: 200,
+    description: 'Paginated list of users',
+    content: new OA\JsonContent(
+        properties: [
+            new OA\Property(
+                property: 'data',
+                type: 'array',
+                items: new OA\Items(
+                    properties: [
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                        new OA\Property(property: 'first_name', type: 'string'),
+                        new OA\Property(property: 'last_name', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string', format: 'email'),
+                    ],
+                    type: 'object',
+                ),
+            ),
+            new OA\Property(
+                property: 'meta',
+                properties: [
+                    new OA\Property(property: 'total', type: 'integer', example: 3),
+                    new OA\Property(property: 'page', type: 'integer', example: 1),
+                    new OA\Property(property: 'per_page', type: 'integer', example: 20),
+                    new OA\Property(property: 'pages', type: 'integer', example: 1),
+                ],
+                type: 'object',
+            ),
+        ],
+    ),
+)]
 final class GetUsersController
 {
     private const ALLOWED_FILTERS = [

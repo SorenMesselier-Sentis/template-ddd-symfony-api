@@ -13,21 +13,31 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users/{id}', methods: ['GET'])]
-#[OA\Get(path: '/users/{id}', summary: 'Get a user', tags: ['Users'])]
+#[OA\Get(
+    path: '/api/v1/users/{id}',
+    operationId: 'getUser',
+    summary: 'Get a user',
+    tags: ['Users'],
+    security: [['bearer' => []]],
+)]
 #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
 #[OA\Response(
     response: 200,
     description: 'User found',
     content: new OA\JsonContent(
         properties: [
-            new OA\Property(property: 'data', properties: [
-                new OA\Property(property: 'id', type: 'string', format: 'uuid'),
-                new OA\Property(property: 'first_name', type: 'string'),
-                new OA\Property(property: 'last_name', type: 'string'),
-                new OA\Property(property: 'email', type: 'string'),
-            ], type: 'object'),
-        ]
-    )
+            new OA\Property(
+                property: 'data',
+                properties: [
+                    new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                    new OA\Property(property: 'first_name', type: 'string', example: 'John'),
+                    new OA\Property(property: 'last_name', type: 'string', example: 'Doe'),
+                    new OA\Property(property: 'email', type: 'string', format: 'email', example: 'john.doe@example.com'),
+                ],
+                type: 'object',
+            ),
+        ],
+    ),
 )]
 #[OA\Response(response: 404, description: 'User not found')]
 final class GetUserController

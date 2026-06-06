@@ -13,22 +13,28 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/users/{id}', methods: ['PUT'])]
-#[OA\Put(path: '/users/{id}', summary: 'Replace a user', tags: ['Users'])]
+#[OA\Put(
+    path: '/api/v1/users/{id}',
+    operationId: 'putUser',
+    summary: 'Replace a user',
+    description: 'Replaces all scalar fields of the user.',
+    tags: ['Users'],
+    security: [['bearer' => []]],
+)]
 #[OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid'))]
 #[OA\RequestBody(
     required: true,
     content: new OA\JsonContent(
         required: ['firstName', 'lastName', 'email', 'password'],
         properties: [
-            new OA\Property(property: 'firstName', type: 'string'),
-            new OA\Property(property: 'lastName', type: 'string'),
-            new OA\Property(property: 'email', type: 'string'),
-            new OA\Property(property: 'password', type: 'string'),
-        ]
-    )
+            new OA\Property(property: 'firstName', type: 'string', example: 'John'),
+            new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
+            new OA\Property(property: 'email', type: 'string', format: 'email', example: 'john.doe@example.com'),
+            new OA\Property(property: 'password', type: 'string', format: 'password', example: 'secret1234'),
+        ],
+    ),
 )]
-#[OA\Response(response: 204, description: 'User replaced')]
-#[OA\Response(response: 400, description: 'Missing field')]
+#[OA\Response(response: 204, description: 'User replaced (empty body)')]
 #[OA\Response(response: 404, description: 'User not found')]
 final class PutUserController
 {

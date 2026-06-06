@@ -15,35 +15,30 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/auth/logout', methods: ['POST'])]
 #[OA\Post(
     path: '/api/v1/auth/logout',
-    summary: 'Logout (revoke a refresh token)',
-    description: 'Requires a valid access token in `Authorization` and the refresh token to revoke in the body. Returns 204 with an empty body on success.',
+    operationId: 'postAuthLogout',
+    summary: 'Logout',
+    description: 'Revokes the given refresh token. Requires a valid access token in `Authorization`.',
     tags: ['Authentication'],
-    requestBody: new OA\RequestBody(
-        required: true,
-        content: new OA\JsonContent(
-            required: ['refresh_token'],
-            properties: [
-                new OA\Property(
-                    property: 'refresh_token',
-                    type: 'string',
-                    description: 'Refresh token to revoke (opaque string issued at login or refresh)',
-                    example: 'dGhpcy1pcy1hLXJlZnJlc2gtdG9rZW4='
-                ),
-            ]
-        )
+    security: [['bearer' => []]],
+)]
+#[OA\RequestBody(
+    required: true,
+    content: new OA\JsonContent(
+        required: ['refresh_token'],
+        properties: [
+            new OA\Property(
+                property: 'refresh_token',
+                type: 'string',
+                description: 'Refresh token to revoke',
+                example: 'dGhpcy1pcy1hLXJlZnJlc2gtdG9rZW4=',
+            ),
+        ],
+        example: ['refresh_token' => 'dGhpcy1pcy1hLXJlZnJlc2gtdG9rZW4='],
     ),
 )]
-#[OA\Parameter(
-    name: 'Authorization',
-    in: 'header',
-    required: true,
-    description: 'Bearer access token (JWT)',
-    schema: new OA\Schema(type: 'string', example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...')
-)]
-#[OA\Response(response: 204, description: 'Refresh token revoked; response body is empty')]
-#[OA\Response(response: 400, description: 'Invalid JSON, empty body, or missing `refresh_token`')]
-#[OA\Response(response: 401, description: 'Missing/invalid/expired access token (Bearer JWT)')]
-#[OA\Response(response: 404, description: 'Refresh token not found in storage')]
+#[OA\Response(response: 204, description: 'Refresh token revoked (empty body)')]
+#[OA\Response(response: 401, description: 'Missing or invalid access token')]
+#[OA\Response(response: 404, description: 'Refresh token not found')]
 final class LogoutUserController
 {
     public function __construct(

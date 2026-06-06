@@ -8,6 +8,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
@@ -31,12 +32,19 @@ final class MakeBoundedContextCommand extends Command
             mode: InputArgument::REQUIRED,
             description: 'The name of the Bounded Context (e.g. Product, Order)',
         );
+        $this->addOption(
+            name: 'version',
+            mode: InputOption::VALUE_REQUIRED,
+            description: 'API version route block (e.g. v1, v2)',
+            default: 'v1',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->io = new SymfonyStyle($input, $output);
-        $name = ucfirst($input->getArgument('name'));
+        $name = ucfirst((string) $input->getArgument('name'));
+        $version = (string) $input->getOption('version');
         $srcDir = $this->projectDir.'/src/'.$name;
         $testsDir = $this->projectDir.'/tests';
 
@@ -48,11 +56,18 @@ final class MakeBoundedContextCommand extends Command
             return Command::FAILURE;
         }
 
+        if (!$this->apiVersionExists($version)) {
+            $this->io->error(sprintf('API version "%s" is not registered in config/routes.yaml (expected key api_%s).', $version, $version));
+
+            return Command::FAILURE;
+        }
+
         $this->generateDomain($srcDir, $name);
         $this->generateApplication($srcDir, $name);
         $this->generateInfrastructure($srcDir, $name);
         $this->generateTests($testsDir, $name);
         $this->registerConfiguration($name);
+        $this->registerRoutes($name, $version);
         $this->printNextSteps($name);
 
         $this->io->success(sprintf('Bounded Context "%s" generated successfully.', $name));
@@ -82,6 +97,10 @@ final class MakeBoundedContextCommand extends Command
 
             // Exception
             "Domain/Exception/{$name}NotFoundException.php" => $this->templateNotFoundException($name),
+            "Domain/Exception/{$name}AlreadyExistsException.php" => $this->templateAlreadyExistsException($name),
+
+            // Status
+            "Domain/ValueObject/{$name}Status.php" => $this->templateStatusEnum($name),
         ];
 
         $this->writeFiles($srcDir, $files);
@@ -148,6 +167,9 @@ final class MakeBoundedContextCommand extends Command
             "Infrastructure/Http/Controller/Put{$name}Controller.php" => $this->templatePutController($name, $table),
             "Infrastructure/Http/Controller/Delete{$name}Controller.php" => $this->templateDeleteController($name, $table),
 
+            // Http Requests
+            "Infrastructure/Http/Request/Patch{$name}Request.php" => $this->templatePatchRequest($name),
+
             // Fixture
             "Infrastructure/Fixture/{$name}Fixture.php" => $this->templateFixture($name),
 
@@ -208,6 +230,7 @@ final class MakeBoundedContextCommand extends Command
         use App\\{$name}\\Domain\\Event\\{$name}Replaced;
         use App\\{$name}\\Domain\\Event\\{$name}Updated;
         use App\\{$name}\\Domain\\ValueObject\\{$name}Id;
+        use App\\{$name}\\Domain\\ValueObject\\{$name}Status;
 
         final class {$name}
         {
@@ -216,6 +239,7 @@ final class MakeBoundedContextCommand extends Command
 
             private function __construct(
                 private readonly {$name}Id \$id,
+                private {$name}Status \$status,
                 private \\DateTimeImmutable \$createdAt,
                 private \\DateTimeImmutable \$updatedAt,
             ) {}
@@ -223,7 +247,7 @@ final class MakeBoundedContextCommand extends Command
             public static function create({$name}Id \$id): self
             {
                 \$now    = new \\DateTimeImmutable();
-                \$entity = new self(\$id, \$now, \$now);
+                \$entity = new self(\$id, {$name}Status::Active, \$now, \$now);
 
                 \$entity->record(new {$name}Created(aggregateId: \$id->value()));
 
@@ -267,8 +291,27 @@ final class MakeBoundedContextCommand extends Command
             }
 
             public function id(): {$name}Id                    { return \$this->id; }
+            public function status(): {$name}Status           { return \$this->status; }
             public function createdAt(): \\DateTimeImmutable { return \$this->createdAt; }
             public function updatedAt(): \\DateTimeImmutable { return \$this->updatedAt; }
+        }
+        PHP;
+    }
+
+    private function templateStatusEnum(string $name): string
+    {
+        return <<<PHP
+        <?php
+
+        declare(strict_types=1);
+
+        namespace App\\{$name}\\Domain\\ValueObject;
+
+        enum {$name}Status: string
+        {
+            case Active   = 'active';
+            case Inactive = 'inactive';
+            case Deleted  = 'deleted';
         }
         PHP;
     }
@@ -363,6 +406,34 @@ final class MakeBoundedContextCommand extends Command
             public function errorCode(): string
             {
                 return '{$lower}.not_found';
+            }
+        }
+        PHP;
+    }
+
+    private function templateAlreadyExistsException(string $name): string
+    {
+        $lower = $this->toSnakeCase($name);
+
+        return <<<PHP
+        <?php
+
+        declare(strict_types=1);
+
+        namespace App\\{$name}\\Domain\\Exception;
+
+        use App\\Shared\\Domain\\Exception\\AlreadyExistsException;
+
+        final class {$name}AlreadyExistsException extends AlreadyExistsException
+        {
+            public static function withField(string \$field, string \$value): self
+            {
+                return new self(sprintf('{$name} with %s "%s" already exists.', \$field, \$value));
+            }
+
+            public function errorCode(): string
+            {
+                return '{$lower}.already_exists';
             }
         }
         PHP;
@@ -776,6 +847,7 @@ final class MakeBoundedContextCommand extends Command
 
                 <id name="id" type="{$this->toSnakeCase($name)}_id" column="id"/>
 
+                <field name="status" type="string" column="status" length="20" nullable="false"/>
                 <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
                 <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="false"/>
 
@@ -1568,9 +1640,75 @@ final class MakeBoundedContextCommand extends Command
     // Helpers
     // =========================================================
 
+    private function templatePatchRequest(string $name): string
+    {
+        return <<<PHP
+        <?php
+
+        declare(strict_types=1);
+
+        namespace App\\{$name}\\Infrastructure\\Http\\Request;
+
+        use App\\Shared\\Infrastructure\\Http\\Request\\JsonRequest;
+
+        final class Patch{$name}Request extends JsonRequest
+        {
+            /** @return array<string, bool|array{required?: bool, type?: string}> */
+            protected function rules(): array
+            {
+                return [];
+            }
+        }
+        PHP;
+    }
+
     private function toSnakeCase(string $name): string
     {
         return strtolower(preg_replace('/[A-Z]/', '_$0', lcfirst($name)));
+    }
+
+    private function apiVersionExists(string $version): bool
+    {
+        $routesPath = $this->projectDir.'/config/routes.yaml';
+        $content = file_get_contents($routesPath);
+
+        if (false === $content) {
+            return false;
+        }
+
+        return (bool) preg_match('/^api_'.preg_quote($version, '/').':/m', $content);
+    }
+
+    private function registerRoutes(string $name, string $version): void
+    {
+        $routesPath = $this->projectDir.'/config/routes.yaml';
+        $content = file_get_contents($routesPath);
+
+        if (false === $content) {
+            $this->io->error('Could not read config/routes.yaml.');
+
+            return;
+        }
+
+        $routeKey = 'api_'.$version.'_'.$this->toSnakeCase($name);
+
+        if (str_contains($content, $routeKey.':')) {
+            $this->io->writeln(sprintf('  <comment>skipped</comment> Route %s (already registered)', $routeKey));
+
+            return;
+        }
+
+        $entry = <<<YAML
+
+# Generated by make:bounded-context {$name}
+{$routeKey}:
+    resource: ../src/{$name}/Infrastructure/Http/Controller/
+    type: attribute
+    prefix: /api/{$version}
+YAML;
+
+        file_put_contents($routesPath, $content.$entry);
+        $this->io->writeln(sprintf('  <info>updated</info> config/routes.yaml (route %s)', $routeKey));
     }
 
     private function registerConfiguration(string $name): void
@@ -1728,7 +1866,23 @@ YAML;
 
     private function printNextSteps(string $name): void
     {
+        $lower = $this->toSnakeCase($name);
+
         $this->io->section('Next steps');
+        $this->io->text('Add to config/packages/doctrine.yaml if not auto-registered:');
+        $this->io->block([
+            'dbal:',
+            '    types:',
+            "        {$lower}_id: App\\{$name}\\Infrastructure\\Persistence\\Doctrine\\Type\\{$name}IdType",
+            '',
+            'orm:',
+            '    mappings:',
+            "        {$name}:",
+            '            type: xml',
+            "            dir: '%kernel.project_dir%/src/{$name}/Infrastructure/Persistence/Doctrine/Mapping'",
+            "            prefix: 'App\\{$name}\\Domain\\Entity'",
+            '            is_bundle: false',
+        ], null, 'fg=cyan');
         $this->io->listing([
             'Add your fields to the entity, repository interface, and XML mapping',
             'Add request DTOs and validation when you introduce writable fields',
