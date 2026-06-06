@@ -227,6 +227,13 @@ services:
             $secretKey: '%env(MINIO_SECRET_KEY)%'
             $useSsl: '%env(bool:MINIO_USE_SSL)%'
 
+    App\Document\Infrastructure\Storage\MinioBucketManager:
+        arguments:
+            $endpoint: '%env(MINIO_ENDPOINT)%'
+            $accessKey: '%env(MINIO_ACCESS_KEY)%'
+            $secretKey: '%env(MINIO_SECRET_KEY)%'
+            $useSsl: '%env(bool:MINIO_USE_SSL)%'
+
     App\Document\Application\Service\BucketMimeTypeValidator:
         arguments:
             $buckets: '%document_storage.buckets%'
@@ -265,6 +272,9 @@ services:
 
     App\Document\Domain\Storage\BucketExistenceCheckerInterface:
         alias: App\Document\Infrastructure\Storage\MinioBucketExistenceChecker
+
+    App\Document\Domain\Storage\BucketManagerInterface:
+        alias: App\Document\Infrastructure\Storage\MinioBucketManager
 
     App\Document\Domain\Repository\DocumentRepositoryInterface:
         alias: App\Document\Infrastructure\Persistence\Doctrine\Repository\DoctrineDocumentRepository

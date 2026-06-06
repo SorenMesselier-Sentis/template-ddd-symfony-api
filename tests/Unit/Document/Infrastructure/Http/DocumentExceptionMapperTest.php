@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Document\Infrastructure\Http;
 
+use App\Document\Domain\Exception\BucketNotEmptyException;
 use App\Document\Domain\Exception\BucketNotFoundException;
 use App\Document\Domain\Exception\DocumentNotFoundException;
 use App\Document\Domain\Exception\FileTooLargeException;
@@ -31,6 +32,14 @@ final class DocumentExceptionMapperTest extends UnitTestCase
 
         $this->assertTrue($this->mapper->supports($exception));
         $this->assertSame([404, 'document.bucket_not_found'], $this->mapper->resolve($exception));
+    }
+
+    public function testItMapsBucketNotEmptyTo409(): void
+    {
+        $exception = BucketNotEmptyException::withName('documents');
+
+        $this->assertTrue($this->mapper->supports($exception));
+        $this->assertSame([409, 'document.bucket_not_empty'], $this->mapper->resolve($exception));
     }
 
     public function testItMapsInvalidMimeTypeTo422(): void

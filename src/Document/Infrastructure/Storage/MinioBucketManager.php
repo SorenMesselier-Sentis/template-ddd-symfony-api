@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Document\Infrastructure\Storage;
+
+use App\Document\Domain\Storage\BucketManagerInterface;
+use App\Document\Domain\ValueObject\BucketInfo;
+use App\Document\Domain\ValueObject\BucketName;
+use Aws\S3\S3Client;
+
+final class MinioBucketManager implements BucketManagerInterface
+{
+    private readonly S3Client $client;
+
+    public function __construct(
+        string $endpoint,
+        string $accessKey,
+        string $secretKey,
+        bool $useSsl,
+    ) {
+        $this->client = MinioS3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
+    }
+
+    public function create(BucketName $bucket): void
+    {
+        $this->client->createBucket([
+            'Bucket' => $bucket->value(),
+        ]);
+    }
+
+    public function delete(BucketName $bucket): void
+    {
+        $this->client->deleteBucket([
+            'Bucket' => $bucket->value(),
+        ]);
+    }
+
+    public function list(): array
+    {
+        $result = $this->client->listBuckets();
+        $buckets = [];
+
+        foreach ($result['Buckets'] ?? [] as $bucket) {
+            $creationDate = $bucket['CreationDate'] ?? null;
+            $createdAt = $creationDate instanceof \DateTimeInterface
+                ? \DateTimeImmutable::createFromInterface($creationDate)
+                : new \DateTimeImmutable();
+
+            $buckets[] = new BucketInfo(
+                name: BucketName::fromString((string) $bucket['Name']),
+                createdAt: $createdAt,
+            );
+        }
+
+        return $buckets;
+    }
+}

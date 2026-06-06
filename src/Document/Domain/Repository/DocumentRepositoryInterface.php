@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Document\Domain\Repository;
 
 use App\Document\Domain\Entity\Document;
+use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\DocumentId;
 
 interface DocumentRepositoryInterface
@@ -14,4 +15,6 @@ interface DocumentRepositoryInterface
     public function findById(DocumentId $id): ?Document;
 
     public function findByIdIncludingDeleted(DocumentId $id): ?Document;
+
+    public function hasActiveDocumentsInBucket(BucketName $bucket): bool;
 }
