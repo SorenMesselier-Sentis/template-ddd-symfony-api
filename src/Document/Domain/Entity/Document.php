@@ -6,6 +6,7 @@ namespace App\Document\Domain\Entity;
 
 use App\Document\Domain\Enum\DocumentStatus;
 use App\Document\Domain\Enum\UploadResultStatus;
+use App\Document\Domain\Event\DocumentDeleted;
 use App\Document\Domain\Event\DocumentUploaded;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\DocumentId;
@@ -134,5 +135,17 @@ final class Document
     public function updatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function delete(bool $purge): void
+    {
+        $this->status = DocumentStatus::DELETED;
+        $this->updatedAt = new \DateTimeImmutable();
+
+        $this->record(new DocumentDeleted(
+            aggregateId: $this->id->value(),
+            ownerId: $this->ownerId->value(),
+            purge: $purge,
+        ));
     }
 }

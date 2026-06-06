@@ -42,6 +42,14 @@ final class MinioDocumentStorageAdapter implements DocumentStorageInterface, Mul
         ]);
     }
 
+    public function delete(BucketName $bucket, ObjectPath $objectPath): void
+    {
+        $this->client->deleteObject([
+            'Bucket' => $bucket->value(),
+            'Key' => $objectPath->value(),
+        ]);
+    }
+
     public function initiateMultipartUpload(
         BucketName $bucket,
         ObjectPath $objectPath,

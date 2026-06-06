@@ -147,9 +147,7 @@ final class GetDocumentPresignedUrlQueryHandlerTest extends UnitTestCase
         );
 
         if (DocumentStatus::DELETED === $status) {
-            $reflection = new \ReflectionClass($document);
-            $property = $reflection->getProperty('status');
-            $property->setValue($document, DocumentStatus::DELETED);
+            $document->delete(false);
         }
 
         $document->pullDomainEvents();

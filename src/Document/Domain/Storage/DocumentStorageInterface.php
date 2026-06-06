@@ -16,4 +16,6 @@ interface DocumentStorageInterface
         string $content,
         MimeType $mimeType,
     ): void;
+
+    public function delete(BucketName $bucket, ObjectPath $objectPath): void;
 }
