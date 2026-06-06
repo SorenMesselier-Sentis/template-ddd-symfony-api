@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\Monitoring\Metrics;
 
 use Prometheus\CollectorRegistry;
+use Prometheus\Storage\Adapter;
 use Prometheus\Storage\APC;
+use Prometheus\Storage\InMemory;
 use Prometheus\Storage\Redis;
 
 final class PrometheusCollectorRegistryFactory
@@ -23,10 +25,11 @@ final class PrometheusCollectorRegistryFactory
         return new CollectorRegistry($this->createStorageAdapter());
     }
 
-    private function createStorageAdapter(): APC|Redis
+    private function createStorageAdapter(): Adapter
     {
         return match ($this->metricsStorage) {
             'apcu' => new APC(),
+            'in_memory' => new InMemory(),
             'redis' => new Redis([
                 'host' => $this->redisHost,
                 'port' => $this->redisPort,
@@ -34,7 +37,7 @@ final class PrometheusCollectorRegistryFactory
                     ? $this->redisPassword
                     : null,
             ]),
-            default => throw new \LogicException(sprintf('Unsupported METRICS_STORAGE value "%s"; expected "apcu" or "redis".', $this->metricsStorage)),
+            default => throw new \LogicException(sprintf('Unsupported METRICS_STORAGE value "%s"; expected "apcu", "in_memory" or "redis".', $this->metricsStorage)),
         };
     }
 }

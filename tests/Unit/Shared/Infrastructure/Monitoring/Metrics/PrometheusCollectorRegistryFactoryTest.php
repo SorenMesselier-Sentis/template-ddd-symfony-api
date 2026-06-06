@@ -13,11 +13,18 @@ final class PrometheusCollectorRegistryFactoryTest extends UnitTestCase
 {
     public function testItCreatesRegistryWithApcuStorage(): void
     {
-        if (!\extension_loaded('apcu')) {
-            $this->markTestSkipped('APCu extension is required to exercise the apcu storage adapter.');
+        if (!\extension_loaded('apcu') || !\function_exists('apcu_enabled') || !apcu_enabled()) {
+            $this->markTestSkipped('APCu extension must be loaded and enabled to exercise the apcu storage adapter.');
         }
 
         $registry = (new PrometheusCollectorRegistryFactory('apcu'))->create();
+
+        $this->assertInstanceOf(CollectorRegistry::class, $registry);
+    }
+
+    public function testItCreatesRegistryWithInMemoryStorage(): void
+    {
+        $registry = (new PrometheusCollectorRegistryFactory('in_memory'))->create();
 
         $this->assertInstanceOf(CollectorRegistry::class, $registry);
     }
@@ -37,7 +44,7 @@ final class PrometheusCollectorRegistryFactoryTest extends UnitTestCase
     public function testItThrowsOnUnsupportedStorage(): void
     {
         $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('Unsupported METRICS_STORAGE value "memory"');
+        $this->expectExceptionMessage('Unsupported METRICS_STORAGE value "memory"; expected "apcu", "in_memory" or "redis".');
 
         (new PrometheusCollectorRegistryFactory('memory'))->create();
     }

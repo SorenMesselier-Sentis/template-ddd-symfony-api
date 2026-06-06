@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Http\Response;
 
+use App\Shared\Infrastructure\Http\Pagination\PaginationLinkBuilder;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\SerializerInterface;
 
 final class ApiResponse
 {
     public function __construct(
         private readonly SerializerInterface $serializer,
+        private readonly PaginationLinkBuilder $paginationLinkBuilder,
     ) {
     }
 
@@ -41,17 +44,16 @@ final class ApiResponse
         mixed $data,
         int $total,
         int $page,
-        int $perPage,
+        int $limit,
+        Request $request,
     ): JsonResponse {
+        $totalPages = PaginationMeta::totalPages($total, $limit);
+
         return new JsonResponse(
             data: $this->normalize([
                 'data' => $data,
-                'meta' => [
-                    'total' => $total,
-                    'page' => $page,
-                    'per_page' => $perPage,
-                    'pages' => (int) ceil($total / $perPage),
-                ],
+                'meta' => PaginationMeta::from($total, $page, $limit),
+                'links' => $this->paginationLinkBuilder->build($request, $page, $limit, $totalPages),
             ]),
             json: true,
         );

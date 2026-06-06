@@ -449,7 +449,19 @@ All responses follow a consistent envelope:
 // collection
 {
     "data": [...],
-    "meta": { "total": 100, "page": 1, "per_page": 20, "pages": 5 }
+    "meta": {
+        "page": 1,
+        "limit": 10,
+        "total_items": 245,
+        "total_pages": 25,
+        "has_next": true,
+        "has_previous": false
+    },
+    "links": {
+        "self": "/v1/users?page=1&limit=10",
+        "next": "/v1/users?page=2&limit=10",
+        "previous": null
+    }
 }
 
 // error

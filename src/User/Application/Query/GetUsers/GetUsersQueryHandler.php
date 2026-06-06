@@ -24,7 +24,7 @@ final class GetUsersQueryHandler
             users: array_map(fn ($user) => new UserItemResponse($user), $users),
             total: $total,
             page: $query->filters->pagination->page,
-            perPage: $query->filters->pagination->limit,
+            limit: $query->filters->pagination->limit,
         );
     }
 }

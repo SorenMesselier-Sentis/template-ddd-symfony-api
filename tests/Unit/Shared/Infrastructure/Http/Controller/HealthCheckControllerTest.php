@@ -54,7 +54,7 @@ final class HealthCheckControllerTest extends UnitTestCase
             ->method('serialize')
             ->willReturnCallback(static fn (mixed $data): string => json_encode($data, JSON_THROW_ON_ERROR));
 
-        return new ApiResponse($serializer);
+        return new ApiResponse($serializer, new \App\Shared\Infrastructure\Http\Pagination\PaginationLinkBuilder());
     }
 
     /** @param callable():HealthCheckStatus $callback */

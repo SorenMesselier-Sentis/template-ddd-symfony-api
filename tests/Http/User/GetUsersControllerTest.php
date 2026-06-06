@@ -11,9 +11,25 @@ final class GetUsersControllerTest extends HttpTestCase
     public function testListUsersAsAdmin(): void
     {
         $client = $this->createAuthenticatedClient('admin');
-        $client->request('GET', '/api/v1/users');
+        $client->request('GET', '/api/v1/users?page=1&limit=10');
 
-        $this->assertJsonEnvelope($client->getResponse(), 200);
+        $response = $client->getResponse();
+        $this->assertJsonEnvelope($response, 200);
+
+        $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertArrayHasKey('meta', $payload);
+        $this->assertArrayHasKey('links', $payload);
+        $this->assertArrayHasKey('page', $payload['meta']);
+        $this->assertArrayHasKey('limit', $payload['meta']);
+        $this->assertArrayHasKey('total_items', $payload['meta']);
+        $this->assertArrayHasKey('total_pages', $payload['meta']);
+        $this->assertArrayHasKey('has_next', $payload['meta']);
+        $this->assertArrayHasKey('has_previous', $payload['meta']);
+        $this->assertArrayHasKey('self', $payload['links']);
+        $this->assertArrayHasKey('next', $payload['links']);
+        $this->assertArrayHasKey('previous', $payload['links']);
+        $this->assertStringStartsWith('/v1/users?', $payload['links']['self']);
     }
 
     public function testUserRoleCannotCreateUser(): void

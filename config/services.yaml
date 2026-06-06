@@ -51,6 +51,7 @@ services:
     App\Shared\Infrastructure\Http\Response\ApiResponse:
         arguments:
             $serializer: "@serializer"
+            $paginationLinkBuilder: '@App\Shared\Infrastructure\Http\Pagination\PaginationLinkBuilder'
 
     # Bus implementations
     App\Shared\Infrastructure\Bus\Command\MessengerCommandBus:

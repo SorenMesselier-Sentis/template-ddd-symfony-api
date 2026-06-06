@@ -101,7 +101,7 @@ final class FiltersBuilder
     {
         return Pagination::fromRequest(
             page: (int) ($params['page'] ?? 1),
-            limit: (int) ($params['per_page'] ?? $params['limit'] ?? 20),
+            limit: (int) ($params['limit'] ?? 20),
         );
     }
 }

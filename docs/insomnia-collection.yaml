@@ -148,7 +148,7 @@ resources:
     parentId: fld_v2_users
     name: List Users
     method: GET
-    url: "{{ _.base_url }}/api/v1/users?page=1&per_page=20"
+    url: "{{ _.base_url }}/api/v1/users?page=1&limit=20"
     body: {}
     headers:
       - name: Accept
