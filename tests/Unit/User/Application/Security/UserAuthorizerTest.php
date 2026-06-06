@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\User\Application\Security;
 
 use App\Tests\Unit\UnitTestCase;
-use App\User\Application\Security\RoleRequirement;
+use App\Shared\Domain\Security\RoleRequirement;
 use App\User\Application\Security\UserAuthorizer;
 use App\User\Domain\Exception\InsufficientPrivilegesException;
 use App\User\Domain\Security\UserContextInterface;
@@ -36,7 +36,7 @@ final class UserAuthorizerTest extends UnitTestCase
     {
         $authorizer = new UserAuthorizer($this->userContext([UserRole::USER]));
 
-        $authorizer->assert(RoleRequirement::any(UserRole::ADMIN, UserRole::USER));
+        $authorizer->assert(RoleRequirement::any('ROLE_ADMIN', 'ROLE_USER'));
 
         $this->addToAssertionCount(1);
     }
@@ -47,14 +47,14 @@ final class UserAuthorizerTest extends UnitTestCase
 
         $authorizer = new UserAuthorizer($this->userContext([UserRole::USER]));
 
-        $authorizer->assert(RoleRequirement::any(UserRole::ADMIN));
+        $authorizer->assert(RoleRequirement::any('ROLE_ADMIN'));
     }
 
     public function testAllModePassesWhenUserHasEveryRequiredRole(): void
     {
         $authorizer = new UserAuthorizer($this->userContext([UserRole::ADMIN, UserRole::USER]));
 
-        $authorizer->assert(RoleRequirement::all(UserRole::ADMIN, UserRole::USER));
+        $authorizer->assert(RoleRequirement::all('ROLE_ADMIN', 'ROLE_USER'));
 
         $this->addToAssertionCount(1);
     }
@@ -65,7 +65,7 @@ final class UserAuthorizerTest extends UnitTestCase
 
         $authorizer = new UserAuthorizer($this->userContext([UserRole::ADMIN]));
 
-        $authorizer->assert(RoleRequirement::all(UserRole::ADMIN, UserRole::USER));
+        $authorizer->assert(RoleRequirement::all('ROLE_ADMIN', 'ROLE_USER'));
     }
 
     public function testAuthenticatedPassesWhenUserIsAuthenticated(): void

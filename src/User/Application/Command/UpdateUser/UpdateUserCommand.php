@@ -6,7 +6,7 @@ namespace App\User\Application\Command\UpdateUser;
 
 use App\Shared\Domain\Bus\Command\Command;
 use App\User\Application\Security\AuthorizedMessage;
-use App\User\Application\Security\RoleRequirement;
+use App\Shared\Domain\Security\RoleRequirement;
 
 final class UpdateUserCommand implements Command, AuthorizedMessage
 {

@@ -1,0 +1,11 @@
+parameters:
+    document_storage.max_single_part_bytes: 104857600
+    document_storage.buckets:
+        documents:
+            allowed_mime_types:
+                - application/pdf
+                - image/jpeg
+                - image/png
+        invoices:
+            allowed_mime_types:
+                - application/pdf

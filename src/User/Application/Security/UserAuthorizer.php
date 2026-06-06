@@ -6,6 +6,8 @@ namespace App\User\Application\Security;
 
 use App\Shared\Domain\Security\AuthorizedMessageContract;
 use App\Shared\Domain\Security\MessageAuthorizerInterface;
+use App\Shared\Domain\Security\RoleMatchMode;
+use App\Shared\Domain\Security\RoleRequirement;
 use App\User\Domain\Exception\InsufficientPrivilegesException;
 use App\User\Domain\Security\UserContextInterface;
 use App\User\Domain\ValueObject\UserRole;
@@ -19,10 +21,6 @@ final class UserAuthorizer implements MessageAuthorizerInterface
 
     public function authorize(AuthorizedMessageContract $message): void
     {
-        if (!$message instanceof AuthorizedMessage) {
-            return;
-        }
-
         $this->assert($message->roleRequirement());
     }
 
@@ -35,11 +33,14 @@ final class UserAuthorizer implements MessageAuthorizerInterface
 
     public function isSatisfied(RoleRequirement $requirement): bool
     {
-        $userRoles = $this->userContext->roles();
-
         if ([] === $requirement->roles) {
             return $this->userContext->isAuthenticated();
         }
+
+        $userRoles = array_map(
+            static fn (UserRole $role): string => $role->value,
+            $this->userContext->roles(),
+        );
 
         return match ($requirement->mode) {
             RoleMatchMode::Any => $this->hasAnyRole($userRoles, $requirement->roles),
@@ -48,8 +49,8 @@ final class UserAuthorizer implements MessageAuthorizerInterface
     }
 
     /**
-     * @param list<UserRole> $userRoles
-     * @param list<UserRole> $requiredRoles
+     * @param list<string> $userRoles
+     * @param list<string> $requiredRoles
      */
     private function hasAnyRole(array $userRoles, array $requiredRoles): bool
     {
@@ -63,8 +64,8 @@ final class UserAuthorizer implements MessageAuthorizerInterface
     }
 
     /**
-     * @param list<UserRole> $userRoles
-     * @param list<UserRole> $requiredRoles
+     * @param list<string> $userRoles
+     * @param list<string> $requiredRoles
      */
     private function hasAllRoles(array $userRoles, array $requiredRoles): bool
     {

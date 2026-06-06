@@ -10,6 +10,12 @@ doctrine:
             user_status: App\User\Infrastructure\Persistence\Doctrine\Type\UserStatusType
             user_roles: App\User\Infrastructure\Persistence\Doctrine\Type\UserRolesType
             refresh_token_id: App\User\Infrastructure\Persistence\Doctrine\Type\RefreshTokenIdType
+            document_id: App\Document\Infrastructure\Persistence\Doctrine\Type\DocumentIdType
+            owner_id: App\Document\Infrastructure\Persistence\Doctrine\Type\OwnerIdType
+            bucket_name: App\Document\Infrastructure\Persistence\Doctrine\Type\BucketNameType
+            object_path: App\Document\Infrastructure\Persistence\Doctrine\Type\ObjectPathType
+            document_mime_type: App\Document\Infrastructure\Persistence\Doctrine\Type\MimeTypeType
+            document_status: App\Document\Infrastructure\Persistence\Doctrine\Type\DocumentStatusType
     orm:
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         mappings:
@@ -22,6 +28,11 @@ doctrine:
                 type: xml
                 dir: "%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping"
                 prefix: App\User\Domain\Entity
+                is_bundle: false
+            Document:
+                type: xml
+                dir: "%kernel.project_dir%/src/Document/Infrastructure/Persistence/Doctrine/Mapping"
+                prefix: App\Document\Domain\Entity
                 is_bundle: false
 when@prod:
     doctrine:

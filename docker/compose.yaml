@@ -14,10 +14,16 @@ services:
             DATABASE_URL: ${DATABASE_URL}
             RABBITMQ_DSN: ${RABBITMQ_DSN}
             PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT}
+            MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+            MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+            MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+            MINIO_USE_SSL: ${MINIO_USE_SSL}
         depends_on:
             postgres:
                 condition: service_healthy
             rabbitmq:
+                condition: service_healthy
+            minio:
                 condition: service_healthy
 
     # =========================================================
@@ -126,6 +132,26 @@ services:
             - prometheus
 
     # =========================================================
+    # MinIO
+    # =========================================================
+    minio:
+        image: minio/minio:latest
+        command: server /data --console-address ":9001"
+        environment:
+            MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+            MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+        volumes:
+            - minio_data:/data
+        ports:
+            - "${MINIO_API_PORT}:9000"
+            - "${MINIO_CONSOLE_PORT}:9001"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    # =========================================================
     # Mailpit
     # =========================================================
     mailpit:
@@ -139,3 +165,4 @@ volumes:
     rabbitmq_data:
     prometheus_data:
     grafana_data:
+    minio_data:

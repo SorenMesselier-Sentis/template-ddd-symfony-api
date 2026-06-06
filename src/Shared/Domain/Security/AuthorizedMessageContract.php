@@ -6,5 +6,5 @@ namespace App\Shared\Domain\Security;
 
 interface AuthorizedMessageContract
 {
-    public function roleRequirement(): object;
+    public function roleRequirement(): RoleRequirement;
 }

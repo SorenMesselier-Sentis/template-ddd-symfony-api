@@ -14,6 +14,10 @@ framework:
                     - App\Shared\Infrastructure\Monitoring\Metrics\BusMetricsMiddleware
                     - App\Shared\Infrastructure\Monitoring\Tracing\TracerMiddleware
                     - App\Shared\Infrastructure\Messaging\AuthorizeMessageMiddleware
+            audit.bus:
+                middleware:
+                    - App\Shared\Infrastructure\Monitoring\Metrics\BusMetricsMiddleware
+                    - App\Shared\Infrastructure\Monitoring\Tracing\TracerMiddleware
             event.bus:
                 default_middleware: allow_no_handlers
                 middleware:
@@ -32,6 +36,8 @@ framework:
                     queues:
                         events.user:
                             binding_keys: ['user.#']
+                        events.document:
+                            binding_keys: ['document.#']
                 retry_strategy:
                     max_retries: 3
                     delay: 1000
@@ -50,6 +56,7 @@ framework:
 
         routing:
             'App\Shared\Domain\Bus\Command\Command': sync
+            'App\Document\Application\Command\UploadDocument\RecordDocumentUploadFailureCommand': sync
             'App\Shared\Domain\Bus\Query\Query': sync
             'App\Shared\Domain\Bus\Event\DomainEvent': async
             'App\Shared\Infrastructure\Messaging\RabbitMQ\DeadLetterMessage': async.dead_letter

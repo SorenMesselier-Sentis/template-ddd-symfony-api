@@ -6,7 +6,7 @@ namespace App\User\Application\Query\GetUser;
 
 use App\Shared\Domain\Bus\Query\Query;
 use App\User\Application\Security\AuthorizedMessage;
-use App\User\Application\Security\RoleRequirement;
+use App\Shared\Domain\Security\RoleRequirement;
 
 final class GetUserQuery implements Query, AuthorizedMessage
 {

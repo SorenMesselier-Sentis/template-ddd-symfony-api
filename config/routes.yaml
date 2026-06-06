@@ -14,3 +14,8 @@ api_v1:
     resource: ../src/User/Infrastructure/Http/Controller/
     type: attribute
     prefix: /api/v1
+
+api_v1_document:
+    resource: ../src/Document/Infrastructure/Http/Controller/
+    type: attribute
+    prefix: /api/v1
