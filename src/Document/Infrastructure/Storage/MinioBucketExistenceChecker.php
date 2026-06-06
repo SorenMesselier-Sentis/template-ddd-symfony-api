@@ -18,19 +18,7 @@ final class MinioBucketExistenceChecker implements BucketExistenceCheckerInterfa
         string $secretKey,
         bool $useSsl,
     ) {
-        $this->client = new S3Client([
-            'version' => 'latest',
-            'region' => 'us-east-1',
-            'endpoint' => $endpoint,
-            'use_path_style_endpoint' => true,
-            'credentials' => [
-                'key' => $accessKey,
-                'secret' => $secretKey,
-            ],
-            'http' => [
-                'verify' => $useSsl,
-            ],
-        ]);
+        $this->client = MinioS3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
     }
 
     public function exists(BucketName $bucket): bool

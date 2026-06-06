@@ -236,7 +236,19 @@ services:
             $auditBus: '@audit.bus'
             $maxSinglePartBytes: '%document_storage.max_single_part_bytes%'
 
+    App\Document\Application\Command\MultipartUpload\InitiateMultipartUploadCommandHandler:
+        arguments:
+            $minMultipartBytes: '%document_storage.min_multipart_bytes%'
+            $maxMultipartBytes: '%document_storage.max_multipart_bytes%'
+
+    App\Document\Application\Service\MultipartPartSizeValidator:
+        arguments:
+            $minPartBytes: '%document_storage.min_part_bytes%'
+
     App\Document\Domain\Storage\DocumentStorageInterface:
+        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+
+    App\Document\Domain\Storage\MultipartDocumentStorageInterface:
         alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
 
     App\Document\Domain\Storage\BucketExistenceCheckerInterface:
@@ -244,6 +256,9 @@ services:
 
     App\Document\Domain\Repository\DocumentRepositoryInterface:
         alias: App\Document\Infrastructure\Persistence\Doctrine\Repository\DoctrineDocumentRepository
+
+    App\Document\Domain\Repository\MultipartUploadSessionRepositoryInterface:
+        alias: App\Document\Infrastructure\Persistence\Doctrine\Repository\DoctrineMultipartUploadSessionRepository
 
     App\Document\Domain\Security\OwnerContextInterface:
         alias: App\Document\Infrastructure\Security\HttpOwnerContext

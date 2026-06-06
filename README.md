@@ -2,6 +2,9 @@
 
 A production-ready REST API template built with Symfony 8 and Domain-Driven Design principles.
 
+## TODOS
+- Add fixtures to the documents
+
 ## Stack
 
 | Layer | Technology |

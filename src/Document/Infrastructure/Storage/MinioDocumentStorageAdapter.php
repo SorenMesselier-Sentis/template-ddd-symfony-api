@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Storage;
 
 use App\Document\Domain\Storage\DocumentStorageInterface;
+use App\Document\Domain\Storage\MultipartDocumentStorageInterface;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\MimeType;
 use App\Document\Domain\ValueObject\ObjectPath;
+use App\Document\Domain\ValueObject\PartNumber;
 use Aws\S3\S3Client;
 
-final class MinioDocumentStorageAdapter implements DocumentStorageInterface
+final class MinioDocumentStorageAdapter implements DocumentStorageInterface, MultipartDocumentStorageInterface
 {
     private readonly S3Client $client;
 
@@ -20,19 +22,7 @@ final class MinioDocumentStorageAdapter implements DocumentStorageInterface
         string $secretKey,
         bool $useSsl,
     ) {
-        $this->client = new S3Client([
-            'version' => 'latest',
-            'region' => 'us-east-1',
-            'endpoint' => $endpoint,
-            'use_path_style_endpoint' => true,
-            'credentials' => [
-                'key' => $accessKey,
-                'secret' => $secretKey,
-            ],
-            'http' => [
-                'verify' => $useSsl,
-            ],
-        ]);
+        $this->client = MinioS3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
     }
 
     public function upload(
@@ -46,6 +36,72 @@ final class MinioDocumentStorageAdapter implements DocumentStorageInterface
             'Key' => $objectPath->value(),
             'Body' => $content,
             'ContentType' => $mimeType->value(),
+        ]);
+    }
+
+    public function initiateMultipartUpload(
+        BucketName $bucket,
+        ObjectPath $objectPath,
+        MimeType $mimeType,
+    ): string {
+        $result = $this->client->createMultipartUpload([
+            'Bucket' => $bucket->value(),
+            'Key' => $objectPath->value(),
+            'ContentType' => $mimeType->value(),
+        ]);
+
+        return (string) $result['UploadId'];
+    }
+
+    public function uploadPart(
+        BucketName $bucket,
+        ObjectPath $objectPath,
+        string $uploadId,
+        PartNumber $partNumber,
+        string $content,
+    ): string {
+        $result = $this->client->uploadPart([
+            'Bucket' => $bucket->value(),
+            'Key' => $objectPath->value(),
+            'UploadId' => $uploadId,
+            'PartNumber' => $partNumber->value(),
+            'Body' => $content,
+        ]);
+
+        return (string) $result['ETag'];
+    }
+
+    public function completeMultipartUpload(
+        BucketName $bucket,
+        ObjectPath $objectPath,
+        string $uploadId,
+        array $parts,
+    ): void {
+        $this->client->completeMultipartUpload([
+            'Bucket' => $bucket->value(),
+            'Key' => $objectPath->value(),
+            'UploadId' => $uploadId,
+            'MultipartUpload' => [
+                'Parts' => array_map(
+                    static fn (array $part): array => [
+                        'PartNumber' => $part['partNumber'],
+                        'ETag' => $part['etag'],
+                    ],
+                    $parts,
+                ),
+            ],
+        ]);
+    }
+
+    public function abortMultipartUpload(
+        BucketName $bucket,
+        ObjectPath $objectPath,
+        string $uploadId,
+    ): void {
+        $this->client->abortMultipartUpload([
+            'Bucket' => $bucket->value(),
+            'Key' => $objectPath->value(),
+            'UploadId' => $uploadId,
         ]);
     }
 }
