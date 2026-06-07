@@ -13,7 +13,17 @@ final class MinioS3ClientFactory
         string $accessKey,
         string $secretKey,
         bool $useSsl,
+        ?float $timeoutSeconds = null,
     ): S3Client {
+        $http = [
+            'verify' => $useSsl,
+        ];
+
+        if (null !== $timeoutSeconds) {
+            $http['connect_timeout'] = $timeoutSeconds;
+            $http['timeout'] = $timeoutSeconds;
+        }
+
         return new S3Client([
             'version' => 'latest',
             'region' => 'us-east-1',
@@ -23,9 +33,7 @@ final class MinioS3ClientFactory
                 'key' => $accessKey,
                 'secret' => $secretKey,
             ],
-            'http' => [
-                'verify' => $useSsl,
-            ],
+            'http' => $http,
         ]);
     }
 }

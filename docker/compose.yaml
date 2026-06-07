@@ -135,6 +135,9 @@ services:
     # MinIO
     # =========================================================
     minio:
+        build:
+            context: ./minio
+            dockerfile: Dockerfile
         image: minio/minio:latest
         command: server /data --console-address ":9001"
         environment:
@@ -146,7 +149,7 @@ services:
             - "${MINIO_API_PORT}:9000"
             - "${MINIO_CONSOLE_PORT}:9001"
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+            test: ["CMD", "mc", "ready", "local"]
             interval: 10s
             timeout: 5s
             retries: 5
