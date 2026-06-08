@@ -48,7 +48,7 @@ final class JsonRequestTest extends UnitTestCase
     }
 
     /**
-     * @param array<string, mixed> $body
+     * @param array<string, mixed>                                      $body
      * @param array<string, bool|array{required?: bool, type?: string}> $rules
      */
     private function createJsonRequest(array $body, array $rules): object

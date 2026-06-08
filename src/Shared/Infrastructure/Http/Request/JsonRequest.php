@@ -42,7 +42,7 @@ abstract class JsonRequest
             throw new InvalidJsonException('JSON body must be a JSON object.');
         }
 
-        /** @var array<string, mixed> $decoded */
+        /* @var array<string, mixed> $decoded */
         $this->data = $decoded;
         $this->validate();
     }

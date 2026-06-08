@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Document\Infrastructure\Http;
 
-use App\Document\Domain\Exception\DocumentNotFoundException;
 use App\Document\Domain\Exception\BucketNotEmptyException;
 use App\Document\Domain\Exception\BucketNotFoundException;
+use App\Document\Domain\Exception\DocumentNotFoundException;
 use App\Document\Domain\Exception\FileTooLargeException;
 use App\Document\Domain\Exception\InvalidMimeTypeException;
 use App\Document\Domain\Exception\InvalidMultipartFileSizeException;

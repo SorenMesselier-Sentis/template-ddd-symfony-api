@@ -6,6 +6,7 @@ namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\UploadDocument\UploadDocumentCommand;
 use App\Document\Application\Command\UploadDocument\UploadDocumentResult;
+use App\Document\Infrastructure\Http\Response\DocumentResponseData;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -51,7 +52,6 @@ use Symfony\Component\Uid\Uuid;
                     new OA\Property(property: 'size', type: 'integer'),
                     new OA\Property(property: 'mimeType', type: 'string'),
                     new OA\Property(property: 'bucket', type: 'string'),
-                    new OA\Property(property: 'objectPath', type: 'string'),
                     new OA\Property(property: 'ownerId', type: 'string', format: 'uuid'),
                     new OA\Property(property: 'status', type: 'string'),
                     new OA\Property(property: 'createdAt', type: 'string', format: 'date-time'),
@@ -96,21 +96,10 @@ final class UploadDocumentController
             bucket: $bucket,
             originalName: $file->getClientOriginalName(),
             content: $content,
-            size: $file->getSize() !== false ? $file->getSize() : strlen($content),
+            size: false !== $file->getSize() ? $file->getSize() : strlen($content),
             mimeType: $mimeType,
         ));
 
-        return $this->apiResponse->created([
-            'id' => $result->id,
-            'originalName' => $result->originalName,
-            'size' => $result->size,
-            'mimeType' => $result->mimeType,
-            'bucket' => $result->bucket,
-            'objectPath' => $result->objectPath,
-            'ownerId' => $result->ownerId,
-            'status' => $result->status,
-            'createdAt' => $result->createdAt,
-            'updatedAt' => $result->updatedAt,
-        ]);
+        return $this->apiResponse->created(DocumentResponseData::fromUploadResult($result));
     }
 }

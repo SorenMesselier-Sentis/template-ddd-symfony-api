@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Infrastructure\Messaging;
 
 use App\Shared\Domain\Security\MessageAuthorizerInterface;
+use App\Shared\Domain\ValueObject\Email;
 use App\Shared\Infrastructure\Messaging\AuthorizeMessageMiddleware;
 use App\Tests\Unit\UnitTestCase;
 use App\User\Application\Command\CreateUser\CreateUserCommand;
@@ -14,7 +15,6 @@ use App\User\Domain\Exception\InsufficientPrivilegesException;
 use App\User\Domain\Security\UserContextInterface;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserRole;
-use App\Shared\Domain\ValueObject\Email;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
@@ -78,12 +78,16 @@ final class AuthorizeMessageMiddlewareTest extends UnitTestCase
     private function terminatingStack(Envelope $envelope): StackInterface
     {
         return new class($envelope) implements StackInterface {
-            public function __construct(private readonly Envelope $envelope) {}
+            public function __construct(private readonly Envelope $envelope)
+            {
+            }
 
             public function next(): MiddlewareInterface
             {
                 return new class($this->envelope) implements MiddlewareInterface {
-                    public function __construct(private readonly Envelope $envelope) {}
+                    public function __construct(private readonly Envelope $envelope)
+                    {
+                    }
 
                     public function handle(Envelope $envelope, StackInterface $stack): Envelope
                     {

@@ -8,7 +8,7 @@ use App\Tests\Http\HttpTestCase;
 use Aws\S3\S3Client;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-final class UploadDocumentControllerTest extends HttpTestCase
+final class DocumentSecurityHttpTest extends HttpTestCase
 {
     protected function setUp(): void
     {
@@ -19,92 +19,69 @@ final class UploadDocumentControllerTest extends HttpTestCase
         }
     }
 
-    public function testUploadDocumentRequiresAuthentication(): void
+    public function testDocumentEndpointsRequireAuthentication(): void
     {
         $client = static::createClient();
-        $client->request('POST', '/api/v1/documents');
 
+        $client->request('DELETE', '/api/v1/documents/00000000-0000-0000-0000-000000000001');
+        $this->assertSame(401, $client->getResponse()->getStatusCode());
+
+        $client->request('GET', '/api/v1/documents/00000000-0000-0000-0000-000000000001/presigned-url');
+        $this->assertSame(401, $client->getResponse()->getStatusCode());
+
+        $client->request('GET', '/api/v1/buckets');
         $this->assertSame(401, $client->getResponse()->getStatusCode());
     }
 
-    public function testUploadDocumentReturns404ForMissingBucket(): void
+    public function testBucketManagementRequiresAdminRole(): void
     {
-        if (!$this->isMinioAvailable()) {
-            $this->markTestSkipped('MinIO is not available.');
-        }
-
         $client = $this->createAuthenticatedClient('user');
-        $file = $this->createTempPdf('missing-bucket.pdf');
 
         $client->request(
             'POST',
-            '/api/v1/documents',
-            parameters: ['bucket' => 'missing-bucket'],
-            files: ['file' => $file],
+            '/api/v1/buckets',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: json_encode(['name' => 'reports'], JSON_THROW_ON_ERROR),
         );
 
         $payload = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame(404, $client->getResponse()->getStatusCode());
-        $this->assertSame('document.bucket_not_found', $payload['error']['code']);
+        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        $this->assertSame('insufficient_privileges', $payload['error']['code']);
+
+        $client->request('GET', '/api/v1/buckets');
+        $this->assertSame(403, $client->getResponse()->getStatusCode());
     }
 
-    public function testUploadDocumentRejectsInvalidMimeType(): void
+    public function testAdminCanListBuckets(): void
+    {
+        $client = $this->createAuthenticatedClient('admin');
+
+        $client->request('GET', '/api/v1/buckets');
+
+        $this->assertJsonEnvelope($client->getResponse(), 200);
+    }
+
+    public function testUploadResponseDoesNotExposeObjectPath(): void
     {
         if (!$this->isMinioAvailable()) {
             $this->markTestSkipped('MinIO is not available.');
         }
 
         $client = $this->createAuthenticatedClient('user');
-        $path = tempnam(sys_get_temp_dir(), 'doc');
-        file_put_contents($path, 'plain text');
-        $file = new UploadedFile($path, 'notes.txt', 'text/plain', null, true);
-
-        $client->request(
-            'POST',
-            '/api/v1/documents',
-            parameters: ['bucket' => 'documents'],
-            files: ['file' => $file],
-        );
-
-        $payload = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame(422, $client->getResponse()->getStatusCode());
-        $this->assertSame('document.invalid_mime_type', $payload['error']['code']);
-    }
-
-    public function testUploadDocumentSucceeds(): void
-    {
-        if (!$this->isMinioAvailable()) {
-            $this->markTestSkipped('MinIO is not available.');
-        }
-
-        $client = $this->createAuthenticatedClient('user');
-        $file = $this->createTempPdf('invoice.pdf');
-
-        $client->request(
-            'POST',
-            '/api/v1/documents',
-            parameters: ['bucket' => 'documents'],
-            files: ['file' => $file],
-        );
-
-        $response = $client->getResponse();
-        $this->assertJsonEnvelope($response, 201);
-
-        $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
-        $this->assertSame('invoice.pdf', $payload['data']['originalName']);
-        $this->assertSame('application/pdf', $payload['data']['mimeType']);
-        $this->assertSame('documents', $payload['data']['bucket']);
-        $this->assertSame('active', $payload['data']['status']);
-        $this->assertArrayNotHasKey('objectPath', $payload['data']);
-        $this->assertArrayHasKey('ownerId', $payload['data']);
-    }
-
-    private function createTempPdf(string $name): UploadedFile
-    {
         $path = tempnam(sys_get_temp_dir(), 'pdf');
         file_put_contents($path, '%PDF-1.4 test');
+        $file = new UploadedFile($path, 'secure.pdf', 'application/pdf', null, true);
 
-        return new UploadedFile($path, $name, 'application/pdf', null, true);
+        $client->request(
+            'POST',
+            '/api/v1/documents',
+            parameters: ['bucket' => 'documents'],
+            files: ['file' => $file],
+        );
+
+        $payload = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(201, $client->getResponse()->getStatusCode());
+        $this->assertArrayNotHasKey('objectPath', $payload['data']);
     }
 
     private function isMinioAvailable(): bool

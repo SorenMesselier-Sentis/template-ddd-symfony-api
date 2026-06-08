@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Document;
 
-use App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\MimeType;
 use App\Document\Domain\ValueObject\ObjectPath;
+use App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter;
 use App\Tests\Integration\IntegrationTestCase;
 use Aws\S3\S3Client;
 

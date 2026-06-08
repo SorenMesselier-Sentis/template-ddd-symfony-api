@@ -6,6 +6,7 @@ namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\MultipartUpload\CompleteMultipartUploadCommand;
 use App\Document\Application\Command\UploadDocument\UploadDocumentResult;
+use App\Document\Infrastructure\Http\Response\DocumentResponseData;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -36,17 +37,6 @@ final class CompleteMultipartUploadController
             uploadId: $uploadId,
         ));
 
-        return $this->apiResponse->created([
-            'id' => $result->id,
-            'originalName' => $result->originalName,
-            'size' => $result->size,
-            'mimeType' => $result->mimeType,
-            'bucket' => $result->bucket,
-            'objectPath' => $result->objectPath,
-            'ownerId' => $result->ownerId,
-            'status' => $result->status,
-            'createdAt' => $result->createdAt,
-            'updatedAt' => $result->updatedAt,
-        ]);
+        return $this->apiResponse->created(DocumentResponseData::fromUploadResult($result));
     }
 }

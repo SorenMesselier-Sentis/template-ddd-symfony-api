@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\User\Application\Query\GetUsers;
+namespace App\Document\Application\Query\GetDocuments;
 
+use App\Document\Application\Security\AuthorizedMessage;
 use App\Shared\Domain\Bus\Query\Query;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\Security\RoleRequirement;
-use App\User\Application\Security\AuthorizedMessage;
 
-final class GetUsersQuery implements Query, AuthorizedMessage
+final class GetDocumentsQuery implements Query, AuthorizedMessage
 {
     public function __construct(
         public readonly Filters $filters,
@@ -18,6 +18,6 @@ final class GetUsersQuery implements Query, AuthorizedMessage
 
     public function roleRequirement(): RoleRequirement
     {
-        return RoleRequirement::authenticated();
+        return RoleRequirement::user();
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Application\Security;
 
+use App\Shared\Domain\Exception\UnauthenticatedException;
 use App\Shared\Domain\Security\AuthorizedMessageContract;
 use App\Shared\Domain\Security\MessageAuthorizerInterface;
 use App\Shared\Domain\Security\RoleMatchMode;
@@ -26,6 +27,10 @@ final class UserAuthorizer implements MessageAuthorizerInterface
 
     public function assert(RoleRequirement $requirement): void
     {
+        if (!$this->userContext->isAuthenticated()) {
+            throw UnauthenticatedException::create();
+        }
+
         if (!$this->isSatisfied($requirement)) {
             throw InsufficientPrivilegesException::create();
         }

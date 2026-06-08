@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\User\Application\Security;
 
-use App\Tests\Unit\UnitTestCase;
+use App\Shared\Domain\Exception\UnauthenticatedException;
 use App\Shared\Domain\Security\RoleRequirement;
+use App\Tests\Unit\UnitTestCase;
 use App\User\Application\Security\UserAuthorizer;
 use App\User\Domain\Exception\InsufficientPrivilegesException;
 use App\User\Domain\Security\UserContextInterface;
@@ -79,11 +80,20 @@ final class UserAuthorizerTest extends UnitTestCase
 
     public function testAuthenticatedThrowsWhenUserIsNotAuthenticated(): void
     {
-        $this->expectException(InsufficientPrivilegesException::class);
+        $this->expectException(UnauthenticatedException::class);
 
         $authorizer = new UserAuthorizer($this->userContext([], isAuthenticated: false));
 
         $authorizer->assert(RoleRequirement::authenticated());
+    }
+
+    public function testRoleRequirementThrowsUnauthenticatedWhenUserIsNotAuthenticated(): void
+    {
+        $this->expectException(UnauthenticatedException::class);
+
+        $authorizer = new UserAuthorizer($this->userContext([], isAuthenticated: false));
+
+        $authorizer->assert(RoleRequirement::user());
     }
 
     /**

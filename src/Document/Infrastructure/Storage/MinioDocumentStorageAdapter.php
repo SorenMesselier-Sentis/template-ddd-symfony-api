@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Document\Infrastructure\Storage;
 
+use App\Document\Domain\Entity\Document;
 use App\Document\Domain\Storage\DocumentPresignedUrlGeneratorInterface;
 use App\Document\Domain\Storage\DocumentStorageInterface;
 use App\Document\Domain\Storage\MultipartDocumentStorageInterface;
-use App\Document\Domain\Entity\Document;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\MimeType;
 use App\Document\Domain\ValueObject\ObjectPath;
