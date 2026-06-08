@@ -145,6 +145,8 @@ final class Document
         $this->record(new DocumentDeleted(
             aggregateId: $this->id->value(),
             ownerId: $this->ownerId->value(),
+            bucketName: $this->bucketName->value(),
+            objectPath: $this->objectPath->value(),
             purge: $purge,
         ));
     }

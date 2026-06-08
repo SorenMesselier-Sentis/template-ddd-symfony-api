@@ -46,10 +46,10 @@ final class JwtAuthenticatorTest extends UnitTestCase
         $this->assertTrue($this->authenticator->supports($request));
     }
 
-    public function testItSkipsAuthenticationOnProtectedRoutesWithoutAuthorizationHeader(): void
+    public function testItAuthenticatesProtectedRoutesEvenWithoutAuthorizationHeader(): void
     {
         $request = Request::create('/api/v1/users', 'GET');
 
-        $this->assertFalse($this->authenticator->supports($request));
+        $this->assertTrue($this->authenticator->supports($request));
     }
 }

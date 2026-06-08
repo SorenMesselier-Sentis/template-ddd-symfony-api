@@ -46,20 +46,24 @@ final class DoctrineDocumentRepositoryTest extends IntegrationTestCase
         $otherOwnerId = OwnerId::random();
 
         $older = $this->createDocument($ownerId, 'documents', 'application/pdf');
+        $this->repository->save($older);
+        sleep(1);
+
         $newer = $this->createDocument($ownerId, 'archive', 'application/pdf');
         $deleted = $this->createDocument($ownerId, 'documents', 'application/pdf');
         $deleted->delete(false);
         $deleted->pullDomainEvents();
         $foreign = $this->createDocument($otherOwnerId, 'documents', 'application/pdf');
 
-        foreach ([$older, $newer, $deleted, $foreign] as $document) {
+        foreach ([$newer, $deleted, $foreign] as $document) {
             $this->repository->save($document);
         }
 
         $documents = $this->repository->findByOwnerId($ownerId);
 
         $this->assertCount(2, $documents);
-        $this->assertTrue($documents[0]->createdAt() >= $documents[1]->createdAt());
+        $this->assertTrue($newer->id()->equals($documents[0]->id()));
+        $this->assertTrue($older->id()->equals($documents[1]->id()));
         $this->assertTrue($ownerId->equals($documents[0]->ownerId()));
     }
 
