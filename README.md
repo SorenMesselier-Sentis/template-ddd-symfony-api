@@ -476,12 +476,17 @@ If you want a fully editable HTTP client collection (custom env vars, token plac
 
 - `docs/insomnia-collection.yaml`
 
-This file is an Insomnia native export (not OpenAPI-based) and includes:
+This file is an Insomnia native export (not OpenAPI-based) and covers **Auth**, **Users**, **Documents**, **Buckets**, and **Infrastructure**:
 
-- base env vars (`base_url`, `access_token`, `refresh_token`, `user_id`)
+- base env vars (`base_url`, `access_token`, `refresh_token`, `user_id`, `document_id`, `bucket_name`, `upload_id`, `part_number`)
 - auth requests (`login`, `refresh`, `logout`)
 - users CRUD requests
+- documents requests (single-part upload via `multipart/form-data`, list, presigned URL, delete)
+- multipart upload flow (initiate → upload part → complete / abort), chainable via `upload_id` and `part_number`
+- bucket requests (create, list, exists, delete)
 - infrastructure requests (`/health`, `/health/live`, `/metrics`)
+
+Document and bucket folders inherit `Authorization: Bearer {{ access_token }}` from the folder-level Bearer auth. Run **Login** first, then paste `data.access_token` into the `access_token` environment variable.
 
 ## REST API
 
@@ -687,12 +692,13 @@ curl -s -X DELETE http://localhost:8080/api/v1/users/<id>
 
 ## Adding a new Bounded Context
 
-1. Create the directory structure under `src/<ContextName>/`
-2. Add the Doctrine XML mapping under `src/<ContextName>/Infrastructure/Persistence/Doctrine/Mapping/`
-3. Register the new mapping in `config/packages/doctrine.yaml`
-4. Add the RabbitMQ binding key in `config/packages/messenger.yaml`
-5. Register your repository implementation in `config/services.yaml`
-6. Define allowed filters in your collection controller via `FiltersBuilder::fromRequest()`
+Start with the maker, then follow the full checklist in [`docs/ddd-conventions.md`](docs/ddd-conventions.md) (Deptrac rules, exception mappers, migrations, fixtures, tests).
+
+```bash
+make bc name=Product
+```
+
+The command scaffolds Domain / Application / Infrastructure, registers routes, Doctrine mapping, repository alias, and RabbitMQ binding. Remaining steps: domain fields, `ProductExceptionMapper`, fixtures, tests, `make db-diff`, `make db-migrate`, `make ci`.
 
 ## Services
 
