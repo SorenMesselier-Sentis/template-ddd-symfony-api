@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Http;
 
+use App\Shared\Infrastructure\Fixture\FixtureData;
 use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -24,8 +25,8 @@ abstract class HttpTestCase extends WebTestCase
         $this->resetDatabase();
 
         $credentials = 'admin' === $role
-            ? ['email' => 'john.doe@example.com', 'password' => 'secret1234']
-            : ['email' => 'jane.doe@example.com', 'password' => 'secret1234'];
+            ? ['email' => FixtureData::USER_JOHN_EMAIL, 'password' => FixtureData::DEFAULT_PASSWORD]
+            : ['email' => FixtureData::USER_JANE_EMAIL, 'password' => FixtureData::DEFAULT_PASSWORD];
 
         $client->request(
             'POST',

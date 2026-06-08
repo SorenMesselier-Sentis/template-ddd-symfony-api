@@ -68,3 +68,4 @@ deptrac:
   skip_violations:
     App\Shared\Infrastructure\Fixture\AppFixtures:
       - App\User\Infrastructure\Fixture\UserFixture
+      - App\Document\Infrastructure\Fixture\DocumentFixture
