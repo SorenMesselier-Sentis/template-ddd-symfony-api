@@ -48,30 +48,82 @@ final class InitiateMultipartUploadController
     {
         $payload = json_decode($request->getContent(), true);
 
-        if (!is_array($payload)) {
+        if (!\is_array($payload)) {
             throw new BadRequestHttpException('Invalid JSON payload.');
         }
 
-        foreach (['bucket', 'originalName', 'totalSize', 'mimeType'] as $field) {
-            if (!isset($payload[$field]) || '' === $payload[$field]) {
-                throw new BadRequestHttpException(sprintf('Field "%s" is required.', $field));
-            }
-        }
+        $payload = self::normalizePayload($payload);
+        $bucket = self::requiredString($payload, 'bucket');
+        $originalName = self::requiredString($payload, 'originalName');
+        $mimeType = self::requiredString($payload, 'mimeType');
+        $totalSize = self::requiredPositiveInt($payload, 'totalSize');
 
         $documentId = Uuid::v4()->toRfc4122();
 
         /** @var InitiateMultipartUploadResult $result */
         $result = $this->commandBus->dispatch(new InitiateMultipartUploadCommand(
             documentId: $documentId,
-            bucket: (string) $payload['bucket'],
-            originalName: (string) $payload['originalName'],
-            totalSize: (int) $payload['totalSize'],
-            mimeType: (string) $payload['mimeType'],
+            bucket: $bucket,
+            originalName: $originalName,
+            totalSize: $totalSize,
+            mimeType: $mimeType,
         ));
 
         return $this->apiResponse->created([
             'uploadId' => $result->uploadId,
             'documentId' => $result->documentId,
         ]);
+    }
+
+    /**
+     * @param array<mixed, mixed> $payload
+     *
+     * @return array<string, mixed>
+     */
+    private static function normalizePayload(array $payload): array
+    {
+        $normalized = [];
+
+        foreach ($payload as $key => $value) {
+            if (!\is_string($key)) {
+                throw new BadRequestHttpException('Invalid JSON payload.');
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function requiredString(array $payload, string $field): string
+    {
+        $value = $payload[$field] ?? null;
+
+        if (!\is_string($value) || '' === $value) {
+            throw new BadRequestHttpException(sprintf('Field "%s" is required.', $field));
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function requiredPositiveInt(array $payload, string $field): int
+    {
+        $value = $payload[$field] ?? null;
+
+        if (\is_int($value) && $value > 0) {
+            return $value;
+        }
+
+        if (\is_string($value) && '' !== $value && ctype_digit($value) && (int) $value > 0) {
+            return (int) $value;
+        }
+
+        throw new BadRequestHttpException(sprintf('Field "%s" is required.', $field));
     }
 }

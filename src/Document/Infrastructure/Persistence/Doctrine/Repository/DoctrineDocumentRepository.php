@@ -43,8 +43,9 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
 
     public function findByIdIncludingDeleted(DocumentId $id): ?Document
     {
-        /** @var Document|null $document */
-        return $this->em->find(Document::class, $id);
+        $document = $this->em->find(Document::class, $id);
+
+        return $document instanceof Document ? $document : null;
     }
 
     public function hasActiveDocumentsInBucket(BucketName $bucket): bool

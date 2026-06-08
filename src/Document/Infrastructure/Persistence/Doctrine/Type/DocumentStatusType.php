@@ -10,6 +10,8 @@ use Doctrine\DBAL\Types\Type;
 
 final class DocumentStatusType extends Type
 {
+    use DoctrineStringValueTypeTrait;
+
     public const NAME = 'document_status';
 
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
@@ -23,7 +25,7 @@ final class DocumentStatusType extends Type
             return null;
         }
 
-        return DocumentStatus::from((string) $value);
+        return DocumentStatus::from(self::assertString($value, self::NAME));
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
@@ -36,7 +38,7 @@ final class DocumentStatusType extends Type
             return $value->value;
         }
 
-        return (string) $value;
+        return self::assertString($value, self::NAME);
     }
 
     public function getName(): string

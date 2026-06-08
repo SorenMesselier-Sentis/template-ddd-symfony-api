@@ -38,17 +38,32 @@ final class MinioBucketManager implements BucketManagerInterface
 
     public function list(): array
     {
-        $result = $this->client->listBuckets();
+        $result = AwsS3ResultHelper::toArray($this->client->listBuckets());
+        $bucketsList = $result['Buckets'] ?? [];
         $buckets = [];
 
-        foreach ($result['Buckets'] ?? [] as $bucket) {
+        if (!\is_array($bucketsList)) {
+            return $buckets;
+        }
+
+        foreach ($bucketsList as $bucket) {
+            if (!\is_array($bucket)) {
+                continue;
+            }
+
+            $name = $bucket['Name'] ?? null;
+
+            if (!\is_string($name)) {
+                continue;
+            }
+
             $creationDate = $bucket['CreationDate'] ?? null;
             $createdAt = $creationDate instanceof \DateTimeInterface
                 ? \DateTimeImmutable::createFromInterface($creationDate)
                 : new \DateTimeImmutable();
 
             $buckets[] = new BucketInfo(
-                name: BucketName::fromString((string) $bucket['Name']),
+                name: BucketName::fromString($name),
                 createdAt: $createdAt,
             );
         }

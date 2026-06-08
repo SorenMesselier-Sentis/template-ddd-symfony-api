@@ -55,13 +55,13 @@ final class MinioDocumentStorageAdapter implements DocumentStorageInterface, Mul
         ObjectPath $objectPath,
         MimeType $mimeType,
     ): string {
-        $result = $this->client->createMultipartUpload([
+        $result = AwsS3ResultHelper::toArray($this->client->createMultipartUpload([
             'Bucket' => $bucket->value(),
             'Key' => $objectPath->value(),
             'ContentType' => $mimeType->value(),
-        ]);
+        ]));
 
-        return (string) $result['UploadId'];
+        return AwsS3ResultHelper::requireString($result, 'UploadId');
     }
 
     public function uploadPart(
@@ -71,15 +71,15 @@ final class MinioDocumentStorageAdapter implements DocumentStorageInterface, Mul
         PartNumber $partNumber,
         string $content,
     ): string {
-        $result = $this->client->uploadPart([
+        $result = AwsS3ResultHelper::toArray($this->client->uploadPart([
             'Bucket' => $bucket->value(),
             'Key' => $objectPath->value(),
             'UploadId' => $uploadId,
             'PartNumber' => $partNumber->value(),
             'Body' => $content,
-        ]);
+        ]));
 
-        return (string) $result['ETag'];
+        return AwsS3ResultHelper::requireString($result, 'ETag');
     }
 
     public function completeMultipartUpload(

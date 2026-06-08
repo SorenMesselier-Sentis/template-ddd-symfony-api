@@ -38,7 +38,15 @@ final class HttpOwnerContext implements OwnerContextInterface
             return [];
         }
 
-        return array_values(array_map(static fn (mixed $role): string => (string) $role, $roles));
+        $normalizedRoles = [];
+
+        foreach ($roles as $role) {
+            if (\is_string($role)) {
+                $normalizedRoles[] = $role;
+            }
+        }
+
+        return $normalizedRoles;
     }
 
     public function isAuthenticated(): bool

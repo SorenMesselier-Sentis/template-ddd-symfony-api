@@ -87,8 +87,10 @@ final class FiltersBuilder
      */
     private static function buildOrder(array $params): Order
     {
-        if (isset($params['sort']) && '' !== $params['sort']) {
-            return Order::fromString($params['sort']);
+        $sort = $params['sort'] ?? null;
+
+        if (\is_string($sort) && '' !== $sort) {
+            return Order::fromString($sort);
         }
 
         return Order::default();
@@ -100,8 +102,21 @@ final class FiltersBuilder
     private static function buildPagination(array $params): Pagination
     {
         return Pagination::fromRequest(
-            page: (int) ($params['page'] ?? 1),
-            limit: (int) ($params['limit'] ?? 20),
+            page: self::toPositiveInt($params['page'] ?? null, 1),
+            limit: self::toPositiveInt($params['limit'] ?? null, 20),
         );
+    }
+
+    private static function toPositiveInt(mixed $value, int $default): int
+    {
+        if (\is_int($value)) {
+            return $value;
+        }
+
+        if (\is_string($value) && '' !== $value && ctype_digit($value)) {
+            return (int) $value;
+        }
+
+        return $default;
     }
 }

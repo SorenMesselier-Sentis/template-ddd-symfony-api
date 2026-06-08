@@ -696,6 +696,40 @@ make ci               # run all quality gates (phpstan, deptrac, all test suites
 
 `make test-http` exercises controllers end-to-end via `KernelBrowser`. Tests extend `HttpTestCase`, which resets the database, reloads fixtures, and provides `createAuthenticatedClient('admin'|'user')` using credentials from `FixtureData`.
 
+### Continuous Integration
+
+GitHub Actions runs on every **push** and **pull request** to `main` and `master` (workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+The pipeline:
+
+1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **MinIO**, **PHP**
+2. Runs `composer install`
+3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
+4. Warms the Symfony dev container cache (required by PHPStan)
+5. Runs `make ci` — `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+
+Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
+
+**Reproduce the CI pipeline locally:**
+
+```bash
+cp .env .env.local                              # skip if .env.local already exists
+docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq minio php
+make install
+
+# Generate JWT keys once (required for auth / HTTP tests):
+docker compose -f docker/compose.yaml --env-file .env.local exec php sh -c '
+  mkdir -p config/jwt
+  openssl genrsa -aes256 -passout pass:change_me -out config/jwt/private.pem 4096
+  openssl rsa -pubout -passin pass:change_me -in config/jwt/private.pem -out config/jwt/public.pem
+'
+
+docker compose -f docker/compose.yaml --env-file .env.local exec php bin/console cache:warmup --env=dev
+make ci
+```
+
+If any step fails, PHPUnit output is printed directly in the terminal (same as in GitHub Actions job logs).
+
 ## Code quality
 
 Run static analysis, architecture checks, and code style:
