@@ -331,7 +331,17 @@ Doctrine fixtures live in each bounded context (`User/Infrastructure/Fixture/`, 
 |---|---|---|
 | `FixtureReference` | `Shared/Infrastructure/Fixture/` | Stable Doctrine reference keys (`user.john`, `document.john.invoice`, …) used with `addReference()` / `getReference()` |
 | `FixtureData` | `Shared/Infrastructure/Fixture/` | Stable values (UUIDs, emails, default password) reused by fixtures and HTTP tests |
-| `AppFixtures` | `Shared/Infrastructure/Fixture/` | Entry point loaded by `make db-fixtures`; declares fixture load order via `DependentFixtureInterface` |
+
+Each bounded context registers its own fixture class under `<BC>/Infrastructure/Fixture/`. Doctrine auto-discovers every fixture under `src/` — there is **no orchestrator in Shared** (Deptrac forbids `Shared/Infrastructure` from importing other bounded contexts).
+
+Cross-BC fixture data uses shared UUIDs from `FixtureData` only (e.g. `DocumentFixture` sets `ownerId` to `FixtureData::USER_JOHN_ID` without a foreign key or a `getReference()` call to `UserFixture`). Because there is no cross-BC entity dependency, fixtures can load in any order.
+
+If a future bounded context must persist rows that truly depend on another BC's entities, use **fixture groups** (`FixtureGroupInterface::getGroups()`) and load groups explicitly:
+
+```bash
+php bin/console doctrine:fixtures:load --group=user --no-interaction
+php bin/console doctrine:fixtures:load --group=document --append --no-interaction
+```
 
 HTTP integration tests reset the database and reload all fixtures before each test (`HttpTestCase::resetDatabase()`), then authenticate using credentials from `FixtureData` (e.g. `USER_JOHN_EMAIL` / `DEFAULT_PASSWORD` for admin, `USER_JANE_EMAIL` for a regular user).
 
@@ -739,7 +749,7 @@ make test-unit        # unit tests only
 make test-integration # integration tests only (migrates test DB first)
 make test-http        # HTTP integration tests only (migrates test DB + reloads fixtures)
 make test-coverage    # generate HTML coverage report in var/coverage/
-make ci               # run all quality gates (phpstan, deptrac, all test suites)
+make ci               # run all quality gates (cs-check, phpstan, deptrac, all test suites)
 ```
 
 `make test-http` exercises controllers end-to-end via `KernelBrowser`. Tests extend `HttpTestCase`, which resets the database, reloads fixtures, and provides `createAuthenticatedClient('admin'|'user')` using credentials from `FixtureData`.
@@ -754,9 +764,11 @@ The pipeline:
 2. Runs `composer install`
 3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
 4. Warms the Symfony dev container cache (required by PHPStan)
-5. Runs `make ci` — `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
 
 Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
+
+Run `make ci` locally before opening a PR — it executes the same quality gates as GitHub Actions and stops at the first failure.
 
 **Reproduce the CI pipeline locally:**
 
@@ -787,7 +799,7 @@ make cs-check  # PHP CS Fixer dry-run (fails if formatting drifts)
 make cs-fix    # apply PHP CS Fixer fixes
 make phpstan   # run PHPStan with phpstan.neon (level 9)
 make deptrac   # run Deptrac with deptrac.yaml
-make ci        # phpstan + deptrac + all test suites
+make ci        # cs-check + phpstan + deptrac + all test suites (recommended before every PR)
 ```
 
 Pre-commit hooks (see [Getting started](#pre-commit-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
