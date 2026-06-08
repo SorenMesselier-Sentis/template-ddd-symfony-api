@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\User\Application\Security;
-
-use App\User\Domain\ValueObject\UserRole;
+namespace App\Shared\Domain\Security;
 
 final readonly class RoleRequirement
 {
     /**
-     * @param list<UserRole> $roles
+     * @param list<string> $roles
      */
     private function __construct(
         public array $roles,
@@ -17,12 +15,12 @@ final readonly class RoleRequirement
     ) {
     }
 
-    public static function any(UserRole ...$roles): self
+    public static function any(string ...$roles): self
     {
         return new self(array_values($roles), RoleMatchMode::Any);
     }
 
-    public static function all(UserRole ...$roles): self
+    public static function all(string ...$roles): self
     {
         return new self(array_values($roles), RoleMatchMode::All);
     }
@@ -32,8 +30,13 @@ final readonly class RoleRequirement
         return new self([], RoleMatchMode::Any);
     }
 
+    public static function user(): self
+    {
+        return self::any('ROLE_USER');
+    }
+
     public static function admin(): self
     {
-        return self::any(UserRole::ADMIN);
+        return self::any('ROLE_ADMIN');
     }
 }

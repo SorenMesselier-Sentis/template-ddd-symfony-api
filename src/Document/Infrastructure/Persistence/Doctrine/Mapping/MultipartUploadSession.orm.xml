@@ -1,0 +1,24 @@
+<doctrine-mapping
+    xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                        https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd"
+>
+    <entity name="App\Document\Domain\Entity\MultipartUploadSession" table="multipart_upload_sessions">
+
+        <id name="uploadId" type="string" column="upload_id" length="255"/>
+
+        <field name="documentId" type="document_id" column="document_id" nullable="false"/>
+        <field name="ownerId" type="owner_id" column="owner_id" nullable="false"/>
+        <field name="bucketName" type="bucket_name" column="bucket_name" length="63" nullable="false"/>
+        <field name="objectPath" type="object_path" column="object_path" length="1024" nullable="false"/>
+        <field name="originalName" type="string" column="original_name" length="255" nullable="false"/>
+        <field name="mimeType" type="document_mime_type" column="mime_type" length="127" nullable="false"/>
+        <field name="totalSize" type="integer" column="total_size" nullable="false"/>
+        <field name="status" type="multipart_upload_status" column="status" length="20" nullable="false"/>
+        <field name="partsData" type="json" column="parts" nullable="false"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="false"/>
+
+    </entity>
+</doctrine-mapping>

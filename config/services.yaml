@@ -143,6 +143,9 @@ services:
     App\User\Infrastructure\Http\UserExceptionMapper:
         tags: ['app.exception_mapper']
 
+    App\Document\Infrastructure\Http\DocumentExceptionMapper:
+        tags: ['app.exception_mapper']
+
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:
         arguments:
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
@@ -208,3 +211,76 @@ services:
 
     App\User\Domain\Repository\RefreshTokenRepositoryInterface:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineRefreshTokenRepository
+
+    # Document storage
+    App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter:
+        arguments:
+            $endpoint: '%env(MINIO_ENDPOINT)%'
+            $accessKey: '%env(MINIO_ACCESS_KEY)%'
+            $secretKey: '%env(MINIO_SECRET_KEY)%'
+            $useSsl: '%env(bool:MINIO_USE_SSL)%'
+
+    App\Document\Infrastructure\Storage\MinioBucketExistenceChecker:
+        arguments:
+            $endpoint: '%env(MINIO_ENDPOINT)%'
+            $accessKey: '%env(MINIO_ACCESS_KEY)%'
+            $secretKey: '%env(MINIO_SECRET_KEY)%'
+            $useSsl: '%env(bool:MINIO_USE_SSL)%'
+
+    App\Document\Infrastructure\Storage\MinioBucketManager:
+        arguments:
+            $endpoint: '%env(MINIO_ENDPOINT)%'
+            $accessKey: '%env(MINIO_ACCESS_KEY)%'
+            $secretKey: '%env(MINIO_SECRET_KEY)%'
+            $useSsl: '%env(bool:MINIO_USE_SSL)%'
+
+    App\Document\Application\Service\BucketMimeTypeValidator:
+        arguments:
+            $buckets: '%document_storage.buckets%'
+
+    App\Document\Application\Command\UploadDocument\UploadDocumentCommandHandler:
+        arguments:
+            $auditBus: '@audit.bus'
+            $maxSinglePartBytes: '%document_storage.max_single_part_bytes%'
+
+    App\Document\Application\Command\MultipartUpload\InitiateMultipartUploadCommandHandler:
+        arguments:
+            $minMultipartBytes: '%document_storage.min_multipart_bytes%'
+            $maxMultipartBytes: '%document_storage.max_multipart_bytes%'
+
+    App\Document\Application\Service\MultipartPartSizeValidator:
+        arguments:
+            $minPartBytes: '%document_storage.min_part_bytes%'
+
+    App\Document\Application\Service\PresignedUrlTtlValidator:
+        arguments:
+            $minTtlSeconds: '%document_storage.presigned_url_min_ttl%'
+            $maxTtlSeconds: '%document_storage.presigned_url_max_ttl%'
+
+    App\Document\Application\Query\GetDocumentPresignedUrl\GetDocumentPresignedUrlQueryHandler:
+        arguments:
+            $defaultTtlSeconds: '%env(int:MINIO_PRESIGNED_URL_TTL)%'
+
+    App\Document\Domain\Storage\DocumentStorageInterface:
+        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+
+    App\Document\Domain\Storage\MultipartDocumentStorageInterface:
+        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+
+    App\Document\Domain\Storage\DocumentPresignedUrlGeneratorInterface:
+        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+
+    App\Document\Domain\Storage\BucketExistenceCheckerInterface:
+        alias: App\Document\Infrastructure\Storage\MinioBucketExistenceChecker
+
+    App\Document\Domain\Storage\BucketManagerInterface:
+        alias: App\Document\Infrastructure\Storage\MinioBucketManager
+
+    App\Document\Domain\Repository\DocumentRepositoryInterface:
+        alias: App\Document\Infrastructure\Persistence\Doctrine\Repository\DoctrineDocumentRepository
+
+    App\Document\Domain\Repository\MultipartUploadSessionRepositoryInterface:
+        alias: App\Document\Infrastructure\Persistence\Doctrine\Repository\DoctrineMultipartUploadSessionRepository
+
+    App\Document\Domain\Security\OwnerContextInterface:
+        alias: App\Document\Infrastructure\Security\HttpOwnerContext

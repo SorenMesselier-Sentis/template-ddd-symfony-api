@@ -16,7 +16,7 @@ final class DeleteUserControllerTest extends HttpTestCase
             '/api/v1/users',
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode([
-                'firstName' => 'To',
+                'firstName' => 'Tom',
                 'lastName' => 'Delete',
                 'email' => 'delete-me@example.com',
                 'password' => 'secret1234',

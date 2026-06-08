@@ -16,7 +16,7 @@ final class RefreshTokenControllerTest extends HttpTestCase
             'POST',
             '/api/v1/auth/refresh',
             server: ['CONTENT_TYPE' => 'application/json'],
-            content: json_encode(['refreshToken' => 'invalid'], JSON_THROW_ON_ERROR),
+            content: json_encode(['refresh_token' => 'invalid'], JSON_THROW_ON_ERROR),
         );
 
         $this->assertSame(401, $client->getResponse()->getStatusCode());

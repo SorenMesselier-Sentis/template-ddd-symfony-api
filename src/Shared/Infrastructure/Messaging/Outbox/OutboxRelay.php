@@ -98,7 +98,7 @@ final class OutboxRelay
                 throw new \RuntimeException(sprintf('Missing outbox payload key "%s" for "%s".', $name, $eventClass));
             }
 
-            $arguments[] = $payload[$name];
+            $arguments[] = $this->resolveConstructorArgument($parameter, $payload[$name]);
         }
 
         $event = $reflection->newInstanceArgs($arguments);
@@ -108,5 +108,23 @@ final class OutboxRelay
         }
 
         return $event;
+    }
+
+    private function resolveConstructorArgument(\ReflectionParameter $parameter, mixed $value): mixed
+    {
+        $type = $parameter->getType();
+
+        if (!$type instanceof \ReflectionNamedType || $type->isBuiltin()) {
+            return $value;
+        }
+
+        $className = $type->getName();
+
+        if (is_subclass_of($className, \BackedEnum::class)) {
+            /** @var class-string<\BackedEnum> $className */
+            return $className::from($value);
+        }
+
+        return $value;
     }
 }

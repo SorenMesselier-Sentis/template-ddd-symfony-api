@@ -16,10 +16,10 @@ final class UpdateUserRolesControllerTest extends HttpTestCase
         $id = $list['data'][0]['id'];
 
         $client->request(
-            'PATCH',
+            'PUT',
             '/api/v1/users/'.$id.'/roles',
             server: ['CONTENT_TYPE' => 'application/json'],
-            content: json_encode(['roles' => ['user']], JSON_THROW_ON_ERROR),
+            content: json_encode(['roles' => ['ROLE_USER']], JSON_THROW_ON_ERROR),
         );
 
         $this->assertSame(204, $client->getResponse()->getStatusCode());

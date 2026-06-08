@@ -1,0 +1,16 @@
+parameters:
+    document_storage.max_single_part_bytes: 104857600
+    document_storage.min_multipart_bytes: 104857600
+    document_storage.max_multipart_bytes: 5368709120
+    document_storage.min_part_bytes: 5242880
+    document_storage.presigned_url_min_ttl: 60
+    document_storage.presigned_url_max_ttl: 604800
+    document_storage.buckets:
+        documents:
+            allowed_mime_types:
+                - application/pdf
+                - image/jpeg
+                - image/png
+        invoices:
+            allowed_mime_types:
+                - application/pdf

@@ -40,7 +40,8 @@ final class OutboxEventBus implements EventBusInterface
         $payload = [];
 
         foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
-            $payload[$property->getName()] = $property->getValue($event);
+            $value = $property->getValue($event);
+            $payload[$property->getName()] = $value instanceof \BackedEnum ? $value->value : $value;
         }
 
         return $payload;

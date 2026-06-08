@@ -19,7 +19,7 @@ final class ExceptionListenerTest extends UnitTestCase
 {
     public function testUnmappedDomainExceptionFallsBackTo422(): void
     {
-        $exception = new class ('custom') extends DomainException {
+        $exception = new class('custom') extends DomainException {
             public function errorCode(): string
             {
                 return 'custom.error';
@@ -91,7 +91,7 @@ final class ExceptionListenerTest extends UnitTestCase
         $listener = new ExceptionListener($this->createStub(LoggerInterface::class), []);
 
         for ($i = 0; $i < 100; ++$i) {
-            $exception = new class ('msg-'.$i) extends DomainException {
+            $exception = new class('msg-'.$i) extends DomainException {
                 public function errorCode(): string
                 {
                     return 'custom_'.$this->getMessage();

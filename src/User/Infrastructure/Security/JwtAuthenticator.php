@@ -28,15 +28,15 @@ final class JwtAuthenticator extends AbstractAuthenticator
 
     public function supports(Request $request): ?bool
     {
-        if ($this->publicApiRequestMatcher->matches($request)) {
-            return false;
-        }
-
-        return $request->headers->has('Authorization');
+        return !$this->publicApiRequestMatcher->matches($request);
     }
 
     public function authenticate(Request $request): Passport
     {
+        if (!$request->headers->has('Authorization')) {
+            throw new CustomUserMessageAuthenticationException('authentication.missing_token');
+        }
+
         $authHeader = $request->headers->get('Authorization', '');
 
         if (!str_starts_with($authHeader, 'Bearer ')) {
@@ -76,6 +76,7 @@ final class JwtAuthenticator extends AbstractAuthenticator
             'error' => [
                 'code' => $errorCode,
                 'message' => match ($errorCode) {
+                    'authentication.missing_token' => 'Authorization token is missing.',
                     'token_expired' => 'The access token has expired.',
                     'invalid_token' => 'The access token is invalid.',
                     default => 'Authentication failed.',
