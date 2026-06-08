@@ -122,14 +122,10 @@ final class OutboxRelay
 
         if (is_subclass_of($className, \BackedEnum::class)) {
             if (!\is_string($value) && !\is_int($value)) {
-                throw new \RuntimeException(sprintf(
-                    'Cannot hydrate enum "%s" from value of type "%s".',
-                    $className,
-                    \get_debug_type($value),
-                ));
+                throw new \RuntimeException(sprintf('Cannot hydrate enum "%s" from value of type "%s".', $className, \get_debug_type($value)));
             }
 
-            /** @var class-string<\BackedEnum> $className */
+            /* @var class-string<\BackedEnum> $className */
             return $className::from($value);
         }
 

@@ -12,20 +12,38 @@ final class AwsS3ResultHelper
     public static function toArray(mixed $result): array
     {
         if (\is_array($result)) {
-            /** @var array<string, mixed> */
-            return $result;
+            return self::normalizeArray($result);
         }
 
         if (\is_object($result) && method_exists($result, 'toArray')) {
             $array = $result->toArray();
 
             if (\is_array($array)) {
-                /** @var array<string, mixed> */
-                return $array;
+                return self::normalizeArray($array);
             }
         }
 
         return [];
+    }
+
+    /**
+     * @param array<mixed, mixed> $array
+     *
+     * @return array<string, mixed>
+     */
+    private static function normalizeArray(array $array): array
+    {
+        $normalized = [];
+
+        foreach ($array as $key => $value) {
+            if (!\is_string($key)) {
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
     }
 
     /**

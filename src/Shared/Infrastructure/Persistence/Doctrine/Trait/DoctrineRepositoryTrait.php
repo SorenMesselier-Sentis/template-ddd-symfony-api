@@ -36,7 +36,7 @@ trait DoctrineRepositoryTrait
             return [];
         }
 
-        /** @var list<mixed> */
+        /* @var list<mixed> */
         return array_values($results);
     }
 }

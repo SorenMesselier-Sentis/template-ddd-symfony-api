@@ -1,0 +1,40 @@
+# See https://pre-commit.com for usage and installation.
+# Optional but recommended — the project works without these hooks.
+
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+    - repo: local
+      hooks:
+          - id: php-cs-fixer
+            name: PHP CS Fixer (dry-run)
+            entry: scripts/pre-commit/php-cs-fixer-dry-run.sh
+            language: script
+            types: [php]
+            pass_filenames: true
+
+          - id: block-sensitive-files
+            name: Block sensitive files (.env.local, JWT keys, decrypted secrets)
+            language: fail
+            entry: >-
+                Sensitive file detected — must not be committed.
+                Use .env.local (gitignored) for secrets and keep JWT keys local.
+            files: >-
+                ^(
+                  \.env\.local|
+                  \.env\..*\.local|
+                  config/jwt/.*\.pem|
+                  config/secrets/.*/.*\.private\.php
+                )$
+
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v5.0.0
+      hooks:
+          - id: detect-private-key
+
+    - repo: https://github.com/compilerla/conventional-pre-commit
+      rev: v4.0.0
+      hooks:
+          - id: conventional-pre-commit
+            stages: [commit-msg]
+            args: [--verbose]
