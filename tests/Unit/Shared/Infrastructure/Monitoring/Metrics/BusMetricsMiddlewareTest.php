@@ -64,6 +64,18 @@ final class BusMetricsMiddlewareTest extends UnitTestCase
         }
     }
 
+    public function testItTracksAuditBusMessages(): void
+    {
+        $metrics = new MetricsCollectorSpy();
+        $middleware = new BusMetricsMiddleware($metrics);
+        $envelope = new Envelope(new DummyMessage(), [new BusNameStamp('audit.bus')]);
+
+        $middleware->handle($envelope, $this->terminatingStack($envelope));
+
+        $this->assertSame('audit', $metrics->counterCalls[0]['labels']['bus']);
+        $this->assertSame('handled', $metrics->counterCalls[1]['labels']['status']);
+    }
+
     public function testItThrowsWhenBusStampIsMissing(): void
     {
         $middleware = new BusMetricsMiddleware(new MetricsCollectorSpy());

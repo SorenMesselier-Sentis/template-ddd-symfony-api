@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Document\Application\Query\GetDocumentPresignedUrl;
 
-final readonly class GetDocumentPresignedUrlResult
+use App\Shared\Domain\Bus\Query\Response;
+
+final readonly class GetDocumentPresignedUrlResult implements Response
 {
     public function __construct(
         public string $documentId,

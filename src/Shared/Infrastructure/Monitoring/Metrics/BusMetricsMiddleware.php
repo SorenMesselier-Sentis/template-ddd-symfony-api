@@ -78,6 +78,7 @@ final class BusMetricsMiddleware implements MiddlewareInterface
             'command.bus' => 'command',
             'query.bus' => 'query',
             'event.bus' => 'event',
+            'audit.bus' => 'audit',
             default => throw new \LogicException(sprintf('Unsupported Messenger bus "%s" for metrics middleware.', (string) $busName)),
         };
     }

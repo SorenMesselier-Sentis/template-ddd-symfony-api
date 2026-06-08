@@ -54,7 +54,7 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
             ->from(Document::class, 'd')
             ->where('d.bucketName = :bucket')
             ->andWhere('d.status = :status')
-            ->setParameter('bucket', $bucket)
+            ->setParameter('bucket', $bucket->value())
             ->setParameter('status', DocumentStatus::ACTIVE)
             ->getQuery()
             ->getSingleScalarResult();
