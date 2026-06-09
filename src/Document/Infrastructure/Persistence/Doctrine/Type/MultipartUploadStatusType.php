@@ -10,6 +10,8 @@ use Doctrine\DBAL\Types\Type;
 
 final class MultipartUploadStatusType extends Type
 {
+    use DoctrineStringValueTypeTrait;
+
     public const NAME = 'multipart_upload_status';
 
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
@@ -23,7 +25,7 @@ final class MultipartUploadStatusType extends Type
             return null;
         }
 
-        return MultipartUploadStatus::from((string) $value);
+        return MultipartUploadStatus::from(self::assertString($value, self::NAME));
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
@@ -36,7 +38,7 @@ final class MultipartUploadStatusType extends Type
             return $value->value;
         }
 
-        return (string) $value;
+        return self::assertString($value, self::NAME);
     }
 
     public function getName(): string

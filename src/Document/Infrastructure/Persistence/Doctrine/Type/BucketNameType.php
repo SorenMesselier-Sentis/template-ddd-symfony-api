@@ -10,6 +10,8 @@ use Doctrine\DBAL\Types\Type;
 
 final class BucketNameType extends Type
 {
+    use DoctrineStringValueTypeTrait;
+
     public const NAME = 'bucket_name';
 
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
@@ -23,7 +25,7 @@ final class BucketNameType extends Type
             return null;
         }
 
-        return BucketName::fromString((string) $value);
+        return BucketName::fromString(self::assertString($value, self::NAME));
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
@@ -36,7 +38,7 @@ final class BucketNameType extends Type
             return $value->value();
         }
 
-        return (string) $value;
+        return self::assertString($value, self::NAME);
     }
 
     public function getName(): string

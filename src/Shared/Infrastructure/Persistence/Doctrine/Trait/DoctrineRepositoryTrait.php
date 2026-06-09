@@ -26,10 +26,17 @@ trait DoctrineRepositoryTrait
      */
     protected function paginate(QueryBuilder $qb, int $page, int $perPage): array
     {
-        return $qb
-        ->setFirstResult(($page - 1) * $perPage)
-        ->setMaxResults($perPage)
-        ->getQuery()
-        ->getResult();
+        $results = $qb
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+
+        if (!\is_array($results)) {
+            return [];
+        }
+
+        /* @var list<mixed> */
+        return array_values($results);
     }
 }

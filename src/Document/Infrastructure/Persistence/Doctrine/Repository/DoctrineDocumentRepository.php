@@ -43,8 +43,9 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
 
     public function findByIdIncludingDeleted(DocumentId $id): ?Document
     {
-        /** @var Document|null $document */
-        return $this->em->find(Document::class, $id);
+        $document = $this->em->find(Document::class, $id);
+
+        return $document instanceof Document ? $document : null;
     }
 
     public function hasActiveDocumentsInBucket(BucketName $bucket): bool
@@ -64,7 +65,7 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
 
     public function findByOwnerId(OwnerId $ownerId): array
     {
-        /** @var list<Document> */
+        /* @var list<Document> */
         return $this->activeByOwnerQueryBuilder($ownerId)
             ->orderBy('d.createdAt', 'DESC')
             ->getQuery()
@@ -76,7 +77,7 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
         $qb = $this->activeByOwnerQueryBuilder($ownerId);
         DoctrineFilterApplier::apply($qb, $filters, 'd');
 
-        /** @var list<Document> */
+        /* @var list<Document> */
         return $qb->getQuery()->getResult();
     }
 

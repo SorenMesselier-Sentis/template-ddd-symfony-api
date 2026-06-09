@@ -1,0 +1,58 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - main
+            - master
+    pull_request:
+        branches:
+            - main
+            - master
+
+concurrency:
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    quality:
+        name: Quality gates
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        env:
+            COMPOSE_FILE: docker/compose.yaml
+            COMPOSE_ENV_FILE: .env.local
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Prepare environment file
+              run: cp .env .env.local
+
+            - name: Build PHP image
+              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" build php
+
+            - name: Start services
+              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" up -d --wait postgres rabbitmq minio php
+
+            - name: Install Composer dependencies
+              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php composer install --no-interaction --prefer-dist --no-progress
+
+            - name: Generate JWT keypair
+              run: |
+                  docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php sh -c '
+                    set -e
+                    mkdir -p config/jwt
+                    if [ ! -f config/jwt/private.pem ]; then
+                      openssl genrsa -aes256 -passout pass:change_me -out config/jwt/private.pem 4096
+                      openssl rsa -pubout -passin pass:change_me -in config/jwt/private.pem -out config/jwt/public.pem
+                    fi
+                  '
+
+            - name: Warm up Symfony container cache (PHPStan)
+              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php bin/console cache:warmup --env=dev --no-debug
+
+            - name: Run quality gates
+              run: make ci

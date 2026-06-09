@@ -2,9 +2,6 @@
 
 A production-ready REST API template built with Symfony 8 and Domain-Driven Design principles.
 
-## TODOS
-- Add fixtures to the documents
-
 ## Stack
 
 | Layer | Technology |
@@ -19,6 +16,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Mailer | Symfony Mailer + Twig templates, Mailpit for dev |
 | Logging | Monolog |
 | Monitoring | Prometheus + Grafana (preconfigured scrape targets + starter dashboard) |
+| Object storage | MinIO (S3-compatible), AWS SDK for PHP (`aws/aws-sdk-php`) |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
 
 ## Architecture
@@ -56,7 +54,33 @@ src/
 │               ├── Type/           # Custom Doctrine types
 │               └── DoctrineFilterApplier.php  # Applies Filters to a QueryBuilder
 │
-└── <BoundedContext>/               # e.g. User, Product, Order
+├── User/                           # Authentication, users, refresh tokens
+│   ├── Domain/
+│   ├── Application/
+│   └── Infrastructure/
+│       ├── Fixture/UserFixture.php
+│       ├── EventHandler/           # e.g. SendWelcomeEmailOnUserCreated
+│       ├── Scheduler/              # e.g. CleanupExpiredRefreshTokensHandler
+│       └── Http/Controller/        # /users, /auth/*
+│
+├── Document/                       # Object storage (MinIO) — metadata in DB, files in buckets
+│   ├── Domain/
+│   │   ├── Entity/Document.php
+│   │   ├── ValueObject/            # DocumentId, OwnerId, BucketName, MimeType, PresignedUrl, …
+│   │   ├── Repository/DocumentRepositoryInterface.php
+│   │   ├── Storage/                # DocumentStorageInterface, BucketManagerInterface (ports)
+│   │   └── Exception/
+│   ├── Application/
+│   │   ├── Command/                # UploadDocument, DeleteDocument, CreateBucket, …
+│   │   └── Query/                  # GetDocuments, GetDocumentPresignedUrl, ListBuckets, …
+│   └── Infrastructure/
+│       ├── Fixture/DocumentFixture.php
+│       ├── Persistence/Doctrine/   # XML mapping + DoctrineDocumentRepository
+│       ├── Storage/                # MinioDocumentStorageAdapter, MinioBucketAdapter
+│       ├── Health/MinioHealthCheck.php
+│       └── Http/Controller/        # /documents, /buckets
+│
+└── <BoundedContext>/               # e.g. Product, Order — scaffold with `make bc name=…`
     ├── Domain/                     # Pure PHP — no framework dependency
     │   ├── Entity/
     │   ├── ValueObject/
@@ -73,9 +97,9 @@ src/
         │       ├── Mapping/        # XML mapping files
         │       └── Repository/
         ├── Messaging/              # RabbitMQ consumers
-        ├── EventHandler/           # Async handlers reacting to domain events (e.g. SendWelcomeEmailOnUserCreated)
+        ├── EventHandler/           # Async handlers reacting to domain events
         ├── Email/                  # Per-BC template constants (e.g. UserEmailTemplate)
-        ├── Scheduler/              # Per-BC Scheduler handlers (e.g. CleanupExpiredRefreshTokensHandler)
+        ├── Scheduler/              # Per-BC Scheduler handlers
         └── Http/
             ├── Controller/
             └── Request/
@@ -117,6 +141,8 @@ templates/email/
 | daily at 03:00 UTC | `CleanupStaleOutboxMessages` — purges published outbox rows older than `OUTBOX_RETENTION_DAYS` (default 30) via `OutboxMessagesCleaner` | `Shared/Infrastructure/Scheduler/Handler/CleanupStaleOutboxMessagesHandler` |
 
 Handlers are registered on `command.bus` only (no auto-broadcast to other buses). Failures are logged via `LoggerInterface` and swallowed so a single bad tick never crashes the scheduler worker. The manual `make outbox-relay` and `app:outbox:relay` console command remain available for on-demand triggering.
+
+**Object storage (Document BC)** — file bytes live in MinIO; the `Document` aggregate stores metadata only (name, size, MIME type, bucket, object path, owner ID, status). Bounded contexts interact through domain ports (`DocumentStorageInterface`, `BucketManagerInterface`); infrastructure adapters use the AWS SDK for PHP against MinIO. `OwnerId` is a UUID reference with no foreign key to the User BC, preserving bounded-context isolation. Presigned URLs delegate direct download to MinIO without streaming through PHP.
 
 **OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers. Paths in attributes are relative to the API base (`/users`, `/auth/login`, …); the `/api/v1` prefix is configured once in `config/packages/nelmio_api_doc.yaml` (`servers`) and in `config/routes.yaml`. Swagger UI is served at `/api/doc` and the JSON spec at `/api/doc.json`. The health check (`GET /health`) is documented under the **Infrastructure** tag with the root server.
 
@@ -185,6 +211,54 @@ make init
 
 `make init` will build the Docker images, start the containers, install Composer dependencies, create the database and run all migrations.
 
+### Pre-commit hooks (recommended)
+
+Git hooks are **optional** but recommended to catch formatting drift and accidental secret commits before they reach CI.
+
+Install [pre-commit](https://pre-commit.com/) once per machine, then enable the hooks for this repository:
+
+```bash
+pip install pre-commit   # or: brew install pre-commit
+pre-commit install --install-hooks   # installs pre-commit + commit-msg hooks
+```
+
+On every `git commit`, the configured hooks will:
+
+- run **PHP CS Fixer** in dry-run mode on staged PHP files (same rules as `make cs-check`)
+- block commits that include sensitive files (`.env.local`, `config/jwt/*.pem`, decrypted Symfony secrets, …)
+- run **detect-private-key** on staged content
+- validate the **commit message** against [Conventional Commits](https://www.conventionalcommits.org/) (`feat: …`, `fix: …`, `chore: …`, etc.)
+
+Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
+
+Examples:
+
+```bash
+git commit -m "feat(document): add multipart upload endpoints"
+git commit -m "fix(user): reject expired refresh tokens"
+git commit -m "chore: update README CI section"
+```
+
+Run file checks manually against the full tree:
+
+```bash
+pre-commit run --all-files
+```
+
+Test a commit message without committing:
+
+```bash
+echo "feat: example message" | pre-commit run conventional-pre-commit --hook-stage commit-msg --commit-msg-filename /dev/stdin
+```
+
+When the PHP container is running (`make up`), hooks execute PHP CS Fixer inside Docker (PHP 8.4). Otherwise they fall back to `vendor/bin/php-cs-fixer` on the host. You can also check style directly with Composer dependencies installed locally:
+
+```bash
+vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
+```
+
+With Docker only, use `make cs-check` instead.
+
 ### Environment variables
 
 Copy `.env` to `.env.local` and fill in your secrets. Never commit `.env.local`.
@@ -205,6 +279,17 @@ MAILER_FROM=noreply@example.com
 
 # Outbox cleanup retention (days). Values <1 fall back to 30 with a warning log.
 OUTBOX_RETENTION_DAYS=30
+
+# MinIO (S3-compatible object storage — Document BC)
+MINIO_ROOT_USER=minio
+MINIO_ROOT_PASSWORD=your_password
+MINIO_ENDPOINT=http://minio:9000
+MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+MINIO_USE_SSL=false
+MINIO_API_PORT=9000
+MINIO_CONSOLE_PORT=9001
+MINIO_PRESIGNED_URL_TTL=3600
 ```
 
 See `.env` for the full list of available variables.
@@ -237,6 +322,28 @@ make db-validate  # validate Doctrine mapping
 make db-fixtures  # load fixtures (dev only)
 make db-fresh     # db-reset + db-fixtures in one command
 ```
+
+### Fixtures and test data
+
+Doctrine fixtures live in each bounded context (`User/Infrastructure/Fixture/`, `Document/Infrastructure/Fixture/`). Shared conventions keep dev and test data in sync:
+
+| Class | Location | Purpose |
+|---|---|---|
+| `FixtureReference` | `Shared/Infrastructure/Fixture/` | Stable Doctrine reference keys (`user.john`, `document.john.invoice`, …) used with `addReference()` / `getReference()` |
+| `FixtureData` | `Shared/Infrastructure/Fixture/` | Stable values (UUIDs, emails, default password) reused by fixtures and HTTP tests |
+
+Each bounded context registers its own fixture class under `<BC>/Infrastructure/Fixture/`. Doctrine auto-discovers every fixture under `src/` — there is **no orchestrator in Shared** (Deptrac forbids `Shared/Infrastructure` from importing other bounded contexts).
+
+Cross-BC fixture data uses shared UUIDs from `FixtureData` only (e.g. `DocumentFixture` sets `ownerId` to `FixtureData::USER_JOHN_ID` without a foreign key or a `getReference()` call to `UserFixture`). Because there is no cross-BC entity dependency, fixtures can load in any order.
+
+If a future bounded context must persist rows that truly depend on another BC's entities, use **fixture groups** (`FixtureGroupInterface::getGroups()`) and load groups explicitly:
+
+```bash
+php bin/console doctrine:fixtures:load --group=user --no-interaction
+php bin/console doctrine:fixtures:load --group=document --append --no-interaction
+```
+
+HTTP integration tests reset the database and reload all fixtures before each test (`HttpTestCase::resetDatabase()`), then authenticate using credentials from `FixtureData` (e.g. `USER_JOHN_EMAIL` / `DEFAULT_PASSWORD` for admin, `USER_JANE_EMAIL` for a regular user).
 
 ### Email (local)
 
@@ -273,8 +380,11 @@ Use the built-in maker command to scaffold the full DDD structure:
 ```bash
 make bc name=Product
 ```
+
+This generates the following structure:
+
 ```
-This generates the following structure:src/Product/
+src/Product/
 ├── Domain/
 │   ├── Entity/Product.php
 │   ├── ValueObject/ProductId.php
@@ -294,15 +404,17 @@ This generates the following structure:src/Product/
 │       ├── GetProduct/
 │       └── GetProducts/
 └── Infrastructure/
-├── Persistence/Doctrine/
-│   ├── Mapping/Product.orm.xml
-│   ├── Repository/DoctrineProductRepository.php
-│   └── Type/ProductIdType.php
-├── Http/
-│   ├── Controller/
-│   └── Request/
-├── Fixture/ProductFixture.php
-└── Messaging/ProductCreatedMessageHandler.phptests/
+    ├── Persistence/Doctrine/
+    │   ├── Mapping/Product.orm.xml
+    │   ├── Repository/DoctrineProductRepository.php
+    │   └── Type/ProductIdType.php
+    ├── Http/
+    │   ├── Controller/
+    │   └── Request/
+    ├── Fixture/ProductFixture.php
+    └── Messaging/ProductCreatedMessageHandler.php
+
+tests/
 ├── Unit/Product/
 └── Integration/Product/
 ```
@@ -364,12 +476,17 @@ If you want a fully editable HTTP client collection (custom env vars, token plac
 
 - `docs/insomnia-collection.yaml`
 
-This file is an Insomnia native export (not OpenAPI-based) and includes:
+This file is an Insomnia native export (not OpenAPI-based) and covers **Auth**, **Users**, **Documents**, **Buckets**, and **Infrastructure**:
 
-- base env vars (`base_url`, `access_token`, `refresh_token`, `user_id`)
+- base env vars (`base_url`, `access_token`, `refresh_token`, `user_id`, `document_id`, `bucket_name`, `upload_id`, `part_number`)
 - auth requests (`login`, `refresh`, `logout`)
 - users CRUD requests
+- documents requests (single-part upload via `multipart/form-data`, list, presigned URL, delete)
+- multipart upload flow (initiate → upload part → complete / abort), chainable via `upload_id` and `part_number`
+- bucket requests (create, list, exists, delete)
 - infrastructure requests (`/health`, `/health/live`, `/metrics`)
+
+Document and bucket folders inherit `Authorization: Bearer {{ access_token }}` from the folder-level Bearer auth. Run **Login** first, then paste `data.access_token` into the `access_token` environment variable.
 
 ## REST API
 
@@ -430,16 +547,55 @@ See [`docs/monitoring.md`](docs/monitoring.md) for readiness scope, `/metrics` s
 
 ### Endpoints
 
+#### Authentication
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/auth/login` | None | Authenticate with email/password; returns access + refresh tokens |
+| `POST` | `/auth/refresh` | None | Rotate refresh token; returns a new token pair |
+| `POST` | `/auth/logout` | Bearer | Revoke a refresh token |
+
+#### Users
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/users` | Admin | Create a user |
+| `GET` | `/users` | Admin | List users (filterable, sortable, paginated) |
+| `GET` | `/users/{id}` | Admin | Fetch a user by UUID |
+| `PATCH` | `/users/{id}` | Admin | Partially update a user |
+| `PUT` | `/users/{id}` | Admin | Fully replace a user |
+| `DELETE` | `/users/{id}` | Admin | Soft-delete a user |
+
+#### Documents
+
+All document endpoints require a valid JWT. Upload uses `multipart/form-data` (`file`, `bucket`, optional `name`).
+
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/auth/logout` | Revoke a refresh token (requires `Authorization: Bearer` access token) |
-| `POST` | `/auth/refresh` | Rotate refresh token; returns a new token pair |
-| `POST` | `/users` | Create a user |
-| `GET` | `/users` | List users (filterable, sortable, paginated) |
-| `GET` | `/users/{id}` | Fetch a user by UUID |
-| `PATCH` | `/users/{id}` | Partially update a user |
-| `PUT` | `/users/{id}` | Fully replace a user |
-| `DELETE` | `/users/{id}` | Soft-delete a user |
+| `POST` | `/documents` | Upload a file (single-part, max 100 MB) |
+| `GET` | `/documents` | List documents (filterable, sortable, paginated) |
+| `GET` | `/documents/{id}/presigned-url` | Get a time-limited download URL |
+| `DELETE` | `/documents/{id}` | Soft-delete a document (optional physical purge in MinIO) |
+
+#### Multipart upload
+
+For files larger than 100 MB, use the multipart flow:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/documents/multipart` | Initiate a multipart upload |
+| `PUT` | `/documents/multipart/{uploadId}/parts/{partNumber}` | Upload a single part |
+| `POST` | `/documents/multipart/{uploadId}/complete` | Complete the upload and persist metadata |
+| `DELETE` | `/documents/multipart/{uploadId}` | Abort an in-progress upload |
+
+#### Buckets
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/buckets` | Admin | Create a bucket in MinIO |
+| `GET` | `/buckets` | User | List buckets |
+| `GET` | `/buckets/{name}/exists` | User | Check whether a bucket exists |
+| `DELETE` | `/buckets/{name}` | Admin | Delete a bucket |
 
 ### Response format
 
@@ -536,12 +692,13 @@ curl -s -X DELETE http://localhost:8080/api/v1/users/<id>
 
 ## Adding a new Bounded Context
 
-1. Create the directory structure under `src/<ContextName>/`
-2. Add the Doctrine XML mapping under `src/<ContextName>/Infrastructure/Persistence/Doctrine/Mapping/`
-3. Register the new mapping in `config/packages/doctrine.yaml`
-4. Add the RabbitMQ binding key in `config/packages/messenger.yaml`
-5. Register your repository implementation in `config/services.yaml`
-6. Define allowed filters in your collection controller via `FiltersBuilder::fromRequest()`
+Start with the maker, then follow the full checklist in [`docs/ddd-conventions.md`](docs/ddd-conventions.md) (Deptrac rules, exception mappers, migrations, fixtures, tests).
+
+```bash
+make bc name=Product
+```
+
+The command scaffolds Domain / Application / Infrastructure, registers routes, Doctrine mapping, repository alias, and RabbitMQ binding. Remaining steps: domain fields, `ProductExceptionMapper`, fixtures, tests, `make db-diff`, `make db-migrate`, `make ci`.
 
 ## Services
 
@@ -554,6 +711,7 @@ curl -s -X DELETE http://localhost:8080/api/v1/users/<id>
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin / see .env.local |
 | Mailpit UI | http://localhost:8025 | — |
+| MinIO Console | http://localhost:9001 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (see `.env.local`) |
 | PostgreSQL | localhost:5432 | app / see .env.local |
 
 ## Event flow
@@ -582,32 +740,80 @@ Periodic maintenance (same Scheduler worker):
 
 ## Testing
 
-Tests are organized in three suites matching the architecture layers.
+Tests are organized in three suites matching the architecture layers:
+
 ```
 tests/
 ├── Unit/           # Domain + Application — no I/O, fast
-└── Integration/    # Infrastructure — hits the real database
+├── Integration/    # Infrastructure — hits the real database (and MinIO for Document)
+└── Http/           # Full HTTP stack — routing, JWT, serialization, error handling
 ```
 
 ```bash
 make test             # run all test suites
 make test-unit        # unit tests only
-make test-integration # integration tests only
+make test-integration # integration tests only (migrates test DB first)
+make test-http        # HTTP integration tests only (migrates test DB + reloads fixtures)
 make test-coverage    # generate HTML coverage report in var/coverage/
+make ci               # run all quality gates (cs-check, phpstan, deptrac, all test suites)
 ```
+
+`make test-http` exercises controllers end-to-end via `KernelBrowser`. Tests extend `HttpTestCase`, which resets the database, reloads fixtures, and provides `createAuthenticatedClient('admin'|'user')` using credentials from `FixtureData`.
+
+### Continuous Integration
+
+GitHub Actions runs on every **push** and **pull request** to `main` and `master` (workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+The pipeline:
+
+1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **MinIO**, **PHP**
+2. Runs `composer install`
+3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
+4. Warms the Symfony dev container cache (required by PHPStan)
+5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+
+Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
+
+Run `make ci` locally before opening a PR — it executes the same quality gates as GitHub Actions and stops at the first failure.
+
+**Reproduce the CI pipeline locally:**
+
+```bash
+cp .env .env.local                              # skip if .env.local already exists
+docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq minio php
+make install
+
+# Generate JWT keys once (required for auth / HTTP tests):
+docker compose -f docker/compose.yaml --env-file .env.local exec php sh -c '
+  mkdir -p config/jwt
+  openssl genrsa -aes256 -passout pass:change_me -out config/jwt/private.pem 4096
+  openssl rsa -pubout -passin pass:change_me -in config/jwt/private.pem -out config/jwt/public.pem
+'
+
+docker compose -f docker/compose.yaml --env-file .env.local exec php bin/console cache:warmup --env=dev
+make ci
+```
+
+If any step fails, PHPUnit output is printed directly in the terminal (same as in GitHub Actions job logs).
 
 ## Code quality
 
-Run static analysis and architecture checks:
+Run static analysis, architecture checks, and code style:
 
 ```bash
-make phpstan   # run PHPStan with phpstan.neon
+make cs-check  # PHP CS Fixer dry-run (fails if formatting drifts)
+make cs-fix    # apply PHP CS Fixer fixes
+make phpstan   # run PHPStan with phpstan.neon (level 9)
 make deptrac   # run Deptrac with deptrac.yaml
+make ci        # cs-check + phpstan + deptrac + all test suites (recommended before every PR)
 ```
+
+Pre-commit hooks (see [Getting started](#pre-commit-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
 
 If Docker is not available in your environment, run them directly:
 
 ```bash
+vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
 vendor/bin/phpstan analyse
 vendor/bin/deptrac analyse --config-file=deptrac.yaml
 ```

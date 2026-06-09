@@ -18,6 +18,9 @@ final class MultipartUploadSession
     /** @var array<int, MultipartUploadPart> */
     private array $parts = [];
 
+    /**
+     * @param list<array{partNumber: int, etag: string, size: int}> $partsData
+     */
     private function __construct(
         private readonly string $uploadId,
         private readonly DocumentId $documentId,

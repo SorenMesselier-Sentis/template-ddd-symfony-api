@@ -109,30 +109,6 @@ parameters:
 			path: src/Shared/Infrastructure/Health/HealthCheckRegistry.php
 
 		-
-			message: '#^Cannot access offset ''max'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Shared/Infrastructure/Http/Filter/FiltersBuilder.php
-
-		-
-			message: '#^Cannot access offset ''min'' on mixed\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: src/Shared/Infrastructure/Http/Filter/FiltersBuilder.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 2
-			path: src/Shared/Infrastructure/Http/Filter/FiltersBuilder.php
-
-		-
-			message: '#^Parameter \#1 \$sort of static method App\\Shared\\Domain\\Filter\\Order\:\:fromString\(\) expects string, mixed given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Shared/Infrastructure/Http/Filter/FiltersBuilder.php
-
-		-
 			message: '#^Cannot call method value\(\) on mixed\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -341,18 +317,6 @@ parameters:
 			identifier: cast.useless
 			count: 1
 			path: src/User/Infrastructure/Persistence/Doctrine/Repository/DoctrineRefreshTokenRepository.php
-
-		-
-			message: '#^Method App\\User\\Infrastructure\\Persistence\\Doctrine\\Repository\\DoctrineRefreshTokenRepository\:\:paginate\(\) should return list\<mixed\> but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/User/Infrastructure/Persistence/Doctrine/Repository/DoctrineRefreshTokenRepository.php
-
-		-
-			message: '#^Method App\\User\\Infrastructure\\Persistence\\Doctrine\\Repository\\DoctrineUserRepository\:\:paginate\(\) should return list\<mixed\> but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/User/Infrastructure/Persistence/Doctrine/Repository/DoctrineUserRepository.php
 
 		-
 			message: '#^Method App\\User\\Infrastructure\\Persistence\\Doctrine\\Type\\HashedPasswordType\:\:convertToDatabaseValue\(\) should return string\|null but returns mixed\.$#'

@@ -147,7 +147,7 @@ test-http:
 	$(CONSOLE_TEST) doctrine:migrations:migrate --no-interaction
 	$(PHP_TEST) vendor/bin/phpunit --testsuite=Http
 
-ci: phpstan deptrac test-unit test-integration test-http ## Run all CI quality gates
+ci: cs-check phpstan deptrac test-unit test-integration test-http ## Run all CI quality gates
 
 test-coverage:
 	$(PHP_TEST) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage

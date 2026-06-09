@@ -7,7 +7,8 @@ resources:
     _type: workspace
     name: template-ddd-symfony API (v2)
     description: >
-      Insomnia collection with folder-level Bearer auth and environment variables.
+      Insomnia collection for Auth, Users, Documents, Buckets, and Infrastructure.
+      Folder-level Bearer auth and environment variables for chaining requests.
     scope: collection
 
   - _id: env_template_ddd_v2_base
@@ -19,6 +20,10 @@ resources:
       access_token: ""
       refresh_token: ""
       user_id: ""
+      document_id: ""
+      bucket_name: documents
+      upload_id: ""
+      part_number: 1
       email: john.doe@example.com
       password: secret1234
     color: null
@@ -43,6 +48,48 @@ resources:
     environment: {}
     environmentPropertyOrder: null
     metaSortKey: 300
+    authentication:
+      type: bearer
+      token: "{{ _.access_token }}"
+
+  - _id: fld_v2_documents
+    _type: request_group
+    parentId: wrk_template_ddd_v2
+    name: Documents
+    description: >
+      Document storage endpoints. Folder auth: Authorization Bearer {{ access_token }}.
+      After upload or multipart complete, copy `data.id` into the `document_id` env var.
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 350
+    authentication:
+      type: bearer
+      token: "{{ _.access_token }}"
+
+  - _id: fld_v2_multipart
+    _type: request_group
+    parentId: fld_v2_documents
+    name: Multipart Upload
+    description: >
+      Chain: Initiate → Upload Part(s) → Complete (or Abort).
+      Copy `data.uploadId` from Initiate into `upload_id`. Increment `part_number` per part.
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 355
+    authentication:
+      type: bearer
+      token: "{{ _.access_token }}"
+
+  - _id: fld_v2_buckets
+    _type: request_group
+    parentId: wrk_template_ddd_v2
+    name: Buckets
+    description: >
+      MinIO bucket management. Folder auth: Authorization Bearer {{ access_token }}.
+      Create/List/Exists require an authenticated user; Create/Delete require admin (login as john.doe@example.com).
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 360
     authentication:
       type: bearer
       token: "{{ _.access_token }}"
@@ -201,6 +248,199 @@ resources:
         value: application/json
     authentication: {}
     metaSortKey: 350
+
+  - _id: req_v2_documents_upload
+    _type: request
+    parentId: fld_v2_documents
+    name: Upload Document
+    description: >
+      Authorization: Bearer {{ access_token }} (folder-level).
+      Body: multipart/form-data with fields `file` (binary) and `bucket` (string).
+      Copy `data.id` from the response into `document_id`.
+    method: POST
+    url: "{{ _.base_url }}/api/v1/documents"
+    body:
+      mimeType: multipart/form-data
+      params:
+        - name: bucket
+          value: "{{ _.bucket_name }}"
+          type: text
+        - name: file
+          type: file
+          fileName: ""
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 351
+
+  - _id: req_v2_documents_list
+    _type: request
+    parentId: fld_v2_documents
+    name: List Documents
+    method: GET
+    url: "{{ _.base_url }}/api/v1/documents?page=1&limit=20"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 352
+
+  - _id: req_v2_documents_presigned_url
+    _type: request
+    parentId: fld_v2_documents
+    name: Get Presigned URL
+    method: GET
+    url: "{{ _.base_url }}/api/v1/documents/{{ _.document_id }}/presigned-url"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 353
+
+  - _id: req_v2_documents_delete
+    _type: request
+    parentId: fld_v2_documents
+    name: Delete Document
+    method: DELETE
+    url: "{{ _.base_url }}/api/v1/documents/{{ _.document_id }}"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 354
+
+  - _id: req_v2_multipart_initiate
+    _type: request
+    parentId: fld_v2_multipart
+    name: Initiate Multipart Upload
+    description: Copy `data.uploadId` into `upload_id` and `data.documentId` into `document_id`.
+    method: POST
+    url: "{{ _.base_url }}/api/v1/documents/multipart"
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "bucket": "{{ _.bucket_name }}",
+          "originalName": "large-file.bin",
+          "totalSize": 157286400,
+          "mimeType": "application/octet-stream"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 356
+
+  - _id: req_v2_multipart_upload_part
+    _type: request
+    parentId: fld_v2_multipart
+    name: Upload Multipart Part
+    description: >
+      Raw binary body (application/octet-stream). Set `part_number` env var (1-based).
+      Add `?isLastPart=true` on the final part. Copy returned `data.etag` if needed for debugging.
+    method: PUT
+    url: "{{ _.base_url }}/api/v1/documents/multipart/{{ _.upload_id }}/parts/{{ _.part_number }}"
+    body:
+      mimeType: application/octet-stream
+      text: "part-binary-content"
+    headers:
+      - name: Content-Type
+        value: application/octet-stream
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 357
+
+  - _id: req_v2_multipart_complete
+    _type: request
+    parentId: fld_v2_multipart
+    name: Complete Multipart Upload
+    method: POST
+    url: "{{ _.base_url }}/api/v1/documents/multipart/{{ _.upload_id }}/complete"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 358
+
+  - _id: req_v2_multipart_abort
+    _type: request
+    parentId: fld_v2_multipart
+    name: Abort Multipart Upload
+    method: DELETE
+    url: "{{ _.base_url }}/api/v1/documents/multipart/{{ _.upload_id }}"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 359
+
+  - _id: req_v2_buckets_create
+    _type: request
+    parentId: fld_v2_buckets
+    name: Create Bucket
+    method: POST
+    url: "{{ _.base_url }}/api/v1/buckets"
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "name": "{{ _.bucket_name }}"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 361
+
+  - _id: req_v2_buckets_list
+    _type: request
+    parentId: fld_v2_buckets
+    name: List Buckets
+    method: GET
+    url: "{{ _.base_url }}/api/v1/buckets"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 362
+
+  - _id: req_v2_buckets_exists
+    _type: request
+    parentId: fld_v2_buckets
+    name: Check Bucket Exists
+    method: GET
+    url: "{{ _.base_url }}/api/v1/buckets/{{ _.bucket_name }}/exists"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 363
+
+  - _id: req_v2_buckets_delete
+    _type: request
+    parentId: fld_v2_buckets
+    name: Delete Bucket
+    method: DELETE
+    url: "{{ _.base_url }}/api/v1/buckets/{{ _.bucket_name }}"
+    body: {}
+    headers:
+      - name: Accept
+        value: application/json
+    authentication: {}
+    metaSortKey: 364
 
   - _id: req_v2_health
     _type: request

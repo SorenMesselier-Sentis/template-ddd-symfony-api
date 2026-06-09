@@ -42,9 +42,28 @@ abstract class JsonRequest
             throw new InvalidJsonException('JSON body must be a JSON object.');
         }
 
-        /* @var array<string, mixed> $decoded */
-        $this->data = $decoded;
+        $this->data = self::normalizeDecodedPayload($decoded);
         $this->validate();
+    }
+
+    /**
+     * @param array<mixed, mixed> $decoded
+     *
+     * @return array<string, mixed>
+     */
+    private static function normalizeDecodedPayload(array $decoded): array
+    {
+        $data = [];
+
+        foreach ($decoded as $key => $value) {
+            if (!\is_string($key)) {
+                throw new InvalidJsonException('JSON body must be a JSON object.');
+            }
+
+            $data[$key] = $value;
+        }
+
+        return $data;
     }
 
     /**
