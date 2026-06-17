@@ -6,7 +6,7 @@ namespace App\Document\Infrastructure\Storage;
 
 use Aws\S3\S3Client;
 
-final class MinioS3ClientFactory
+final class S3ClientFactory
 {
     public static function create(
         string $endpoint,

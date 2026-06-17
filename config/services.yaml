@@ -213,21 +213,21 @@ services:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineRefreshTokenRepository
 
     # Document storage
-    App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter:
+    App\Document\Infrastructure\Storage\S3DocumentStorageAdapter:
         arguments:
             $endpoint: '%env(S3_ENDPOINT)%'
             $accessKey: '%env(S3_ACCESS_KEY)%'
             $secretKey: '%env(S3_SECRET_KEY)%'
             $useSsl: '%env(bool:S3_USE_SSL)%'
 
-    App\Document\Infrastructure\Storage\MinioBucketExistenceChecker:
+    App\Document\Infrastructure\Storage\S3BucketExistenceChecker:
         arguments:
             $endpoint: '%env(S3_ENDPOINT)%'
             $accessKey: '%env(S3_ACCESS_KEY)%'
             $secretKey: '%env(S3_SECRET_KEY)%'
             $useSsl: '%env(bool:S3_USE_SSL)%'
 
-    App\Document\Infrastructure\Storage\MinioBucketManager:
+    App\Document\Infrastructure\Storage\S3BucketManager:
         arguments:
             $endpoint: '%env(S3_ENDPOINT)%'
             $accessKey: '%env(S3_ACCESS_KEY)%'
@@ -262,19 +262,19 @@ services:
             $defaultTtlSeconds: '%env(int:S3_PRESIGNED_URL_TTL)%'
 
     App\Document\Domain\Storage\DocumentStorageInterface:
-        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+        alias: App\Document\Infrastructure\Storage\S3DocumentStorageAdapter
 
     App\Document\Domain\Storage\MultipartDocumentStorageInterface:
-        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+        alias: App\Document\Infrastructure\Storage\S3DocumentStorageAdapter
 
     App\Document\Domain\Storage\DocumentPresignedUrlGeneratorInterface:
-        alias: App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter
+        alias: App\Document\Infrastructure\Storage\S3DocumentStorageAdapter
 
     App\Document\Domain\Storage\BucketExistenceCheckerInterface:
-        alias: App\Document\Infrastructure\Storage\MinioBucketExistenceChecker
+        alias: App\Document\Infrastructure\Storage\S3BucketExistenceChecker
 
     App\Document\Domain\Storage\BucketManagerInterface:
-        alias: App\Document\Infrastructure\Storage\MinioBucketManager
+        alias: App\Document\Infrastructure\Storage\S3BucketManager
 
     App\Document\Domain\Repository\DocumentRepositoryInterface:
         alias: App\Document\Infrastructure\Persistence\Doctrine\Repository\DoctrineDocumentRepository

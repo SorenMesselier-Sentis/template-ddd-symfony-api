@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
     path: '/api/v1/buckets/{name}/exists',
     operationId: 'getBucketExists',
     summary: 'Check if a bucket exists',
-    description: 'Returns whether the bucket exists in MinIO. Requires `ROLE_ADMIN`.',
+    description: 'Returns whether the bucket exists in object storage. Requires `ROLE_ADMIN`.',
     tags: ['Buckets'],
     security: [['bearer' => []]],
 )]

@@ -9,7 +9,7 @@ use App\Document\Domain\ValueObject\BucketInfo;
 use App\Document\Domain\ValueObject\BucketName;
 use Aws\S3\S3Client;
 
-final class MinioBucketManager implements BucketManagerInterface
+final class S3BucketManager implements BucketManagerInterface
 {
     private readonly S3Client $client;
 
@@ -19,7 +19,7 @@ final class MinioBucketManager implements BucketManagerInterface
         string $secretKey,
         bool $useSsl,
     ) {
-        $this->client = MinioS3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
+        $this->client = S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
     }
 
     public function create(BucketName $bucket): void

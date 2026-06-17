@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Document\Infrastructure\Health;
 
-use App\Document\Infrastructure\Storage\MinioS3ClientFactory;
+use App\Document\Infrastructure\Storage\S3ClientFactory;
 use App\Shared\Domain\Health\HealthCheckInterface;
 use App\Shared\Domain\Health\HealthCheckStatus;
 use Aws\S3\S3Client;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-final class MinioHealthCheck implements HealthCheckInterface
+final class ObjectStorageHealthCheck implements HealthCheckInterface
 {
     private const TIMEOUT_SECONDS = 3.0;
 
@@ -34,7 +34,7 @@ final class MinioHealthCheck implements HealthCheckInterface
             string $secretKey,
             bool $useSsl,
             ?float $timeoutSeconds,
-        ): S3Client => MinioS3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl, $timeoutSeconds);
+        ): S3Client => S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl, $timeoutSeconds);
     }
 
     public function name(): string

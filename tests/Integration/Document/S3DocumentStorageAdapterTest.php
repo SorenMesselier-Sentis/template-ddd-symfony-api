@@ -7,13 +7,13 @@ namespace App\Tests\Integration\Document;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\MimeType;
 use App\Document\Domain\ValueObject\ObjectPath;
-use App\Document\Infrastructure\Storage\MinioDocumentStorageAdapter;
+use App\Document\Infrastructure\Storage\S3DocumentStorageAdapter;
 use App\Tests\Integration\IntegrationTestCase;
 use Aws\S3\S3Client;
 
-final class MinioDocumentStorageAdapterTest extends IntegrationTestCase
+final class S3DocumentStorageAdapterTest extends IntegrationTestCase
 {
-    private ?MinioDocumentStorageAdapter $adapter = null;
+    private ?S3DocumentStorageAdapter $adapter = null;
 
     protected function setUp(): void
     {
@@ -24,7 +24,7 @@ final class MinioDocumentStorageAdapterTest extends IntegrationTestCase
         }
 
         $this->ensureBucket('integration-documents');
-        $this->adapter = new MinioDocumentStorageAdapter(
+        $this->adapter = new S3DocumentStorageAdapter(
             endpoint: $_ENV['MINIO_ENDPOINT'] ?? 'http://minio:9000',
             accessKey: $_ENV['MINIO_ACCESS_KEY'] ?? 'minio',
             secretKey: $_ENV['MINIO_SECRET_KEY'] ?? 'change_me',
@@ -32,7 +32,7 @@ final class MinioDocumentStorageAdapterTest extends IntegrationTestCase
         );
     }
 
-    public function testItUploadsObjectToMinio(): void
+    public function testItUploadsObjectToObjectStorage(): void
     {
         $bucket = BucketName::fromString('integration-documents');
         $path = ObjectPath::fromString('integration/test.txt');

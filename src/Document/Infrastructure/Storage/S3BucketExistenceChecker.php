@@ -8,7 +8,7 @@ use App\Document\Domain\Storage\BucketExistenceCheckerInterface;
 use App\Document\Domain\ValueObject\BucketName;
 use Aws\S3\S3Client;
 
-final class MinioBucketExistenceChecker implements BucketExistenceCheckerInterface
+final class S3BucketExistenceChecker implements BucketExistenceCheckerInterface
 {
     private readonly S3Client $client;
 
@@ -18,7 +18,7 @@ final class MinioBucketExistenceChecker implements BucketExistenceCheckerInterfa
         string $secretKey,
         bool $useSsl,
     ) {
-        $this->client = MinioS3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
+        $this->client = S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
     }
 
     public function exists(BucketName $bucket): bool
