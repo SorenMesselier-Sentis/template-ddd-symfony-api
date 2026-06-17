@@ -16,7 +16,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Mailer | Symfony Mailer + Twig templates, Mailpit for dev |
 | Logging | Monolog |
 | Monitoring | Prometheus + Grafana (preconfigured scrape targets + starter dashboard) |
-| Object storage | MinIO (S3-compatible), AWS SDK for PHP (`aws/aws-sdk-php`) |
+| Object storage | RustFS (S3-compatible) `rustfs/rustfs:1.0.0-beta.8`, AWS SDK for PHP (`aws/aws-sdk-php`) |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
 
 ## Architecture
