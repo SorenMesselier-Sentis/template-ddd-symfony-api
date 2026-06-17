@@ -18,13 +18,13 @@ final class MinioHealthCheck implements HealthCheckInterface
     private $clientFactory;
 
     public function __construct(
-        #[Autowire(env: 'MINIO_ENDPOINT')]
+        #[Autowire(env: 'S3_ENDPOINT')]
         private readonly string $endpoint,
-        #[Autowire(env: 'MINIO_ACCESS_KEY')]
+        #[Autowire(env: 'S3_ACCESS_KEY')]
         private readonly string $accessKey,
-        #[Autowire(env: 'MINIO_SECRET_KEY')]
+        #[Autowire(env: 'S3_SECRET_KEY')]
         private readonly string $secretKey,
-        #[Autowire(env: 'bool:MINIO_USE_SSL')]
+        #[Autowire(env: 'bool:S3_USE_SSL')]
         private readonly bool $useSsl,
         ?callable $clientFactory = null,
     ) {
