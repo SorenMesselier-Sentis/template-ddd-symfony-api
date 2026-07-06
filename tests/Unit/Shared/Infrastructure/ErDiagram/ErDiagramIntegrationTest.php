@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Infrastructure\ErDiagram;
 
 use App\Shared\Infrastructure\ErDiagram\DiagramWriter;
+use App\Shared\Infrastructure\ErDiagram\DoctrineXmlParser;
 use App\Shared\Infrastructure\ErDiagram\ErDiagramValidator;
+use App\Shared\Infrastructure\ErDiagram\ForeignKeyRelationInferrer;
 use App\Shared\Infrastructure\ErDiagram\MermaidRenderer;
 use App\Tests\Unit\UnitTestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -15,7 +17,7 @@ final class ErDiagramIntegrationTest extends UnitTestCase
     public function testItGeneratesCompleteProjectDiagram(): void
     {
         $projectDir = \dirname(__DIR__, 5);
-        $parser = new \App\Shared\Infrastructure\ErDiagram\DoctrineXmlParser();
+        $parser = new DoctrineXmlParser(new ForeignKeyRelationInferrer());
         $renderer = new MermaidRenderer();
         $validator = new ErDiagramValidator();
 
@@ -29,6 +31,10 @@ final class ErDiagramIntegrationTest extends UnitTestCase
         $this->assertStringContainsString('documents {', $mermaid);
         $this->assertStringContainsString('multipart_upload_sessions {', $mermaid);
         $this->assertStringContainsString('hashed_password password', $mermaid);
+        $this->assertStringContainsString('refresh_tokens }o--|| users : "user_id"', $mermaid);
+        $this->assertStringContainsString('documents }o--|| users : "owner_id"', $mermaid);
+        $this->assertStringContainsString('multipart_upload_sessions }o--|| documents : "document_id"', $mermaid);
+        $this->assertStringContainsString('multipart_upload_sessions }o--|| users : "owner_id"', $mermaid);
     }
 
     public function testDiagramWriterCreatesFileWithHeader(): void

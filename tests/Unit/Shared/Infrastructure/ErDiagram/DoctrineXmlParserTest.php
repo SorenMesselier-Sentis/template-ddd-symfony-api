@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Infrastructure\ErDiagram;
 
 use App\Shared\Infrastructure\ErDiagram\DoctrineXmlParser;
+use App\Shared\Infrastructure\ErDiagram\ForeignKeyRelationInferrer;
 use App\Tests\Unit\UnitTestCase;
 
 final class DoctrineXmlParserTest extends UnitTestCase
@@ -14,7 +15,7 @@ final class DoctrineXmlParserTest extends UnitTestCase
 
     protected function setUp(): void
     {
-        $this->parser = new DoctrineXmlParser();
+        $this->parser = new DoctrineXmlParser(new ForeignKeyRelationInferrer());
         $this->projectDir = \dirname(__DIR__, 5);
     }
 

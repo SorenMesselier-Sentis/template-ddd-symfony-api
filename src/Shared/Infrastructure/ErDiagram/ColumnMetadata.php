@@ -9,6 +9,7 @@ final readonly class ColumnMetadata
     public function __construct(
         public string $name,
         public string $type,
+        public bool $primaryKey = false,
     ) {
     }
 }

@@ -47,4 +47,8 @@ erDiagram
         datetime_immutable created_at
         datetime_immutable updated_at
     }
+    documents }o--|| users : "owner_id"
+    multipart_upload_sessions }o--|| documents : "document_id"
+    multipart_upload_sessions }o--|| users : "owner_id"
+    refresh_tokens }o--|| users : "user_id"
 ```

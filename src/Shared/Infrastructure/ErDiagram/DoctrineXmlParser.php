@@ -8,6 +8,11 @@ final class DoctrineXmlParser
 {
     private const string MAPPING_GLOB = '/src/*/Infrastructure/Persistence/Doctrine/Mapping/*.orm.xml';
 
+    public function __construct(
+        private readonly ForeignKeyRelationInferrer $foreignKeyRelationInferrer,
+    ) {
+    }
+
     /**
      * @return list<string> Absolute paths to mapping files
      */
@@ -42,7 +47,7 @@ final class DoctrineXmlParser
             }
         }
 
-        return $entities;
+        return $this->foreignKeyRelationInferrer->infer($entities);
     }
 
     /**
@@ -53,7 +58,7 @@ final class DoctrineXmlParser
         $content = @file_get_contents($filePath);
 
         if (false === $content) {
-            $writeWarning(sprintf('Impossible to read mapping file: %s', $filePath));
+            $writeWarning(sprintf('Unable to read mapping file: %s', $filePath));
 
             return null;
         }
@@ -123,7 +128,8 @@ final class DoctrineXmlParser
             }
 
             match ($child->localName) {
-                'id', 'field' => $columns[] = $this->extractColumn($child),
+                'id' => $columns[] = $this->extractColumn($child, true),
+                'field' => $columns[] = $this->extractColumn($child),
                 'many-to-one', 'one-to-many', 'one-to-one', 'many-to-many' => $relations[] = $this->extractRelation($child),
                 default => null,
             };
@@ -137,7 +143,7 @@ final class DoctrineXmlParser
         );
     }
 
-    private function extractColumn(\DOMElement $node): ColumnMetadata
+    private function extractColumn(\DOMElement $node, bool $primaryKey = false): ColumnMetadata
     {
         $name = trim($node->getAttribute('name'));
         $column = trim($node->getAttribute('column'));
@@ -150,6 +156,7 @@ final class DoctrineXmlParser
         return new ColumnMetadata(
             name: '' !== $column ? $column : $name,
             type: $type,
+            primaryKey: $primaryKey,
         );
     }
 
