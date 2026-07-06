@@ -64,7 +64,7 @@ final class DoctrineXmlParserTest extends UnitTestCase
         $this->assertSame([], $entities);
         $this->assertCount(1, $warnings);
         $this->assertStringContainsString($invalidFile, $warnings[0]);
-        $this->assertStringContainsString('malformé', $warnings[0]);
+        $this->assertStringContainsString('Invalid mapping file ignored', $warnings[0]);
 
         unlink($invalidFile);
         rmdir($mappingDir);

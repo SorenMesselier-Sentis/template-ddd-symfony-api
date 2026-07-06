@@ -42,7 +42,7 @@ final class ErDiagramIntegrationTest extends UnitTestCase
 
         $this->assertSame('docs/er-diagram.md', $relativePath);
         $content = file_get_contents($tempDir.'/docs/er-diagram.md');
-        $this->assertSame("# Diagramme Entité-Relation\n\n".$mermaid, $content);
+        $this->assertSame("# Entity Relation Diagram\n\n".$mermaid, $content);
 
         unlink($tempDir.'/docs/er-diagram.md');
         rmdir($tempDir.'/docs');
