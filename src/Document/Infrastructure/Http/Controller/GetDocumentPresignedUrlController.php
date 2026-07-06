@@ -25,7 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
     name: 'ttl',
     in: 'query',
     required: false,
-    description: 'URL validity in seconds (60–604800). Defaults to MINIO_PRESIGNED_URL_TTL.',
+    description: 'URL validity in seconds (60–604800). Defaults to S3_PRESIGNED_URL_TTL.',
     schema: new OA\Schema(type: 'integer', minimum: 60, maximum: 604800),
 )]
 #[OA\Response(response: 200, description: 'Presigned URL generated')]

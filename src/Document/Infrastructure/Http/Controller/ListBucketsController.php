@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 #[OA\Get(
     path: '/api/v1/buckets',
     operationId: 'getBuckets',
-    summary: 'List MinIO buckets',
+    summary: 'List object storage buckets',
     description: 'Returns all buckets with their creation date. Requires `ROLE_ADMIN`.',
     tags: ['Buckets'],
     security: [['bearer' => []]],

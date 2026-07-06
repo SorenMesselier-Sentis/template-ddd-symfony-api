@@ -124,7 +124,7 @@ events.product:
 | Suite | Location | Scope |
 |---|---|---|
 | **Unit** | `tests/Unit/<Name>/` | Domain + Application handlers (no I/O) |
-| **Integration** | `tests/Integration/<Name>/` | Doctrine repositories, adapters (real DB / MinIO) |
+| **Integration** | `tests/Integration/<Name>/` | Doctrine repositories, adapters (real DB / RustFS) |
 | **Http** | `tests/Http/<Name>/` | Full stack via `KernelBrowser`, extend `HttpTestCase` |
 
 ```bash
@@ -179,7 +179,7 @@ Unmapped `DomainException` subclasses fall back to `422 / domain_error`. Unknown
 | BC | Purpose | Notable patterns |
 |---|---|---|
 | **User** | Auth, users, refresh tokens | JWT, `AuthorizedMessage`, welcome email event handlers |
-| **Document** | MinIO object storage | Storage ports, `OwnerId` without FK, `DocumentExceptionMapper` |
+| **Document** | S3-compatible object storage (RustFS) | Storage ports, `OwnerId` without FK, `DocumentExceptionMapper` |
 | **Shared** | Buses, outbox, email, health, HTTP envelope | No BC imports |
 
 ---

@@ -8,7 +8,6 @@ use App\Document\Domain\Exception\UploadSessionNotFoundException;
 use App\Document\Domain\Repository\MultipartUploadSessionRepositoryInterface;
 use App\Document\Domain\Security\OwnerContextInterface;
 use App\Document\Domain\Storage\MultipartDocumentStorageInterface;
-use Aws\S3\Exception\S3Exception;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -38,7 +37,7 @@ final class AbortMultipartUploadCommandHandler
                 objectPath: $session->objectPath(),
                 uploadId: $session->uploadId(),
             );
-        } catch (S3Exception) {
+        } catch (\Throwable) {
             throw UploadSessionNotFoundException::withUploadId($command->uploadId);
         }
 

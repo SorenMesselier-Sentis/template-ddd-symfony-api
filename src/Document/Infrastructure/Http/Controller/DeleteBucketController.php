@@ -16,8 +16,8 @@ use Symfony\Component\Routing\Attribute\Route;
 #[OA\Delete(
     path: '/api/v1/buckets/{name}',
     operationId: 'deleteBucket',
-    summary: 'Delete a MinIO bucket',
-    description: 'Deletes an empty bucket from MinIO. Requires `ROLE_ADMIN`.',
+    summary: 'Delete an object storage bucket',
+    description: 'Deletes an empty bucket from S3-compatible object storage. Requires `ROLE_ADMIN`.',
     tags: ['Buckets'],
     security: [['bearer' => []]],
 )]

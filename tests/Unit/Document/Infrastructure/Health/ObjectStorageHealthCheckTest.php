@@ -4,25 +4,25 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Document\Infrastructure\Health;
 
-use App\Document\Infrastructure\Health\MinioHealthCheck;
+use App\Document\Infrastructure\Health\ObjectStorageHealthCheck;
 use App\Tests\Unit\UnitTestCase;
 use Aws\S3\S3Client;
 
-final class MinioHealthCheckTest extends UnitTestCase
+final class ObjectStorageHealthCheckTest extends UnitTestCase
 {
-    public function testNameIsMinio(): void
+    public function testNameIsObjectStorage(): void
     {
-        $check = new MinioHealthCheck(
-            endpoint: 'http://minio:9000',
-            accessKey: 'minio',
+        $check = new ObjectStorageHealthCheck(
+            endpoint: 'http://rustfs:9000',
+            accessKey: 'rustfsadmin',
             secretKey: 'change_me',
             useSsl: false,
         );
 
-        $this->assertSame('minio', $check->name());
+        $this->assertSame('object_storage', $check->name());
     }
 
-    public function testCheckReturnsOkWhenMinioResponds(): void
+    public function testCheckReturnsOkWhenObjectStorageResponds(): void
     {
         $capturedTimeout = null;
         $client = new class {
@@ -32,9 +32,9 @@ final class MinioHealthCheckTest extends UnitTestCase
             }
         };
 
-        $check = new MinioHealthCheck(
-            endpoint: 'http://minio:9000',
-            accessKey: 'minio',
+        $check = new ObjectStorageHealthCheck(
+            endpoint: 'http://rustfs:9000',
+            accessKey: 'rustfsadmin',
             secretKey: 'change_me',
             useSsl: false,
             clientFactory: static function (
@@ -56,11 +56,11 @@ final class MinioHealthCheckTest extends UnitTestCase
         $this->assertSame(3.0, $capturedTimeout);
     }
 
-    public function testCheckReturnsErrorWhenMinioIsUnreachable(): void
+    public function testCheckReturnsErrorWhenObjectStorageIsUnreachable(): void
     {
-        $check = new MinioHealthCheck(
-            endpoint: 'http://minio:9000',
-            accessKey: 'minio',
+        $check = new ObjectStorageHealthCheck(
+            endpoint: 'http://rustfs:9000',
+            accessKey: 'rustfsadmin',
             secretKey: 'change_me',
             useSsl: false,
             clientFactory: static function (): S3Client {

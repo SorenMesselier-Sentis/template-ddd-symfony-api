@@ -37,7 +37,7 @@ final class UpdateUserRolesCommandHandler
             $command->roles,
         );
 
-        // Be sure that the UUSER_ROLE is present at any cases
+        // Be sure that the USER_ROLE is present at any cases
         if (!in_array(UserRole::USER, $roles, true)) {
             $roles[] = UserRole::USER;
         }

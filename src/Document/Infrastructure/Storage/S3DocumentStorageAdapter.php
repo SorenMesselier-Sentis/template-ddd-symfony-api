@@ -15,7 +15,7 @@ use App\Document\Domain\ValueObject\PartNumber;
 use App\Document\Domain\ValueObject\PresignedUrl;
 use Aws\S3\S3Client;
 
-final class MinioDocumentStorageAdapter implements DocumentStorageInterface, MultipartDocumentStorageInterface, DocumentPresignedUrlGeneratorInterface
+final class S3DocumentStorageAdapter implements DocumentStorageInterface, MultipartDocumentStorageInterface, DocumentPresignedUrlGeneratorInterface
 {
     private readonly S3Client $client;
 
@@ -25,7 +25,7 @@ final class MinioDocumentStorageAdapter implements DocumentStorageInterface, Mul
         string $secretKey,
         bool $useSsl,
     ) {
-        $this->client = MinioS3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
+        $this->client = S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
     }
 
     public function upload(

@@ -18,8 +18,8 @@ use Symfony\Component\Routing\Attribute\Route;
 #[OA\Post(
     path: '/api/v1/buckets',
     operationId: 'postBuckets',
-    summary: 'Create a MinIO bucket',
-    description: 'Creates a new bucket in MinIO. Requires `ROLE_ADMIN`.',
+    summary: 'Create an object storage bucket',
+    description: 'Creates a new bucket in S3-compatible object storage. Requires `ROLE_ADMIN`.',
     tags: ['Buckets'],
     security: [['bearer' => []]],
 )]

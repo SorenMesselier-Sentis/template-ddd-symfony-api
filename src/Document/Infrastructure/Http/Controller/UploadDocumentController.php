@@ -22,7 +22,7 @@ use Symfony\Component\Uid\Uuid;
     path: '/api/v1/documents',
     operationId: 'postDocuments',
     summary: 'Upload a document',
-    description: 'Uploads a single-part file to MinIO and persists document metadata. Requires authentication.',
+    description: 'Uploads a single-part file to S3-compatible object storage and persists document metadata. Requires authentication.',
     tags: ['Documents'],
     security: [['bearer' => []]],
 )]

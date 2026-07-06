@@ -18,7 +18,7 @@ use Symfony\Component\Routing\Attribute\Route;
     path: '/api/v1/documents/{id}',
     operationId: 'deleteDocument',
     summary: 'Soft-delete a document',
-    description: 'Marks a document as deleted. Optionally purges the object from MinIO when purge=true.',
+    description: 'Marks a document as deleted. Optionally purges the object from object storage when purge=true.',
     tags: ['Documents'],
     security: [['bearer' => []]],
 )]
@@ -26,7 +26,7 @@ use Symfony\Component\Routing\Attribute\Route;
     name: 'purge',
     in: 'query',
     required: false,
-    description: 'When true, also removes the object from MinIO after soft-delete.',
+    description: 'When true, also removes the object from object storage after soft-delete.',
     schema: new OA\Schema(type: 'boolean', default: false),
 )]
 #[OA\Response(response: 200, description: 'Document deleted')]
