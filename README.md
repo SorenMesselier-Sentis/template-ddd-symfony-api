@@ -781,7 +781,7 @@ The command scaffolds Domain / Application / Infrastructure, registers routes, D
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin / see .env.local |
 | Mailpit UI | http://localhost:8025 | — |
-| RustFS Console | http://localhost:9001 (`S3_CONSOLE_PORT`) | `S3_ACCESS_KEY` / `S3_SECRET_KEY` (see `.env.local`) |
+| RustFS Console | http://localhost:9001/rustfs/console/ (`S3_CONSOLE_PORT`) | `S3_ACCESS_KEY` / `S3_SECRET_KEY` (see `.env.local`) |
 | PostgreSQL | localhost:5432 | app / see .env.local |
 
 ## Event flow
