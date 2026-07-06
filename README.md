@@ -19,6 +19,8 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Object storage | RustFS (S3-compatible) `rustfs/rustfs:1.0.0-beta.8`, AWS SDK for PHP (`aws/aws-sdk-php`) |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
 
+> **RustFS beta status:** RustFS is currently in beta (`1.0.0-beta.x`). This template uses it for local development and integration testing. Production adopters should independently evaluate maturity, licensing (Apache 2.0), and operational fit before relying on it in production.
+
 ## Architecture
 
 This template follows Domain-Driven Design (DDD) principles with a clear separation of concerns across three layers per Bounded Context.
@@ -63,7 +65,7 @@ src/
 │       ├── Scheduler/              # e.g. CleanupExpiredRefreshTokensHandler
 │       └── Http/Controller/        # /users, /auth/*
 │
-├── Document/                       # Object storage (MinIO) — metadata in DB, files in buckets
+├── Document/                       # Object storage (RustFS) — metadata in DB, files in buckets
 │   ├── Domain/
 │   │   ├── Entity/Document.php
 │   │   ├── ValueObject/            # DocumentId, OwnerId, BucketName, MimeType, PresignedUrl, …
@@ -76,8 +78,8 @@ src/
 │   └── Infrastructure/
 │       ├── Fixture/DocumentFixture.php
 │       ├── Persistence/Doctrine/   # XML mapping + DoctrineDocumentRepository
-│       ├── Storage/                # MinioDocumentStorageAdapter, MinioBucketAdapter
-│       ├── Health/MinioHealthCheck.php
+│       ├── Storage/                # S3DocumentStorageAdapter, S3BucketManager, S3BucketExistenceChecker
+│       ├── Health/ObjectStorageHealthCheck.php
 │       └── Http/Controller/        # /documents, /buckets
 │
 └── <BoundedContext>/               # e.g. Product, Order — scaffold with `make bc name=…`
@@ -142,7 +144,7 @@ templates/email/
 
 Handlers are registered on `command.bus` only (no auto-broadcast to other buses). Failures are logged via `LoggerInterface` and swallowed so a single bad tick never crashes the scheduler worker. The manual `make outbox-relay` and `app:outbox:relay` console command remain available for on-demand triggering.
 
-**Object storage (Document BC)** — file bytes live in MinIO; the `Document` aggregate stores metadata only (name, size, MIME type, bucket, object path, owner ID, status). Bounded contexts interact through domain ports (`DocumentStorageInterface`, `BucketManagerInterface`); infrastructure adapters use the AWS SDK for PHP against MinIO. `OwnerId` is a UUID reference with no foreign key to the User BC, preserving bounded-context isolation. Presigned URLs delegate direct download to MinIO without streaming through PHP.
+**Object storage (Document BC)** — file bytes live in S3-compatible object storage (RustFS in Docker); the `Document` aggregate stores metadata only (name, size, MIME type, bucket, object path, owner ID, status). Bounded contexts interact through domain ports (`DocumentStorageInterface`, `BucketManagerInterface`); infrastructure adapters use the AWS SDK for PHP against the configured `S3_ENDPOINT`. `OwnerId` is a UUID reference with no foreign key to the User BC, preserving bounded-context isolation. Presigned URLs delegate direct download to object storage without streaming through PHP.
 
 **OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers. Paths in attributes are relative to the API base (`/users`, `/auth/login`, …); the `/api/v1` prefix is configured once in `config/packages/nelmio_api_doc.yaml` (`servers`) and in `config/routes.yaml`. Swagger UI is served at `/api/doc` and the JSON spec at `/api/doc.json`. The health check (`GET /health`) is documented under the **Infrastructure** tag with the root server.
 
@@ -280,19 +282,82 @@ MAILER_FROM=noreply@example.com
 # Outbox cleanup retention (days). Values <1 fall back to 30 with a warning log.
 OUTBOX_RETENTION_DAYS=30
 
-# MinIO (S3-compatible object storage — Document BC)
-MINIO_ROOT_USER=minio
-MINIO_ROOT_PASSWORD=your_password
-MINIO_ENDPOINT=http://minio:9000
-MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
-MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
-MINIO_USE_SSL=false
-MINIO_API_PORT=9000
-MINIO_CONSOLE_PORT=9001
-MINIO_PRESIGNED_URL_TTL=3600
+# S3-compatible object storage (RustFS in Docker — Document BC)
+# Application settings consumed by PHP adapters:
+S3_ACCESS_KEY=rustfsadmin
+S3_SECRET_KEY=your_password
+S3_ENDPOINT=http://rustfs:9000
+S3_USE_SSL=false
+S3_API_PORT=9000
+S3_CONSOLE_PORT=9001
+S3_PRESIGNED_URL_TTL=3600
+
+# RustFS container settings (wired in docker/compose.yaml; credentials mirror S3_*):
+# RUSTFS_ACCESS_KEY=${S3_ACCESS_KEY}
+# RUSTFS_SECRET_KEY=${S3_SECRET_KEY}
+# RUSTFS_ADDRESS=0.0.0.0:9000
+# RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
+# RUSTFS_CONSOLE_ENABLE=true
+# RUSTFS_VOLUMES=/data
 ```
 
+| Variable | Scope | Description |
+|---|---|---|
+| `S3_ENDPOINT` | PHP app | S3 API URL used by adapters and health check (Docker: `http://rustfs:9000`) |
+| `S3_ACCESS_KEY` | PHP app + RustFS | Access key for S3 API authentication |
+| `S3_SECRET_KEY` | PHP app + RustFS | Secret key for S3 API authentication |
+| `S3_USE_SSL` | PHP app | Enable TLS for the S3 client (`true` / `false`) |
+| `S3_API_PORT` | Docker host | Host port mapped to RustFS S3 API (container port `9000`) |
+| `S3_CONSOLE_PORT` | Docker host | Host port mapped to RustFS management console (container port `9001`) |
+| `S3_PRESIGNED_URL_TTL` | PHP app | Default presigned download URL TTL in seconds (60–604800) |
+| `RUSTFS_ACCESS_KEY` | RustFS container | Mirrors `S3_ACCESS_KEY` (set in `docker/compose.yaml`) |
+| `RUSTFS_SECRET_KEY` | RustFS container | Mirrors `S3_SECRET_KEY` (set in `docker/compose.yaml`) |
+| `RUSTFS_ADDRESS` | RustFS container | S3 API listen address inside the container (`0.0.0.0:9000`) |
+| `RUSTFS_CONSOLE_ADDRESS` | RustFS container | Console listen address inside the container (`0.0.0.0:9001`) |
+| `RUSTFS_CONSOLE_ENABLE` | RustFS container | Enable the management console (`true`) |
+| `RUSTFS_VOLUMES` | RustFS container | Data directory path inside the container (`/data`) |
+
 See `.env` for the full list of available variables.
+
+### Migrating from MinIO
+
+If you run an existing deployment that still uses MinIO, update application configuration and copy object data to RustFS. **Automated Docker volume migration is out of scope for this template** — operators are responsible for moving blobs and updating environment variables.
+
+#### Configuration mapping
+
+| Legacy (MinIO) | New (application) | New (RustFS container) |
+|---|---|---|
+| `MINIO_ENDPOINT` | `S3_ENDPOINT` | — |
+| `MINIO_ACCESS_KEY` / `MINIO_ROOT_USER` | `S3_ACCESS_KEY` | `RUSTFS_ACCESS_KEY` |
+| `MINIO_SECRET_KEY` / `MINIO_ROOT_PASSWORD` | `S3_SECRET_KEY` | `RUSTFS_SECRET_KEY` |
+| `MINIO_USE_SSL` | `S3_USE_SSL` | — |
+| `MINIO_API_PORT` | `S3_API_PORT` | — |
+| `MINIO_CONSOLE_PORT` | `S3_CONSOLE_PORT` | — |
+| `MINIO_PRESIGNED_URL_TTL` | `S3_PRESIGNED_URL_TTL` | — |
+
+Point `S3_ENDPOINT` at your RustFS S3 API URL (e.g. `http://rustfs:9000` inside Docker, or the external endpoint in production). The RustFS container reads credentials from `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY`, which mirror `S3_ACCESS_KEY` / `S3_SECRET_KEY` in `docker/compose.yaml`.
+
+> **Health check rename:** readiness probes that scrape `/health` by check name must look for `object_storage` instead of the legacy `minio` key.
+
+#### Object data migration
+
+Copy buckets and objects from the old MinIO endpoint to RustFS with any S3-compatible tool, for example:
+
+```bash
+# AWS CLI (sync via a local staging directory, per bucket)
+aws --endpoint-url http://old-minio:9000 s3 sync s3://my-bucket ./staging/my-bucket
+aws --endpoint-url http://new-rustfs:9000 s3 sync ./staging/my-bucket s3://my-bucket
+
+# rclone (configure two remotes, then sync)
+rclone sync minio:source-bucket rustfs:source-bucket
+
+# MinIO Client (mc) or rustfs-cli
+mc mirror old-minio/source-bucket rustfs/source-bucket
+```
+
+#### Database metadata
+
+Existing PostgreSQL `documents` rows remain valid after the switch: no schema change is required. Ensure every `bucket` and `object_path` referenced in the database exists in RustFS (sync object data before or during cutover). Soft-deleted documents may still reference objects that were purged from storage — that behaviour is unchanged.
 
 ## Development
 
@@ -507,7 +572,8 @@ Base path: `/api/v1`.
     "status": "ok",
     "checks": {
       "api": "ok",
-      "database": "ok"
+      "database": "ok",
+      "object_storage": "ok"
     },
     "checks_details": {
       "api": {
@@ -517,6 +583,10 @@ Base path: `/api/v1`.
       "database": {
         "status": "ok",
         "duration_ms": 4
+      },
+      "object_storage": {
+        "status": "ok",
+        "duration_ms": 6
       }
     }
   }
@@ -575,7 +645,7 @@ All document endpoints require a valid JWT. Upload uses `multipart/form-data` (`
 | `POST` | `/documents` | Upload a file (single-part, max 100 MB) |
 | `GET` | `/documents` | List documents (filterable, sortable, paginated) |
 | `GET` | `/documents/{id}/presigned-url` | Get a time-limited download URL |
-| `DELETE` | `/documents/{id}` | Soft-delete a document (optional physical purge in MinIO) |
+| `DELETE` | `/documents/{id}` | Soft-delete a document (optional physical purge in object storage) |
 
 #### Multipart upload
 
@@ -592,7 +662,7 @@ For files larger than 100 MB, use the multipart flow:
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/buckets` | Admin | Create a bucket in MinIO |
+| `POST` | `/buckets` | Admin | Create a bucket in object storage |
 | `GET` | `/buckets` | User | List buckets |
 | `GET` | `/buckets/{name}/exists` | User | Check whether a bucket exists |
 | `DELETE` | `/buckets/{name}` | Admin | Delete a bucket |
@@ -711,7 +781,7 @@ The command scaffolds Domain / Application / Infrastructure, registers routes, D
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin / see .env.local |
 | Mailpit UI | http://localhost:8025 | — |
-| MinIO Console | http://localhost:9001 | `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (see `.env.local`) |
+| RustFS Console | http://localhost:9001 (`S3_CONSOLE_PORT`) | `S3_ACCESS_KEY` / `S3_SECRET_KEY` (see `.env.local`) |
 | PostgreSQL | localhost:5432 | app / see .env.local |
 
 ## Event flow
@@ -745,7 +815,7 @@ Tests are organized in three suites matching the architecture layers:
 ```
 tests/
 ├── Unit/           # Domain + Application — no I/O, fast
-├── Integration/    # Infrastructure — hits the real database (and MinIO for Document)
+├── Integration/    # Infrastructure — hits the real database (and RustFS for Document)
 └── Http/           # Full HTTP stack — routing, JWT, serialization, error handling
 ```
 
@@ -766,7 +836,7 @@ GitHub Actions runs on every **push** and **pull request** to `main` and `master
 
 The pipeline:
 
-1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **MinIO**, **PHP**
+1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **RustFS**, **PHP**
 2. Runs `composer install`
 3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
 4. Warms the Symfony dev container cache (required by PHPStan)
@@ -780,7 +850,7 @@ Run `make ci` locally before opening a PR — it executes the same quality gates
 
 ```bash
 cp .env .env.local                              # skip if .env.local already exists
-docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq minio php
+docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq rustfs php
 make install
 
 # Generate JWT keys once (required for auth / HTTP tests):

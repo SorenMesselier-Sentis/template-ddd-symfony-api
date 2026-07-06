@@ -12,7 +12,6 @@ use App\Document\Domain\Repository\MultipartUploadSessionRepositoryInterface;
 use App\Document\Domain\Security\OwnerContextInterface;
 use App\Document\Domain\Storage\MultipartDocumentStorageInterface;
 use App\Shared\Domain\Bus\Event\EventBusInterface;
-use Aws\S3\Exception\S3Exception;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -45,7 +44,7 @@ final class CompleteMultipartUploadCommandHandler
                 uploadId: $session->uploadId(),
                 parts: $session->partsForCompletion(),
             );
-        } catch (S3Exception) {
+        } catch (\Throwable) {
             throw UploadSessionNotFoundException::withUploadId($command->uploadId);
         }
 

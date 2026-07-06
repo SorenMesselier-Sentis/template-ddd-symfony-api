@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Tests\Http\Document;
 
 use App\Tests\Http\HttpTestCase;
-use Aws\S3\S3Client;
+use App\Tests\Support\ObjectStorageTestTrait;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class DocumentSecurityHttpTest extends HttpTestCase
 {
+    use ObjectStorageTestTrait;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        if ($this->isMinioAvailable()) {
+        if ($this->isObjectStorageAvailable()) {
             $this->ensureBucket('documents');
         }
     }
@@ -63,8 +65,8 @@ final class DocumentSecurityHttpTest extends HttpTestCase
 
     public function testUploadResponseDoesNotExposeObjectPath(): void
     {
-        if (!$this->isMinioAvailable()) {
-            $this->markTestSkipped('MinIO is not available.');
+        if (!$this->isObjectStorageAvailable()) {
+            $this->markTestSkipped('RustFS is not available.');
         }
 
         $client = $this->createAuthenticatedClient('user');
@@ -82,47 +84,5 @@ final class DocumentSecurityHttpTest extends HttpTestCase
         $payload = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame(201, $client->getResponse()->getStatusCode());
         $this->assertArrayNotHasKey('objectPath', $payload['data']);
-    }
-
-    private function isMinioAvailable(): bool
-    {
-        $endpoint = $_ENV['MINIO_ENDPOINT'] ?? 'http://minio:9000';
-
-        try {
-            $client = new S3Client([
-                'version' => 'latest',
-                'region' => 'us-east-1',
-                'endpoint' => $endpoint,
-                'use_path_style_endpoint' => true,
-                'credentials' => [
-                    'key' => $_ENV['MINIO_ACCESS_KEY'] ?? 'minio',
-                    'secret' => $_ENV['MINIO_SECRET_KEY'] ?? 'change_me',
-                ],
-                'http' => ['connect_timeout' => 1, 'timeout' => 1],
-            ]);
-            $client->listBuckets();
-
-            return true;
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    private function ensureBucket(string $name): void
-    {
-        $client = new S3Client([
-            'version' => 'latest',
-            'region' => 'us-east-1',
-            'endpoint' => $_ENV['MINIO_ENDPOINT'] ?? 'http://minio:9000',
-            'use_path_style_endpoint' => true,
-            'credentials' => [
-                'key' => $_ENV['MINIO_ACCESS_KEY'] ?? 'minio',
-                'secret' => $_ENV['MINIO_SECRET_KEY'] ?? 'change_me',
-            ],
-        ]);
-
-        if (!$client->doesBucketExist($name)) {
-            $client->createBucket(['Bucket' => $name]);
-        }
     }
 }

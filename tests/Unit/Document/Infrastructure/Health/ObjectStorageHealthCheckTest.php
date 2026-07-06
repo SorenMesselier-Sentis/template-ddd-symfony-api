@@ -10,7 +10,7 @@ use Aws\S3\S3Client;
 
 final class ObjectStorageHealthCheckTest extends UnitTestCase
 {
-    public function testNameIsMinio(): void
+    public function testNameIsObjectStorage(): void
     {
         $check = new ObjectStorageHealthCheck(
             endpoint: 'http://rustfs:9000',
@@ -19,7 +19,7 @@ final class ObjectStorageHealthCheckTest extends UnitTestCase
             useSsl: false,
         );
 
-        $this->assertSame('minio', $check->name());
+        $this->assertSame('object_storage', $check->name());
     }
 
     public function testCheckReturnsOkWhenObjectStorageResponds(): void

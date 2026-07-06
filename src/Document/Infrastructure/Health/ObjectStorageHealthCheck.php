@@ -39,7 +39,7 @@ final class ObjectStorageHealthCheck implements HealthCheckInterface
 
     public function name(): string
     {
-        return 'minio';
+        return 'object_storage';
     }
 
     public function check(): HealthCheckStatus

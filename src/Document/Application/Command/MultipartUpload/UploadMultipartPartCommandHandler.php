@@ -10,7 +10,6 @@ use App\Document\Domain\Repository\MultipartUploadSessionRepositoryInterface;
 use App\Document\Domain\Security\OwnerContextInterface;
 use App\Document\Domain\Storage\MultipartDocumentStorageInterface;
 use App\Document\Domain\ValueObject\PartNumber;
-use Aws\S3\Exception\S3Exception;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'command.bus')]
@@ -46,7 +45,7 @@ final class UploadMultipartPartCommandHandler
                 partNumber: $partNumber,
                 content: $command->content,
             );
-        } catch (S3Exception) {
+        } catch (\Throwable) {
             throw UploadSessionNotFoundException::withUploadId($command->uploadId);
         }
 

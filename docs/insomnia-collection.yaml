@@ -85,7 +85,7 @@ resources:
     parentId: wrk_template_ddd_v2
     name: Buckets
     description: >
-      MinIO bucket management. Folder auth: Authorization Bearer {{ access_token }}.
+      S3-compatible object storage bucket management. Folder auth: Authorization Bearer {{ access_token }}.
       Create/List/Exists require an authenticated user; Create/Delete require admin (login as john.doe@example.com).
     environment: {}
     environmentPropertyOrder: null
