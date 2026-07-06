@@ -147,6 +147,10 @@ test-http:
 	$(CONSOLE_TEST) doctrine:migrations:migrate --no-interaction
 	$(PHP_TEST) vendor/bin/phpunit --testsuite=Http
 
+er-diagram: ## Generate the ER diagram from Doctrine XML mappings
+	@$(CONSOLE) app:generate:er-diagram
+	@echo "ER diagram generated at docs/er-diagram.md"
+
 ci: cs-check phpstan deptrac test-unit test-integration test-http ## Run all CI quality gates
 
 test-coverage:

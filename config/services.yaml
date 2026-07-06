@@ -28,6 +28,10 @@ services:
         arguments:
             $projectDir: "%kernel.project_dir%"
 
+    App\Shared\Infrastructure\Console\MermaidEntityRelationGeneratorCommand:
+        arguments:
+            $projectDir: "%kernel.project_dir%"
+
     # JWT
     App\User\Infrastructure\Service\JwtTokenService:
         arguments:
