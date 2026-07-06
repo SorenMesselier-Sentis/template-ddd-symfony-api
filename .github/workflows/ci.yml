@@ -17,6 +17,8 @@ jobs:
         name: Quality gates
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        permissions:
+            contents: write
 
         env:
             COMPOSE_FILE: docker/compose.yaml
@@ -37,6 +39,22 @@ jobs:
 
             - name: Install Composer dependencies
               run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php composer install --no-interaction --prefer-dist --no-progress
+
+            - name: Generate ER diagram
+              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php bin/console app:generate:er-diagram
+
+            - name: Commit ER diagram
+              if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add docs/er-diagram.md
+                  if git diff --staged --quiet; then
+                    echo "No changes to ER diagram"
+                  else
+                    git commit -m "chore: regenerate ER diagram"
+                    git push
+                  fi
 
             - name: Generate JWT keypair
               run: |
