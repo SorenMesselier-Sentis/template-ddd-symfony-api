@@ -135,11 +135,22 @@ final class DocumentFixtureCatalog
     {
         return match ($definition['mimeType']) {
             'application/pdf' => "%PDF-1.4\n% Fixture: {$definition['originalName']}\n",
-            'image/png' => base64_decode(
-                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-                true,
-            ) ?: '',
+            'image/png' => self::fixturePngContent(),
             default => "fixture:{$definition['originalName']}",
         };
+    }
+
+    private static function fixturePngContent(): string
+    {
+        $content = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+            true,
+        );
+
+        if (!\is_string($content)) {
+            throw new \LogicException('Fixture PNG payload is invalid.');
+        }
+
+        return $content;
     }
 }
