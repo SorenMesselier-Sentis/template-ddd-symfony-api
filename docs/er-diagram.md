@@ -3,49 +3,59 @@
 ```mermaid
 erDiagram
     documents {
-        document_id id
-        owner_id owner_id
-        bucket_name bucket_name
-        object_path object_path
-        string original_name
-        integer size
-        document_mime_type mime_type
-        document_status status
-        datetime_immutable created_at
-        datetime_immutable updated_at
+        uuid id
+        uuid owner_id
+        varchar63 bucket_name
+        varchar1024 object_path
+        varchar255 original_name
+        int size
+        varchar127 mime_type
+        varchar20 status
+        timestamp0withouttimezone created_at
+        timestamp0withouttimezone updated_at
     }
     multipart_upload_sessions {
-        string upload_id
-        document_id document_id
-        owner_id owner_id
-        bucket_name bucket_name
-        object_path object_path
-        string original_name
-        document_mime_type mime_type
-        integer total_size
-        multipart_upload_status status
+        varchar255 upload_id
+        uuid document_id
+        uuid owner_id
+        varchar63 bucket_name
+        varchar1024 object_path
+        varchar255 original_name
+        varchar127 mime_type
+        int total_size
+        varchar20 status
         json parts
-        datetime_immutable created_at
-        datetime_immutable updated_at
+        timestamp0withouttimezone created_at
+        timestamp0withouttimezone updated_at
+    }
+    outbox_messages {
+        uuid id
+        varchar255 event_name
+        varchar255 event_class
+        uuid aggregate_id
+        json payload
+        timestamp0withouttimezone occurred_on
+        timestamp0withouttimezone created_at
+        timestamp0withouttimezone published_at
     }
     refresh_tokens {
-        refresh_token_id id
-        user_id user_id
-        string token
-        datetime_immutable expires_at
+        uuid id
+        uuid user_id
+        varchar2048 token
+        timestamp0withouttimezone expires_at
         boolean revoked
-        datetime_immutable created_at
+        timestamp0withouttimezone created_at
     }
     users {
-        user_id id
-        user_name first_name
-        user_name last_name
-        email email
-        hashed_password password
-        user_status status
-        user_roles roles
-        datetime_immutable created_at
-        datetime_immutable updated_at
+        uuid id
+        varchar100 first_name
+        varchar100 last_name
+        varchar254 email
+        varchar255 password
+        varchar20 status
+        json roles
+        timestamp0withouttimezone created_at
+        timestamp0withouttimezone updated_at
     }
     documents }o--|| users : "owner_id"
     multipart_upload_sessions }o--|| documents : "document_id"

@@ -147,7 +147,7 @@ test-http:
 	$(CONSOLE_TEST) doctrine:migrations:migrate --no-interaction
 	$(PHP_TEST) vendor/bin/phpunit --testsuite=Http
 
-er-diagram: ## Generate the ER diagram from Doctrine XML mappings
+er-diagram: ## Generate the ER diagram from Doctrine migrations
 	@$(CONSOLE) app:generate:er-diagram
 	@echo "ER diagram generated at docs/er-diagram.md"
 

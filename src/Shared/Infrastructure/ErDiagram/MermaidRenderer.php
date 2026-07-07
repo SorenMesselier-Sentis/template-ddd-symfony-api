@@ -14,23 +14,23 @@ final class MermaidRenderer
     ];
 
     /**
-     * @param list<EntityMetadata> $entities
+     * @param list<TableMetadata> $tables
      */
-    public function render(array $entities): string
+    public function render(array $tables): string
     {
         $lines = ['```mermaid', 'erDiagram'];
 
-        foreach ($this->sortEntities($entities) as $entity) {
-            $lines[] = sprintf('    %s {', $entity->tableName);
+        foreach ($this->sortTables($tables) as $table) {
+            $lines[] = sprintf('    %s {', $table->tableName);
 
-            foreach ($entity->columns as $column) {
+            foreach ($table->columns as $column) {
                 $lines[] = sprintf('        %s %s', $this->sanitizeType($column->type), $column->name);
             }
 
             $lines[] = '    }';
         }
 
-        foreach ($this->deduplicateRelations($entities) as $relationLine) {
+        foreach ($this->deduplicateRelations($tables) as $relationLine) {
             $lines[] = $relationLine;
         }
 
@@ -40,41 +40,34 @@ final class MermaidRenderer
     }
 
     /**
-     * @param list<EntityMetadata> $entities
+     * @param list<TableMetadata> $tables
      *
-     * @return list<EntityMetadata>
+     * @return list<TableMetadata>
      */
-    private function sortEntities(array $entities): array
+    private function sortTables(array $tables): array
     {
         usort(
-            $entities,
-            static fn (EntityMetadata $left, EntityMetadata $right): int => $left->tableName <=> $right->tableName,
+            $tables,
+            static fn (TableMetadata $left, TableMetadata $right): int => $left->tableName <=> $right->tableName,
         );
 
-        return $entities;
+        return $tables;
     }
 
     /**
-     * @param list<EntityMetadata> $entities
+     * @param list<TableMetadata> $tables
      *
      * @return list<string>
      */
-    private function deduplicateRelations(array $entities): array
+    private function deduplicateRelations(array $tables): array
     {
-        $entityTableByFqcn = [];
-
-        foreach ($entities as $entity) {
-            $entityTableByFqcn[$entity->entityFqcn] = $entity->tableName;
-        }
-
         $seen = [];
         $lines = [];
 
-        foreach ($entities as $entity) {
-            foreach ($entity->relations as $relation) {
-                $targetTable = $entityTableByFqcn[$relation->targetEntityFqcn] ?? $relation->targetEntityShortName;
+        foreach ($tables as $table) {
+            foreach ($table->relations as $relation) {
                 $symbol = self::RELATION_SYMBOLS[$relation->cardinality] ?? '}o--||';
-                $dedupKey = $this->relationDedupKey($entity->tableName, $targetTable, $relation->cardinality);
+                $dedupKey = $this->relationDedupKey($table->tableName, $relation->targetTable, $relation->cardinality);
 
                 if (isset($seen[$dedupKey])) {
                     continue;
@@ -85,9 +78,9 @@ final class MermaidRenderer
 
                 $lines[] = sprintf(
                     '    %s %s %s : %s',
-                    $entity->tableName,
+                    $table->tableName,
                     $symbol,
-                    $targetTable,
+                    $relation->targetTable,
                     $label,
                 );
             }
@@ -108,6 +101,8 @@ final class MermaidRenderer
 
     private function sanitizeType(string $type): string
     {
-        return preg_replace('/[^a-zA-Z0-9_]/', '', $type) ?? $type;
+        $normalized = strtolower(trim($type));
+
+        return preg_replace('/[^a-z0-9_]/', '', $normalized) ?? $normalized;
     }
 }

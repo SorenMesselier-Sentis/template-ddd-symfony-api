@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\Console;
 
 use App\Shared\Infrastructure\ErDiagram\DiagramWriter;
-use App\Shared\Infrastructure\ErDiagram\DoctrineXmlParser;
 use App\Shared\Infrastructure\ErDiagram\ErDiagramValidator;
 use App\Shared\Infrastructure\ErDiagram\MermaidRenderer;
+use App\Shared\Infrastructure\ErDiagram\MigrationParser;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,12 +15,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'app:generate:er-diagram', description: 'Generate the Entity Relation schema with all the existing entities')]
+#[AsCommand(name: 'app:generate:er-diagram', description: 'Generate the Entity Relation schema from Doctrine migrations')]
 final class MermaidEntityRelationGeneratorCommand extends Command
 {
     public function __construct(
         private readonly string $projectDir,
-        private readonly DoctrineXmlParser $doctrineXmlParser,
+        private readonly MigrationParser $migrationParser,
         private readonly MermaidRenderer $mermaidRenderer,
         private readonly DiagramWriter $diagramWriter,
         private readonly ErDiagramValidator $erDiagramValidator,
@@ -46,24 +46,24 @@ final class MermaidEntityRelationGeneratorCommand extends Command
         };
 
         try {
-            $mappingFiles = $this->doctrineXmlParser->discoverMappingFiles($this->projectDir);
+            $migrationFiles = $this->migrationParser->discoverMigrationFiles($this->projectDir);
 
-            if ([] === $mappingFiles) {
-                $output->writeln('No mapping file found. No diagram generated.');
-
-                return Command::SUCCESS;
-            }
-
-            $entities = $this->doctrineXmlParser->parseAll($this->projectDir, $writeWarning);
-
-            if ([] === $entities) {
-                $output->writeln('No mapping file found. No diagram generated.');
+            if ([] === $migrationFiles) {
+                $output->writeln('No migration file found. No diagram generated.');
 
                 return Command::SUCCESS;
             }
 
-            $mermaidBlock = $this->mermaidRenderer->render($entities);
-            $this->erDiagramValidator->assertComplete($mermaidBlock, $entities);
+            $tables = $this->migrationParser->parseAll($this->projectDir, $writeWarning);
+
+            if ([] === $tables) {
+                $output->writeln('No migration file found. No diagram generated.');
+
+                return Command::SUCCESS;
+            }
+
+            $mermaidBlock = $this->mermaidRenderer->render($tables);
+            $this->erDiagramValidator->assertComplete($mermaidBlock, $tables);
 
             if (true === $input->getOption('dry-run')) {
                 $output->write($mermaidBlock);

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Infrastructure\ErDiagram;
 
 use App\Shared\Infrastructure\ErDiagram\ColumnMetadata;
-use App\Shared\Infrastructure\ErDiagram\EntityMetadata;
 use App\Shared\Infrastructure\ErDiagram\ForeignKeyRelationInferrer;
+use App\Shared\Infrastructure\ErDiagram\TableMetadata;
 use App\Tests\Unit\UnitTestCase;
 
 final class ForeignKeyRelationInferrerTest extends UnitTestCase
@@ -18,59 +18,55 @@ final class ForeignKeyRelationInferrerTest extends UnitTestCase
         $this->inferrer = new ForeignKeyRelationInferrer();
     }
 
-    public function testItInfersManyToOneRelationsFromForeignKeyColumnTypes(): void
+    public function testItInfersManyToOneRelationsFromUuidForeignKeyColumns(): void
     {
-        $entities = [
-            new EntityMetadata(
-                entityFqcn: 'App\User\Domain\Entity\User',
+        $tables = [
+            new TableMetadata(
                 tableName: 'users',
-                columns: [new ColumnMetadata('id', 'user_id', true)],
+                columns: [new ColumnMetadata('id', 'UUID', true)],
                 relations: [],
             ),
-            new EntityMetadata(
-                entityFqcn: 'App\User\Domain\Entity\RefreshToken',
+            new TableMetadata(
                 tableName: 'refresh_tokens',
                 columns: [
-                    new ColumnMetadata('id', 'refresh_token_id', true),
-                    new ColumnMetadata('user_id', 'user_id'),
+                    new ColumnMetadata('id', 'UUID', true),
+                    new ColumnMetadata('user_id', 'UUID'),
                 ],
                 relations: [],
             ),
         ];
 
-        $enriched = $this->inferrer->infer($entities);
+        $enriched = $this->inferrer->infer($tables);
         $refreshTokens = $enriched[1];
 
         $this->assertCount(1, $refreshTokens->relations);
         $this->assertSame('many-to-one', $refreshTokens->relations[0]->cardinality);
-        $this->assertSame('users', $refreshTokens->relations[0]->targetEntityShortName);
+        $this->assertSame('users', $refreshTokens->relations[0]->targetTable);
         $this->assertSame('user_id', $refreshTokens->relations[0]->name);
     }
 
     public function testItInfersOwnerIdAsRelationToUsers(): void
     {
-        $entities = [
-            new EntityMetadata(
-                entityFqcn: 'App\User\Domain\Entity\User',
+        $tables = [
+            new TableMetadata(
                 tableName: 'users',
-                columns: [new ColumnMetadata('id', 'user_id', true)],
+                columns: [new ColumnMetadata('id', 'UUID', true)],
                 relations: [],
             ),
-            new EntityMetadata(
-                entityFqcn: 'App\Document\Domain\Entity\Document',
+            new TableMetadata(
                 tableName: 'documents',
                 columns: [
-                    new ColumnMetadata('id', 'document_id', true),
-                    new ColumnMetadata('owner_id', 'owner_id'),
+                    new ColumnMetadata('id', 'UUID', true),
+                    new ColumnMetadata('owner_id', 'UUID'),
                 ],
                 relations: [],
             ),
         ];
 
-        $enriched = $this->inferrer->infer($entities);
+        $enriched = $this->inferrer->infer($tables);
         $documents = $enriched[1];
 
         $this->assertCount(1, $documents->relations);
-        $this->assertSame('users', $documents->relations[0]->targetEntityShortName);
+        $this->assertSame('users', $documents->relations[0]->targetTable);
     }
 }

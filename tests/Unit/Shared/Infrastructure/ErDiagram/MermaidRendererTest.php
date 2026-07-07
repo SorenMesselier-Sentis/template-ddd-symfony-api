@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Infrastructure\ErDiagram;
 
 use App\Shared\Infrastructure\ErDiagram\ColumnMetadata;
-use App\Shared\Infrastructure\ErDiagram\EntityMetadata;
 use App\Shared\Infrastructure\ErDiagram\MermaidRenderer;
 use App\Shared\Infrastructure\ErDiagram\RelationMetadata;
+use App\Shared\Infrastructure\ErDiagram\TableMetadata;
 use App\Tests\Unit\UnitTestCase;
 
 final class MermaidRendererTest extends UnitTestCase
@@ -21,47 +21,44 @@ final class MermaidRendererTest extends UnitTestCase
 
     public function testItRendersErDiagramBlock(): void
     {
-        $entities = [
-            new EntityMetadata(
-                entityFqcn: 'App\User\Domain\Entity\User',
+        $tables = [
+            new TableMetadata(
                 tableName: 'users',
                 columns: [
-                    new ColumnMetadata('id', 'user_id'),
-                    new ColumnMetadata('email', 'email'),
+                    new ColumnMetadata('id', 'UUID', true),
+                    new ColumnMetadata('first_name', 'VARCHAR(100)'),
                 ],
                 relations: [],
             ),
         ];
 
-        $output = $this->renderer->render($entities);
+        $output = $this->renderer->render($tables);
 
         $this->assertStringStartsWith("```mermaid\nerDiagram\n", $output);
         $this->assertStringEndsWith("```\n", $output);
-        $this->assertStringContainsString("users {\n        user_id id\n        email email\n    }", $output);
+        $this->assertStringContainsString("users {\n        uuid id\n        varchar100 first_name\n    }", $output);
     }
 
     public function testItRendersRelationsWithCardinalitySymbols(): void
     {
-        $entities = [
-            new EntityMetadata(
-                entityFqcn: 'App\Order\Domain\Entity\Order',
+        $tables = [
+            new TableMetadata(
                 tableName: 'orders',
-                columns: [new ColumnMetadata('id', 'integer')],
+                columns: [new ColumnMetadata('id', 'UUID', true)],
                 relations: [
-                    new RelationMetadata('customer', 'many-to-one', 'App\User\Domain\Entity\User', 'User'),
+                    new RelationMetadata('customer_id', 'many-to-one', 'users'),
                 ],
             ),
-            new EntityMetadata(
-                entityFqcn: 'App\User\Domain\Entity\User',
+            new TableMetadata(
                 tableName: 'users',
-                columns: [new ColumnMetadata('id', 'integer')],
+                columns: [new ColumnMetadata('id', 'UUID', true)],
                 relations: [],
             ),
         ];
 
-        $output = $this->renderer->render($entities);
+        $output = $this->renderer->render($tables);
 
         $this->assertSame(1, substr_count($output, '}o--||'));
-        $this->assertStringContainsString('orders }o--|| users : "customer"', $output);
+        $this->assertStringContainsString('orders }o--|| users : "customer_id"', $output);
     }
 }
