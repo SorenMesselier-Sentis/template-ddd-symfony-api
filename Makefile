@@ -2,8 +2,8 @@
 .PHONY: help
 
 DOCKER_COMPOSE = docker compose -f docker/compose.yaml --env-file .env.local
-PHP = $(DOCKER_COMPOSE) exec php
-PHP_TEST = $(DOCKER_COMPOSE) exec -e APP_ENV=test php
+PHP = $(DOCKER_COMPOSE) exec -w /app php
+PHP_TEST = $(DOCKER_COMPOSE) exec -w /app -e APP_ENV=test php
 CONSOLE = $(PHP) bin/console
 CONSOLE_TEST = $(PHP_TEST) bin/console
 COMPOSER = $(PHP) composer
@@ -117,7 +117,16 @@ scheduler:
 init: build up install db-fresh
 
 bc:
-	$(CONSOLE) make:bounded-context $(name)
+	$(CONSOLE) make:bounded-context $(name) $(if $(api-version),--api-version=$(api-version),)
+
+crud:
+	$(CONSOLE) make:bc-crud $(context) $(entity)
+
+remove-crud:
+	$(CONSOLE) remove:bc-crud $(context) $(entity) $(if $(force),--force,)
+
+remove-bc:
+	$(CONSOLE) remove:bounded-context $(name) $(if $(force),--force,)
 
 deptrac:
 	$(PHP) vendor/bin/deptrac analyse

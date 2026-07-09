@@ -55,28 +55,16 @@ parameters:
 			path: src/Shared/Infrastructure/Bus/Query/MessengerQueryBus.php
 
 		-
-			message: '#^Cannot cast mixed to string\.$#'
-			identifier: cast.string
-			count: 2
-			path: src/Shared/Infrastructure/Console/MakeBoundedContextCommand.php
-
-		-
 			message: '#^Parameter \#1 \$haystack of function str_contains expects string, string\|false given\.$#'
 			identifier: argument.type
-			count: 4
-			path: src/Shared/Infrastructure/Console/MakeBoundedContextCommand.php
-
-		-
-			message: '#^Parameter \#1 \$string of function strtolower expects string, string\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Shared/Infrastructure/Console/MakeBoundedContextCommand.php
+			count: 3
+			path: src/Shared/Infrastructure/Console/Generator/CrudGenerator.php
 
 		-
 			message: '#^Parameter \#3 \$subject of function preg_replace expects array\<float\|int\|string\>\|string, string\|false given\.$#'
 			identifier: argument.type
-			count: 4
-			path: src/Shared/Infrastructure/Console/MakeBoundedContextCommand.php
+			count: 3
+			path: src/Shared/Infrastructure/Console/Generator/CrudGenerator.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

@@ -82,7 +82,7 @@ src/
 │       ├── Health/ObjectStorageHealthCheck.php
 │       └── Http/Controller/        # /documents, /buckets
 │
-└── <BoundedContext>/               # e.g. Product, Order — scaffold with `make bc name=…`
+└── <BoundedContext>/               # e.g. Product, Order — scaffold with `make bc`, entities with `make crud`
     ├── Domain/                     # Pure PHP — no framework dependency
     │   ├── Entity/
     │   ├── ValueObject/
@@ -438,44 +438,80 @@ make messenger-failed-remove # remove all failed messages
 
 In production, `make consume` and `make scheduler` should be supervised as long-running processes (systemd, supervisord, etc.) — `make outbox-relay` is then only kept as an operator escape hatch for manual triggering. The `--time-limit=3600` in both targets is the standard Symfony pattern for safe restarts.
 
-### Generating a new Bounded Context
+### Scaffolding bounded contexts and CRUD entities
 
-Use the built-in maker command to scaffold the full DDD structure:
+The maker commands are split into two steps: create the bounded context skeleton, then generate CRUD entities inside it.
+
+#### 1. Create a bounded context
 
 ```bash
 make bc name=Product
+# optional API version: bin/console make:bounded-context Product --api-version=v1
 ```
 
-This generates the following structure:
+This creates the DDD folder structure under `src/Product/` and auto-registers:
+
+- HTTP routes in `config/routes.yaml` (`api_<version>_<context>`)
+- Doctrine XML mapping entry in `config/packages/doctrine.yaml` (BC-level)
+
+```
+src/Product/
+├── Domain/
+│   ├── Entity/
+│   ├── ValueObject/
+│   ├── Repository/
+│   ├── Event/
+│   └── Exception/
+├── Application/
+│   ├── Command/
+│   └── Query/
+└── Infrastructure/
+    ├── Persistence/Doctrine/
+    │   ├── Mapping/
+    │   ├── Repository/
+    │   └── Type/
+    ├── Http/
+    │   ├── Controller/
+    │   └── Request/
+    ├── Fixture/
+    └── Messaging/
+```
+
+#### 2. Generate a CRUD entity
+
+```bash
+make crud context=Product entity=Product
+# multiple entities in the same context:
+make crud context=Order entity=OrderLine
+```
+
+This generates the full CRUD stack for the entity and auto-registers:
+
+- Domain entity, value objects, repository port, events, exceptions
+- Application commands and queries (Create, Update, Replace, Delete, Get, List)
+- Infrastructure (Doctrine mapping, repository, HTTP controllers, fixture, message handler)
+- Unit and integration tests
+- Doctrine custom type in `config/packages/doctrine.yaml`
+- Repository alias in `config/services.yaml`
+- RabbitMQ queue binding `events.<entity>` in `config/packages/messenger.yaml`
 
 ```
 src/Product/
 ├── Domain/
 │   ├── Entity/Product.php
-│   ├── ValueObject/ProductId.php
+│   ├── ValueObject/ProductId.php, ProductStatus.php
 │   ├── Repository/ProductRepositoryInterface.php
-│   ├── Event/ProductCreated.php
-│   ├── Event/ProductUpdated.php
-│   ├── Event/ProductDeleted.php
-│   └── Exception/
-│       ├── ProductNotFoundException.php
-│       └── ProductAlreadyExistsException.php
+│   ├── Event/ProductCreated.php, …
+│   └── Exception/ProductNotFoundException.php, …
 ├── Application/
-│   ├── Command/
-│   │   ├── CreateProduct/
-│   │   ├── UpdateProduct/
-│   │   └── DeleteProduct/
-│   └── Query/
-│       ├── GetProduct/
-│       └── GetProducts/
+│   ├── Command/CreateProduct/, UpdateProduct/, …
+│   └── Query/GetProduct/, GetProducts/
 └── Infrastructure/
     ├── Persistence/Doctrine/
     │   ├── Mapping/Product.orm.xml
     │   ├── Repository/DoctrineProductRepository.php
     │   └── Type/ProductIdType.php
-    ├── Http/
-    │   ├── Controller/
-    │   └── Request/
+    ├── Http/Controller/…
     ├── Fixture/ProductFixture.php
     └── Messaging/ProductCreatedMessageHandler.php
 
@@ -484,37 +520,35 @@ tests/
 └── Integration/Product/
 ```
 
-After running the command, follow the printed next steps:
+#### 3. Post-generation steps
 
 ```bash
-# 1. Register the Doctrine type in config/packages/doctrine.yaml
-doctrine:
-    dbal:
-        types:
-            product_id: App\Product\Infrastructure\Persistence\Doctrine\Type\ProductIdType
-
-# 2. Register the Doctrine mapping in config/packages/doctrine.yaml
-    orm:
-        mappings:
-            Product:
-                type: xml
-                dir: '%kernel.project_dir%/src/Product/Infrastructure/Persistence/Doctrine/Mapping'
-                prefix: App\Product\Domain\Entity
-                is_bundle: false
-
-# 3. Register the repository in config/services.yaml
-App\Product\Domain\Repository\ProductRepositoryInterface:
-    alias: App\Product\Infrastructure\Persistence\Doctrine\Repository\DoctrineProductRepository
-
-# 4. Add the RabbitMQ binding key in config/packages/messenger.yaml
-queues:
-    events.product:
-        binding_keys: ['product.#']
-
-# 5. Generate and run the migration
+# 1. Add business fields to the entity, repository interface, and XML mapping
+# 2. Create <Context>ExceptionMapper if needed (see docs/ddd-conventions.md)
+# 3. Generate and run the migration
 make db-diff
 make db-migrate
+make ci
 ```
+
+Most configuration entries are registered automatically by `make crud`. If a step was skipped, the command prints the YAML blocks to add manually.
+
+#### 4. Remove scaffolding
+
+```bash
+make remove-crud context=Product entity=Product       # remove one CRUD entity
+make remove-bc name=Product                         # remove the entire bounded context
+make remove-crud context=Product entity=Product force=1   # skip confirmation prompt
+```
+
+`User`, `Document`, and `Shared` are protected and cannot be removed by these commands.
+
+| Make target | Console command | Description |
+|---|---|---|
+| `make bc name=…` | `make:bounded-context` | Create BC skeleton + routes + Doctrine mapping |
+| `make crud context=… entity=…` | `make:bc-crud` | Generate CRUD entity inside a BC |
+| `make remove-crud context=… entity=…` | `remove:bc-crud` | Remove a CRUD entity and its config |
+| `make remove-bc name=…` | `remove:bounded-context` | Remove a BC and all its entities |
 
 ### API documentation (Swagger UI)
 
@@ -762,13 +796,14 @@ curl -s -X DELETE http://localhost:8080/api/v1/users/<id>
 
 ## Adding a new Bounded Context
 
-Start with the maker, then follow the full checklist in [`docs/ddd-conventions.md`](docs/ddd-conventions.md) (Deptrac rules, exception mappers, migrations, fixtures, tests).
+Start with the makers, then follow the full checklist in [`docs/ddd-conventions.md`](docs/ddd-conventions.md) (Deptrac rules, exception mappers, migrations, fixtures, tests).
 
 ```bash
 make bc name=Product
+make crud context=Product entity=Product
 ```
 
-The command scaffolds Domain / Application / Infrastructure, registers routes, Doctrine mapping, repository alias, and RabbitMQ binding. Remaining steps: domain fields, `ProductExceptionMapper`, fixtures, tests, `make db-diff`, `make db-migrate`, `make ci`.
+`make bc` scaffolds the folder structure and registers routes + Doctrine mapping. `make crud` generates the entity, CRUD use cases, HTTP controllers, tests, and entity-specific configuration (Doctrine type, repository alias, RabbitMQ binding). Remaining steps: business fields, `ProductExceptionMapper`, `make db-diff`, `make db-migrate`, `make ci`.
 
 ## Services
 

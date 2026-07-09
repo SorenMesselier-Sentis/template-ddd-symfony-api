@@ -28,6 +28,22 @@ services:
         arguments:
             $projectDir: "%kernel.project_dir%"
 
+    App\Shared\Infrastructure\Console\Generator\BoundedContextGenerator:
+        arguments:
+            $projectDir: "%kernel.project_dir%"
+
+    App\Shared\Infrastructure\Console\Generator\CrudGenerator:
+        arguments:
+            $projectDir: "%kernel.project_dir%"
+
+    App\Shared\Infrastructure\Console\Generator\CrudRemover:
+        arguments:
+            $projectDir: "%kernel.project_dir%"
+
+    App\Shared\Infrastructure\Console\Generator\BoundedContextRemover:
+        arguments:
+            $projectDir: "%kernel.project_dir%"
+
     App\Shared\Infrastructure\Console\MermaidEntityRelationGeneratorCommand:
         arguments:
             $projectDir: "%kernel.project_dir%"
