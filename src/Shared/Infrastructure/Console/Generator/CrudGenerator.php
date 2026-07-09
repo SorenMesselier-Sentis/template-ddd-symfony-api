@@ -170,6 +170,11 @@ final class CrudGenerator
         $this->writeFiles($this->filesystem, $testsDir, $files, $io);
     }
 
+    private function openApiTag(string $context): string
+    {
+        return $context.'s';
+    }
+
     // =========================================================
     // Templates — Domain
     // =========================================================
@@ -927,6 +932,8 @@ final class CrudGenerator
 
     private function templateCreateController(string $context, string $entity, string $table): string
     {
+        $tag = $this->openApiTag($context);
+
         return <<<PHP
         <?php
 
@@ -937,11 +944,31 @@ final class CrudGenerator
         use App\\Shared\\Domain\\Bus\\Command\\CommandBusInterface;
         use App\\Shared\\Infrastructure\\Http\\Response\\ApiResponse;
         use App\\{$context}\\Application\\Command\\Create{$entity}\\Create{$entity}Command;
+        use OpenApi\\Attributes as OA;
         use Symfony\\Component\\HttpFoundation\\JsonResponse;
         use Symfony\\Component\\Routing\\Attribute\\Route;
         use Symfony\\Component\\Uid\\Uuid;
 
         #[Route('/{$table}', methods: ['POST'])]
+        #[OA\\Post(
+            path: '/api/v1/{$table}',
+            operationId: 'post{$entity}s',
+            summary: 'Create a {$entity}',
+            tags: ['{$tag}'],
+        )]
+        #[OA\\Response(
+            response: 201,
+            description: '{$entity} created',
+            content: new OA\\JsonContent(
+                properties: [
+                    new OA\\Property(
+                        property: 'data',
+                        properties: [new OA\\Property(property: 'id', type: 'string', format: 'uuid')],
+                        type: 'object',
+                    ),
+                ],
+            ),
+        )]
         final class Create{$entity}Controller
         {
             public function __construct(
@@ -963,6 +990,8 @@ final class CrudGenerator
 
     private function templateGetController(string $context, string $entity, string $table): string
     {
+        $tag = $this->openApiTag($context);
+
         return <<<PHP
         <?php
 
@@ -974,10 +1003,20 @@ final class CrudGenerator
         use App\\Shared\\Infrastructure\\Http\\Response\\ApiResponse;
         use App\\{$context}\\Application\\Query\\Get{$entity}\\Get{$entity}Query;
         use App\\{$context}\\Application\\Query\\Get{$entity}\\{$entity}Response;
+        use OpenApi\\Attributes as OA;
         use Symfony\\Component\\HttpFoundation\\JsonResponse;
         use Symfony\\Component\\Routing\\Attribute\\Route;
 
         #[Route('/{$table}/{id}', methods: ['GET'])]
+        #[OA\\Get(
+            path: '/api/v1/{$table}/{id}',
+            operationId: 'get{$entity}',
+            summary: 'Get a {$entity}',
+            tags: ['{$tag}'],
+        )]
+        #[OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'string', format: 'uuid'))]
+        #[OA\\Response(response: 200, description: '{$entity} found')]
+        #[OA\\Response(response: 404, description: '{$entity} not found')]
         final class Get{$entity}Controller
         {
             public function __construct(
@@ -998,6 +1037,8 @@ final class CrudGenerator
 
     private function templatePatchController(string $context, string $entity, string $table): string
     {
+        $tag = $this->openApiTag($context);
+
         return <<<PHP
         <?php
 
@@ -1008,10 +1049,20 @@ final class CrudGenerator
         use App\\Shared\\Domain\\Bus\\Command\\CommandBusInterface;
         use App\\Shared\\Infrastructure\\Http\\Response\\ApiResponse;
         use App\\{$context}\\Application\\Command\\Update{$entity}\\Update{$entity}Command;
+        use OpenApi\\Attributes as OA;
         use Symfony\\Component\\HttpFoundation\\JsonResponse;
         use Symfony\\Component\\Routing\\Attribute\\Route;
 
         #[Route('/{$table}/{id}', methods: ['PATCH'])]
+        #[OA\\Patch(
+            path: '/api/v1/{$table}/{id}',
+            operationId: 'patch{$entity}',
+            summary: 'Partially update a {$entity}',
+            tags: ['{$tag}'],
+        )]
+        #[OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'string', format: 'uuid'))]
+        #[OA\\Response(response: 204, description: '{$entity} updated')]
+        #[OA\\Response(response: 404, description: '{$entity} not found')]
         final class Patch{$entity}Controller
         {
             public function __construct(
@@ -1031,6 +1082,8 @@ final class CrudGenerator
 
     private function templatePutController(string $context, string $entity, string $table): string
     {
+        $tag = $this->openApiTag($context);
+
         return <<<PHP
         <?php
 
@@ -1041,10 +1094,20 @@ final class CrudGenerator
         use App\\Shared\\Domain\\Bus\\Command\\CommandBusInterface;
         use App\\Shared\\Infrastructure\\Http\\Response\\ApiResponse;
         use App\\{$context}\\Application\\Command\\Replace{$entity}\\Replace{$entity}Command;
+        use OpenApi\\Attributes as OA;
         use Symfony\\Component\\HttpFoundation\\JsonResponse;
         use Symfony\\Component\\Routing\\Attribute\\Route;
 
         #[Route('/{$table}/{id}', methods: ['PUT'])]
+        #[OA\\Put(
+            path: '/api/v1/{$table}/{id}',
+            operationId: 'put{$entity}',
+            summary: 'Replace a {$entity}',
+            tags: ['{$tag}'],
+        )]
+        #[OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'string', format: 'uuid'))]
+        #[OA\\Response(response: 204, description: '{$entity} replaced')]
+        #[OA\\Response(response: 404, description: '{$entity} not found')]
         final class Put{$entity}Controller
         {
             public function __construct(
@@ -1064,6 +1127,8 @@ final class CrudGenerator
 
     private function templateDeleteController(string $context, string $entity, string $table): string
     {
+        $tag = $this->openApiTag($context);
+
         return <<<PHP
         <?php
 
@@ -1074,10 +1139,20 @@ final class CrudGenerator
         use App\\Shared\\Domain\\Bus\\Command\\CommandBusInterface;
         use App\\Shared\\Infrastructure\\Http\\Response\\ApiResponse;
         use App\\{$context}\\Application\\Command\\Delete{$entity}\\Delete{$entity}Command;
+        use OpenApi\\Attributes as OA;
         use Symfony\\Component\\HttpFoundation\\JsonResponse;
         use Symfony\\Component\\Routing\\Attribute\\Route;
 
         #[Route('/{$table}/{id}', methods: ['DELETE'])]
+        #[OA\\Delete(
+            path: '/api/v1/{$table}/{id}',
+            operationId: 'delete{$entity}',
+            summary: 'Delete a {$entity}',
+            tags: ['{$tag}'],
+        )]
+        #[OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'string', format: 'uuid'))]
+        #[OA\\Response(response: 204, description: '{$entity} deleted')]
+        #[OA\\Response(response: 404, description: '{$entity} not found')]
         final class Delete{$entity}Controller
         {
             public function __construct(
@@ -1097,6 +1172,8 @@ final class CrudGenerator
 
     private function templateCollectionController(string $context, string $entity, string $table): string
     {
+        $tag = $this->openApiTag($context);
+
         return <<<PHP
         <?php
 
@@ -1109,11 +1186,21 @@ final class CrudGenerator
         use App\\Shared\\Infrastructure\\Http\\Response\\ApiResponse;
         use App\\{$context}\\Application\\Query\\Get{$entity}s\\Get{$entity}sQuery;
         use App\\{$context}\\Application\\Query\\Get{$entity}s\\{$entity}sResponse;
+        use OpenApi\\Attributes as OA;
         use Symfony\\Component\\HttpFoundation\\JsonResponse;
         use Symfony\\Component\\HttpFoundation\\Request;
         use Symfony\\Component\\Routing\\Attribute\\Route;
 
         #[Route('/{$table}', methods: ['GET'])]
+        #[OA\\Get(
+            path: '/api/v1/{$table}',
+            operationId: 'get{$entity}s',
+            summary: 'List {$entity}s',
+            tags: ['{$tag}'],
+        )]
+        #[OA\\Parameter(name: 'page', in: 'query', schema: new OA\\Schema(type: 'integer', default: 1, minimum: 1))]
+        #[OA\\Parameter(name: 'limit', in: 'query', schema: new OA\\Schema(type: 'integer', default: 20, maximum: 100, minimum: 1))]
+        #[OA\\Response(response: 200, description: 'Paginated list of {$entity}s')]
         final class Get{$entity}sController
         {
             private const ALLOWED_FILTERS = [
