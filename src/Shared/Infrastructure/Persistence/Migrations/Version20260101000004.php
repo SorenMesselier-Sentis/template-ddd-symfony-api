@@ -7,17 +7,17 @@ namespace App\Shared\Infrastructure\Persistence\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
-final class Version20260513081358 extends AbstractMigration
+final class Version20260101000004 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Add refresh token storage for JWT rotation.';
+        return 'Add password reset token storage.';
     }
 
     public function up(Schema $schema): void
     {
         $this->addSql(<<<'SQL'
-            CREATE TABLE refresh_tokens (
+            CREATE TABLE password_reset_tokens (
                 id UUID NOT NULL,
                 user_id UUID NOT NULL,
                 token VARCHAR(2048) NOT NULL,
@@ -28,12 +28,12 @@ final class Version20260513081358 extends AbstractMigration
             )
         SQL);
 
-        $this->addSql('CREATE UNIQUE INDEX uniq_refresh_tokens_token ON refresh_tokens (token)');
-        $this->addSql('CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens (user_id)');
+        $this->addSql('CREATE UNIQUE INDEX uniq_password_reset_tokens_token ON password_reset_tokens (token)');
+        $this->addSql('CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens (user_id)');
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('DROP TABLE refresh_tokens');
+        $this->addSql('DROP TABLE password_reset_tokens');
     }
 }

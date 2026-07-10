@@ -3,7 +3,7 @@ parameters:
     metrics_redis_host_default: 127.0.0.1
     metrics_redis_port_default: 6379
     metrics_redis_password_default: ''
-    app_version_default: unknown
+    app_frontend_url_default: 'http://localhost:8080'
     cors_allowed_origins_default: ''
     otel_exporter_otlp_endpoint_default: ''
 
@@ -225,12 +225,33 @@ services:
     App\Shared\Domain\Notification\NotificationSenderInterface:
         alias: App\Shared\Infrastructure\Notification\ChannelNotificationSender
 
+    App\User\Infrastructure\EventHandler\SendPasswordResetEmailOnPasswordResetRequested:
+        arguments:
+            $frontendUrl: '%env(default:app_frontend_url_default:APP_FRONTEND_URL)%'
+
+    App\User\Infrastructure\EventHandler\SendEmailVerificationOnEmailVerificationRequested:
+        arguments:
+            $frontendUrl: '%env(default:app_frontend_url_default:APP_FRONTEND_URL)%'
+
+    App\User\Infrastructure\Security\AuthRateLimitListener:
+        arguments:
+            $authLoginLimiter: '@limiter.auth_login'
+            $authForgotPasswordLimiter: '@limiter.auth_forgot_password'
+            $authRegisterLimiter: '@limiter.auth_register'
+            $environment: '%kernel.environment%'
+
     # Repositories
     App\User\Domain\Repository\UserRepositoryInterface:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository
 
     App\User\Domain\Repository\RefreshTokenRepositoryInterface:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineRefreshTokenRepository
+
+    App\User\Domain\Repository\PasswordResetTokenRepositoryInterface:
+        alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrinePasswordResetTokenRepository
+
+    App\User\Domain\Repository\EmailVerificationTokenRepositoryInterface:
+        alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineEmailVerificationTokenRepository
 
     # Document storage
     App\Document\Infrastructure\Storage\S3DocumentStorageAdapter:

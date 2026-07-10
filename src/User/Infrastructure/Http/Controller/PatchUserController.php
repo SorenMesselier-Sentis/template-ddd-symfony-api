@@ -30,7 +30,6 @@ use Symfony\Component\Routing\Attribute\Route;
             new OA\Property(property: 'firstName', type: 'string', example: 'John'),
             new OA\Property(property: 'lastName', type: 'string', example: 'Doe'),
             new OA\Property(property: 'email', type: 'string', format: 'email', example: 'john.doe@example.com'),
-            new OA\Property(property: 'password', type: 'string', format: 'password', example: 'newsecret1234'),
         ],
     ),
 )]
@@ -55,7 +54,6 @@ final class PatchUserController
             firstName: $request->firstName(),
             lastName: $request->lastName(),
             email: $request->email(),
-            password: $request->password(),
         ));
 
         return $this->apiResponse->noContent();

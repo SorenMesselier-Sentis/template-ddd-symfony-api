@@ -199,6 +199,18 @@ parameters:
 			path: src/User/Infrastructure/Http/Controller/LoginUserController.php
 
 		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\ChangePasswordRequest\:\:currentPassword\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/ChangePasswordRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\ChangePasswordRequest\:\:newPassword\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/ChangePasswordRequest.php
+
+		-
 			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\CreateUserRequest\:\:email\(\) should return string but returns mixed\.$#'
 			identifier: return.type
 			count: 1
@@ -223,6 +235,12 @@ parameters:
 			path: src/User/Infrastructure/Http/Request/CreateUserRequest.php
 
 		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\ForgotPasswordRequest\:\:email\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/ForgotPasswordRequest.php
+
+		-
 			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\LoginUserRequest\:\:email\(\) should return string but returns mixed\.$#'
 			identifier: return.type
 			count: 1
@@ -241,6 +259,24 @@ parameters:
 			path: src/User/Infrastructure/Http/Request/LogoutUserRequest.php
 
 		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\PatchMeRequest\:\:email\(\) should return string\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/PatchMeRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\PatchMeRequest\:\:firstName\(\) should return string\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/PatchMeRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\PatchMeRequest\:\:lastName\(\) should return string\|null but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/PatchMeRequest.php
+
+		-
 			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\PatchUserRequest\:\:email\(\) should return string\|null but returns mixed\.$#'
 			identifier: return.type
 			count: 1
@@ -254,12 +290,6 @@ parameters:
 
 		-
 			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\PatchUserRequest\:\:lastName\(\) should return string\|null but returns mixed\.$#'
-			identifier: return.type
-			count: 1
-			path: src/User/Infrastructure/Http/Request/PatchUserRequest.php
-
-		-
-			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\PatchUserRequest\:\:password\(\) should return string\|null but returns mixed\.$#'
 			identifier: return.type
 			count: 1
 			path: src/User/Infrastructure/Http/Request/PatchUserRequest.php
@@ -295,10 +325,64 @@ parameters:
 			path: src/User/Infrastructure/Http/Request/RefreshTokenRequest.php
 
 		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\RegisterUserRequest\:\:email\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/RegisterUserRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\RegisterUserRequest\:\:firstName\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/RegisterUserRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\RegisterUserRequest\:\:lastName\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/RegisterUserRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\RegisterUserRequest\:\:password\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/RegisterUserRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\ResetPasswordRequest\:\:password\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/ResetPasswordRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\ResetPasswordRequest\:\:token\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/ResetPasswordRequest.php
+
+		-
 			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
 			identifier: empty.notAllowed
 			count: 1
 			path: src/User/Infrastructure/Http/Request/UpdateUserRolesRequest.php
+
+		-
+			message: '#^Method App\\User\\Infrastructure\\Http\\Request\\VerifyEmailRequest\:\:token\(\) should return string but returns mixed\.$#'
+			identifier: return.type
+			count: 1
+			path: src/User/Infrastructure/Http/Request/VerifyEmailRequest.php
+
+		-
+			message: '#^Casting to int something that''s already int\<0, max\>\.$#'
+			identifier: cast.useless
+			count: 1
+			path: src/User/Infrastructure/Persistence/Doctrine/Repository/DoctrineEmailVerificationTokenRepository.php
+
+		-
+			message: '#^Casting to int something that''s already int\<0, max\>\.$#'
+			identifier: cast.useless
+			count: 1
+			path: src/User/Infrastructure/Persistence/Doctrine/Repository/DoctrinePasswordResetTokenRepository.php
 
 		-
 			message: '#^Casting to int something that''s already int\<0, max\>\.$#'

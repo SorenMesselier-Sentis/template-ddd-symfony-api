@@ -8,8 +8,11 @@ use App\Tests\Unit\UnitTestCase;
 use App\Tests\Unit\User\Domain\Mother\UserMother;
 use App\User\Application\Query\GetUser\GetUserQuery;
 use App\User\Application\Query\GetUser\GetUserQueryHandler;
+use App\User\Application\Security\UserOwnershipGuard;
 use App\User\Domain\Exception\UserNotFoundException;
 use App\User\Domain\Repository\UserRepositoryInterface;
+use App\User\Domain\Security\UserContextInterface;
+use App\User\Domain\ValueObject\UserRole;
 use PHPUnit\Framework\MockObject\MockObject;
 
 final class GetUserQueryHandlerTest extends UnitTestCase
@@ -22,7 +25,10 @@ final class GetUserQueryHandlerTest extends UnitTestCase
     protected function setUp(): void
     {
         $this->repository = $this->createMock(UserRepositoryInterface::class);
-        $this->handler = new GetUserQueryHandler($this->repository);
+        $userContext = $this->createStub(UserContextInterface::class);
+        $userContext->method('roles')->willReturn([UserRole::ADMIN]);
+        $ownershipGuard = new UserOwnershipGuard($userContext);
+        $this->handler = new GetUserQueryHandler($this->repository, $ownershipGuard);
     }
 
     public function testItReturnsAUser(): void

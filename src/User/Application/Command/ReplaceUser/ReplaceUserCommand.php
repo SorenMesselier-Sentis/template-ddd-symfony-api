@@ -21,6 +21,6 @@ final class ReplaceUserCommand implements Command, AuthorizedMessage
 
     public function roleRequirement(): RoleRequirement
     {
-        return RoleRequirement::authenticated();
+        return RoleRequirement::admin();
     }
 }

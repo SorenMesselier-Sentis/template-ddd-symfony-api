@@ -7,10 +7,10 @@ namespace App\User\Application\Command\UpdateUser;
 use App\Shared\Domain\Bus\Event\EventBusInterface;
 use App\Shared\Domain\Logging\LoggerInterface;
 use App\Shared\Domain\ValueObject\Email;
+use App\User\Application\Security\UserOwnershipGuard;
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\Exception\UserNotFoundException;
 use App\User\Domain\Repository\UserRepositoryInterface;
-use App\User\Domain\ValueObject\HashedPassword;
 use App\User\Domain\ValueObject\UserId;
 use App\User\Domain\ValueObject\UserName;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -22,12 +22,15 @@ final class UpdateUserCommandHandler
         private readonly UserRepositoryInterface $repository,
         private readonly EventBusInterface $eventbus,
         private readonly LoggerInterface $logger,
+        private readonly UserOwnershipGuard $ownershipGuard,
     ) {
     }
 
     public function __invoke(UpdateUserCommand $command): void
     {
         $this->logger->info('Updating user', ['id' => $command->id]);
+
+        $this->ownershipGuard->assertCanAccessUser($command->id);
 
         $user = $this->repository->findById(UserId::fromString($command->id));
 
@@ -50,10 +53,6 @@ final class UpdateUserCommandHandler
             }
 
             $user->updateEmail($email);
-        }
-
-        if (null !== $command->password) {
-            $user->updatePassword(HashedPassword::fromPlainPassword($command->password));
         }
 
         $this->repository->save($user);

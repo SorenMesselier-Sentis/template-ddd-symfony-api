@@ -7,7 +7,7 @@ namespace App\Shared\Infrastructure\Persistence\Migrations;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
-final class Version20260323221055 extends AbstractMigration
+final class Version20260101000001 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -25,6 +25,7 @@ final class Version20260323221055 extends AbstractMigration
                 password VARCHAR(255) NOT NULL,
                 status VARCHAR(20) NOT NULL DEFAULT 'active',
                 roles JSON NOT NULL DEFAULT '["ROLE_USER"]',
+                email_verified_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL,
                 created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
                 updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
                 PRIMARY KEY (id)

@@ -35,7 +35,13 @@ abstract class HttpTestCase extends WebTestCase
             content: json_encode($credentials, JSON_THROW_ON_ERROR),
         );
 
-        $payload = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $response = $client->getResponse();
+        $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        if (200 !== $response->getStatusCode()) {
+            $message = $payload['error']['message'] ?? $response->getContent();
+            self::fail(sprintf('Login failed with status %d: %s', $response->getStatusCode(), $message));
+        }
 
         $client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer '.$payload['data']['access_token']);
 

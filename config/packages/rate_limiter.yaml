@@ -1,0 +1,24 @@
+framework:
+    rate_limiter:
+        auth_login:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+        auth_forgot_password:
+            policy: sliding_window
+            limit: 3
+            interval: '15 minutes'
+        auth_register:
+            policy: sliding_window
+            limit: 3
+            interval: '15 minutes'
+
+when@test:
+    framework:
+        rate_limiter:
+            auth_login:
+                policy: no_limit
+            auth_forgot_password:
+                policy: no_limit
+            auth_register:
+                policy: no_limit

@@ -15,7 +15,6 @@ final class UpdateUserCommand implements Command, AuthorizedMessage
         public readonly ?string $firstName = null,
         public readonly ?string $lastName = null,
         public readonly ?string $email = null,
-        public readonly ?string $password = null,
     ) {
     }
 
