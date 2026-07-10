@@ -14,6 +14,14 @@ erDiagram
         timestamp0withouttimezone created_at
         timestamp0withouttimezone updated_at
     }
+    email_verification_tokens {
+        uuid id
+        uuid user_id
+        varchar2048 token
+        timestamp0withouttimezone expires_at
+        boolean revoked
+        timestamp0withouttimezone created_at
+    }
     multipart_upload_sessions {
         varchar255 upload_id
         uuid document_id
@@ -38,6 +46,14 @@ erDiagram
         timestamp0withouttimezone created_at
         timestamp0withouttimezone published_at
     }
+    password_reset_tokens {
+        uuid id
+        uuid user_id
+        varchar2048 token
+        timestamp0withouttimezone expires_at
+        boolean revoked
+        timestamp0withouttimezone created_at
+    }
     refresh_tokens {
         uuid id
         uuid user_id
@@ -54,11 +70,14 @@ erDiagram
         varchar255 password
         varchar20 status
         json roles
+        timestamp0withouttimezone email_verified_at
         timestamp0withouttimezone created_at
         timestamp0withouttimezone updated_at
     }
     documents }o--|| users : "owner_id"
+    email_verification_tokens }o--|| users : "user_id"
     multipart_upload_sessions }o--|| documents : "document_id"
     multipart_upload_sessions }o--|| users : "owner_id"
+    password_reset_tokens }o--|| users : "user_id"
     refresh_tokens }o--|| users : "user_id"
 ```
