@@ -21,11 +21,15 @@ If `doctrine:migrations:diff` outputs too much at once, split manually into seve
 
 ## Initial migrations in this template
 
-Three separate files, in order:
+Seven separate files, in order:
 
 1. Users (`users`).
 2. Transactional outbox (`outbox_messages`).
 3. Refresh tokens (`refresh_tokens`).
+4. Password reset tokens (`password_reset_tokens`).
+5. Email verification tokens (`email_verification_tokens`).
+6. Documents (`documents`).
+7. Multipart upload sessions (`multipart_upload_sessions`).
 
 That mirrors progressive capabilities; it is not a single “initial dump” migration.
 

@@ -15,7 +15,6 @@ final class PatchUserRequest extends JsonRequest
             'firstName' => false,
             'lastName' => false,
             'email' => false,
-            'password' => false,
         ];
     }
 
@@ -34,16 +33,10 @@ final class PatchUserRequest extends JsonRequest
         return $this->data['email'] ?? null;
     }
 
-    public function password(): ?string
-    {
-        return $this->data['password'] ?? null;
-    }
-
     public function isEmpty(): bool
     {
         return null === $this->firstName()
             && null === $this->lastName()
-            && null === $this->email()
-            && null === $this->password();
+            && null === $this->email();
     }
 }

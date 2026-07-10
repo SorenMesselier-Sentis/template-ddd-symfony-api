@@ -6,8 +6,12 @@ namespace App\User\Domain\Entity;
 
 use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\ValueObject\Email;
+use App\User\Domain\Event\UserActivated;
 use App\User\Domain\Event\UserCreated;
+use App\User\Domain\Event\UserDeactivated;
 use App\User\Domain\Event\UserDeleted;
+use App\User\Domain\Event\UserEmailVerified;
+use App\User\Domain\Event\UserRegistered;
 use App\User\Domain\Event\UserReplaced;
 use App\User\Domain\Event\UserRolesUpdated;
 use App\User\Domain\Event\UserUpdated;
@@ -25,8 +29,18 @@ final class User
     /**
      * @param list<UserRole> $roles
      */
-    private function __construct(private readonly UserId $id, private UserName $firstName, private UserName $lastName, private Email $email, private HashedPassword $password, private UserStatus $status, private array $roles, private readonly \DateTimeImmutable $createdAt, private \DateTimeImmutable $updatedAt)
-    {
+    private function __construct(
+        private readonly UserId $id,
+        private UserName $firstName,
+        private UserName $lastName,
+        private Email $email,
+        private HashedPassword $password,
+        private UserStatus $status,
+        private array $roles,
+        private readonly \DateTimeImmutable $createdAt,
+        private \DateTimeImmutable $updatedAt,
+        private ?\DateTimeImmutable $emailVerifiedAt,
+    ) {
     }
 
     /**
@@ -51,9 +65,41 @@ final class User
             roles: $roles,
             createdAt: $now,
             updatedAt: $now,
+            emailVerifiedAt: $now,
         );
 
         $user->record(new UserCreated(
+            aggregateId: $id->value(),
+            firstName: $firstName->value(),
+            lastName: $lastName->value(),
+            email: $email->value(),
+        ));
+
+        return $user;
+    }
+
+    public static function register(
+        UserId $id,
+        UserName $firstName,
+        UserName $lastName,
+        Email $email,
+        HashedPassword $password,
+    ): self {
+        $now = new \DateTimeImmutable();
+        $user = new self(
+            id: $id,
+            firstName: $firstName,
+            lastName: $lastName,
+            email: $email,
+            password: $password,
+            status: UserStatus::ACTIVE,
+            roles: [UserRole::USER],
+            createdAt: $now,
+            updatedAt: $now,
+            emailVerifiedAt: null,
+        );
+
+        $user->record(new UserRegistered(
             aggregateId: $id->value(),
             firstName: $firstName->value(),
             lastName: $lastName->value(),
@@ -75,6 +121,7 @@ final class User
     public function updateEmail(Email $email): void
     {
         $this->email = $email;
+        $this->emailVerifiedAt = null;
         $this->touch();
 
         $this->record(new UserUpdated($this->id->value()));
@@ -86,6 +133,30 @@ final class User
         $this->touch();
 
         $this->record(new UserUpdated($this->id->value()));
+    }
+
+    public function verifyEmail(): void
+    {
+        $this->emailVerifiedAt = new \DateTimeImmutable();
+        $this->touch();
+
+        $this->record(new UserEmailVerified($this->id->value()));
+    }
+
+    public function activate(): void
+    {
+        $this->status = UserStatus::ACTIVE;
+        $this->touch();
+
+        $this->record(new UserActivated($this->id->value()));
+    }
+
+    public function deactivate(): void
+    {
+        $this->status = UserStatus::INACTIVE;
+        $this->touch();
+
+        $this->record(new UserDeactivated($this->id->value()));
     }
 
     /**
@@ -128,6 +199,11 @@ final class User
         ));
     }
 
+    public function isEmailVerified(): bool
+    {
+        return null !== $this->emailVerifiedAt;
+    }
+
     /**
      * @return DomainEvent[]
      */
@@ -148,10 +224,6 @@ final class User
     {
         $this->updatedAt = new \DateTimeImmutable();
     }
-
-    // ====================================
-    // GETTERS & SETTERS
-    // ====================================
 
     public function id(): UserId
     {
@@ -199,5 +271,10 @@ final class User
     public function updatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function emailVerifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->emailVerifiedAt;
     }
 }

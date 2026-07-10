@@ -6,6 +6,7 @@ namespace App\User\Application\Command\LoginUser;
 
 use App\Shared\Domain\Logging\LoggerInterface;
 use App\User\Domain\Entity\RefreshToken as RefreshTokenEntity;
+use App\User\Domain\Exception\EmailNotVerifiedException;
 use App\User\Domain\Exception\InvalidCredentialsException;
 use App\User\Domain\Repository\RefreshTokenRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
@@ -41,6 +42,10 @@ final class LoginUserCommandHandler
 
         if (!$user->password()->verify($command->password)) {
             throw InvalidCredentialsException::create();
+        }
+
+        if (!$user->isEmailVerified()) {
+            throw EmailNotVerifiedException::create();
         }
 
         $accessToken = $this->tokenService->generateAccessToken($user);

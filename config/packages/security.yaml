@@ -23,6 +23,10 @@ security:
     access_control:
         - { path: ^/api/v1/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/auth/refresh, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/auth/forgot-password, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/auth/reset-password, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/auth/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/auth/verify-email, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc\.json, roles: PUBLIC_ACCESS }
         - { path: ^/metrics$, roles: PUBLIC_ACCESS }

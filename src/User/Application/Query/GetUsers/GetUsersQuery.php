@@ -18,6 +18,6 @@ final class GetUsersQuery implements Query, AuthorizedMessage
 
     public function roleRequirement(): RoleRequirement
     {
-        return RoleRequirement::authenticated();
+        return RoleRequirement::admin();
     }
 }

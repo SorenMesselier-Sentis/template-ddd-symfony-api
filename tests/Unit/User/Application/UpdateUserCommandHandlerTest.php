@@ -11,9 +11,12 @@ use App\Tests\Unit\User\Domain\Mother\EmailMother;
 use App\Tests\Unit\User\Domain\Mother\UserMother;
 use App\User\Application\Command\UpdateUser\UpdateUserCommand;
 use App\User\Application\Command\UpdateUser\UpdateUserCommandHandler;
+use App\User\Application\Security\UserOwnershipGuard;
 use App\User\Domain\Exception\UserAlreadyExistsException;
 use App\User\Domain\Exception\UserNotFoundException;
 use App\User\Domain\Repository\UserRepositoryInterface;
+use App\User\Domain\Security\UserContextInterface;
+use App\User\Domain\ValueObject\UserRole;
 use PHPUnit\Framework\MockObject\MockObject;
 
 final class UpdateUserCommandHandlerTest extends UnitTestCase
@@ -24,6 +27,7 @@ final class UpdateUserCommandHandlerTest extends UnitTestCase
     private EventBusInterface $eventBus;
 
     private LoggerInterface $logger;
+    private UserOwnershipGuard $ownershipGuard;
     private UpdateUserCommandHandler $handler;
 
     protected function setUp(): void
@@ -31,11 +35,15 @@ final class UpdateUserCommandHandlerTest extends UnitTestCase
         $this->repository = $this->createMock(UserRepositoryInterface::class);
         $this->eventBus = $this->createStub(EventBusInterface::class);
         $this->logger = $this->createStub(LoggerInterface::class);
+        $userContext = $this->createStub(UserContextInterface::class);
+        $userContext->method('roles')->willReturn([UserRole::ADMIN]);
+        $this->ownershipGuard = new UserOwnershipGuard($userContext);
 
         $this->handler = new UpdateUserCommandHandler(
             $this->repository,
             $this->eventBus,
             $this->logger,
+            $this->ownershipGuard,
         );
     }
 
@@ -54,6 +62,7 @@ final class UpdateUserCommandHandlerTest extends UnitTestCase
             $this->repository,
             $eventBus,
             $this->logger,
+            $this->ownershipGuard,
         );
 
         $this->repository

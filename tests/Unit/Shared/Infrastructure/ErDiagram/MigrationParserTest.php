@@ -23,9 +23,9 @@ final class MigrationParserTest extends UnitTestCase
     {
         $files = $this->parser->discoverMigrationFiles($this->projectDir);
 
-        $this->assertCount(5, $files);
-        $this->assertStringEndsWith('Version20260323221055.php', $files[0]);
-        $this->assertStringEndsWith('Version20260606140000.php', $files[4]);
+        $this->assertCount(7, $files);
+        $this->assertStringEndsWith('Version20260101000001.php', $files[0]);
+        $this->assertStringEndsWith('Version20260101000007.php', $files[6]);
     }
 
     public function testItParsesUsersTableWithSqlColumnTypes(): void
@@ -41,6 +41,7 @@ final class MigrationParserTest extends UnitTestCase
         $this->assertSame('VARCHAR(100)', $this->findColumn($users, 'first_name')->type);
         $this->assertSame('VARCHAR(254)', $this->findColumn($users, 'email')->type);
         $this->assertSame('JSON', $this->findColumn($users, 'roles')->type);
+        $this->assertSame('TIMESTAMP(0) WITHOUT TIME ZONE', $this->findColumn($users, 'email_verified_at')->type);
         $this->assertSame('TIMESTAMP(0) WITHOUT TIME ZONE', $this->findColumn($users, 'created_at')->type);
         $this->assertTrue($this->findColumn($users, 'id')->primaryKey);
     }

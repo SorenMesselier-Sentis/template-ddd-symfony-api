@@ -1,0 +1,12 @@
+{% extends 'email/layout.html.twig' %}
+
+{% block title %}Verify your email address{% endblock %}
+
+{% block content %}
+    <h1 style="margin: 0 0 16px; font-size: 24px; color: #18181b;">Hello {{ firstName }}!</h1>
+    <p style="margin: 0 0 16px;">Please verify your email address by clicking the button below.</p>
+    <p style="margin: 0 0 16px;">
+        <a href="{{ verificationUrl }}" style="display: inline-block; padding: 12px 24px; background-color: #18181b; color: #ffffff; text-decoration: none; border-radius: 6px;">Verify email</a>
+    </p>
+    <p style="margin: 0; color: #71717a; font-size: 14px;">This link expires in 24 hours.</p>
+{% endblock %}
