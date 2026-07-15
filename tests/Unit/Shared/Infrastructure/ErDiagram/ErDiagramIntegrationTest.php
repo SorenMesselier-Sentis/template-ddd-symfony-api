@@ -9,6 +9,7 @@ use App\Shared\Infrastructure\ErDiagram\ErDiagramValidator;
 use App\Shared\Infrastructure\ErDiagram\ForeignKeyRelationInferrer;
 use App\Shared\Infrastructure\ErDiagram\MermaidRenderer;
 use App\Shared\Infrastructure\ErDiagram\MigrationParser;
+use App\Shared\Infrastructure\ErDiagram\PivotTableResolver;
 use App\Tests\Unit\UnitTestCase;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -17,7 +18,7 @@ final class ErDiagramIntegrationTest extends UnitTestCase
     public function testItGeneratesCompleteProjectDiagram(): void
     {
         $projectDir = \dirname(__DIR__, 5);
-        $parser = new MigrationParser(new ForeignKeyRelationInferrer());
+        $parser = new MigrationParser(new ForeignKeyRelationInferrer(), new PivotTableResolver());
         $renderer = new MermaidRenderer();
         $validator = new ErDiagramValidator();
 

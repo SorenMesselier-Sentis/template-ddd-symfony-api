@@ -10,6 +10,7 @@ final class MigrationParser
 
     public function __construct(
         private readonly ForeignKeyRelationInferrer $foreignKeyRelationInferrer,
+        private readonly PivotTableResolver $pivotTableResolver,
     ) {
     }
 
@@ -48,7 +49,9 @@ final class MigrationParser
             return [];
         }
 
-        return $this->foreignKeyRelationInferrer->infer(array_values($tables));
+        $inferredTables = $this->foreignKeyRelationInferrer->infer(array_values($tables));
+
+        return $this->pivotTableResolver->resolve($inferredTables);
     }
 
     /**

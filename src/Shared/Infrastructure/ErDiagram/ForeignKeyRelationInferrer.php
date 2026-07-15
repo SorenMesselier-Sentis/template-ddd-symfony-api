@@ -25,7 +25,11 @@ final class ForeignKeyRelationInferrer
             $relations = $table->relations;
 
             foreach ($table->columns as $column) {
-                if ($column->primaryKey || !$this->isForeignKeyCandidate($column)) {
+                if (!$this->isForeignKeyCandidate($column)) {
+                    continue;
+                }
+
+                if ($this->isSurrogatePrimaryKeyColumn($table, $column)) {
                     continue;
                 }
 
@@ -59,6 +63,20 @@ final class ForeignKeyRelationInferrer
     {
         return str_contains(strtoupper($column->type), 'UUID')
             && str_ends_with($column->name, '_id');
+    }
+
+    private function isSurrogatePrimaryKeyColumn(TableMetadata $table, ColumnMetadata $column): bool
+    {
+        if (!$column->primaryKey || 'id' !== $column->name) {
+            return false;
+        }
+
+        $primaryKeyColumns = array_filter(
+            $table->columns,
+            static fn (ColumnMetadata $currentColumn): bool => $currentColumn->primaryKey,
+        );
+
+        return 1 === \count($primaryKeyColumns);
     }
 
     /**

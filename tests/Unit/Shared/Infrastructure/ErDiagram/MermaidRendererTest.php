@@ -39,6 +39,29 @@ final class MermaidRendererTest extends UnitTestCase
         $this->assertStringContainsString("users {\n        uuid id\n        varchar100 first_name\n    }", $output);
     }
 
+    public function testItRendersManyToManyRelationsWithCardinalitySymbols(): void
+    {
+        $tables = [
+            new TableMetadata(
+                tableName: 'artists',
+                columns: [new ColumnMetadata('id', 'UUID', true)],
+                relations: [
+                    new RelationMetadata('artist_genres', 'many-to-many', 'genres'),
+                ],
+            ),
+            new TableMetadata(
+                tableName: 'genres',
+                columns: [new ColumnMetadata('id', 'UUID', true)],
+                relations: [],
+            ),
+        ];
+
+        $output = $this->renderer->render($tables);
+
+        $this->assertSame(1, substr_count($output, '}o--o{'));
+        $this->assertStringContainsString('artists }o--o{ genres : "artist_genres"', $output);
+    }
+
     public function testItRendersRelationsWithCardinalitySymbols(): void
     {
         $tables = [

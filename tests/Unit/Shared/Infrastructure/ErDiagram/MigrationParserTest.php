@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Shared\Infrastructure\ErDiagram;
 
 use App\Shared\Infrastructure\ErDiagram\ForeignKeyRelationInferrer;
 use App\Shared\Infrastructure\ErDiagram\MigrationParser;
+use App\Shared\Infrastructure\ErDiagram\PivotTableResolver;
 use App\Tests\Unit\UnitTestCase;
 
 final class MigrationParserTest extends UnitTestCase
@@ -15,7 +16,7 @@ final class MigrationParserTest extends UnitTestCase
 
     protected function setUp(): void
     {
-        $this->parser = new MigrationParser(new ForeignKeyRelationInferrer());
+        $this->parser = new MigrationParser(new ForeignKeyRelationInferrer(), new PivotTableResolver());
         $this->projectDir = \dirname(__DIR__, 5);
     }
 

@@ -69,4 +69,35 @@ final class ForeignKeyRelationInferrerTest extends UnitTestCase
         $this->assertCount(1, $documents->relations);
         $this->assertSame('users', $documents->relations[0]->targetTable);
     }
+
+    public function testItInfersForeignKeysFromCompositePrimaryKeyPivotColumns(): void
+    {
+        $tables = [
+            new TableMetadata(
+                tableName: 'artists',
+                columns: [new ColumnMetadata('id', 'UUID', true)],
+                relations: [],
+            ),
+            new TableMetadata(
+                tableName: 'genres',
+                columns: [new ColumnMetadata('id', 'UUID', true)],
+                relations: [],
+            ),
+            new TableMetadata(
+                tableName: 'artist_genres',
+                columns: [
+                    new ColumnMetadata('artist_id', 'UUID', true),
+                    new ColumnMetadata('genre_id', 'UUID', true),
+                ],
+                relations: [],
+            ),
+        ];
+
+        $enriched = $this->inferrer->infer($tables);
+        $artistGenres = $enriched[2];
+
+        $this->assertCount(2, $artistGenres->relations);
+        $this->assertSame('many-to-one', $artistGenres->relations[0]->cardinality);
+        $this->assertSame('many-to-one', $artistGenres->relations[1]->cardinality);
+    }
 }
