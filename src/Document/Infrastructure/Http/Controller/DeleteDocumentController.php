@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\DeleteDocument\DeleteDocumentCommand;
-use App\Document\Application\Command\DeleteDocument\DeleteDocumentResult;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -44,7 +43,6 @@ final class DeleteDocumentController
     {
         $purge = filter_var($request->query->get('purge', 'false'), FILTER_VALIDATE_BOOLEAN);
 
-        /** @var DeleteDocumentResult $result */
         $result = $this->commandBus->dispatch(new DeleteDocumentCommand(
             documentId: $id,
             purge: $purge,

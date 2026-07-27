@@ -16,6 +16,6 @@ final class VerifyEmailRequest extends JsonRequest
 
     public function token(): string
     {
-        return $this->data['token'];
+        return self::assertString($this->data['token'] ?? null, 'token');
     }
 }

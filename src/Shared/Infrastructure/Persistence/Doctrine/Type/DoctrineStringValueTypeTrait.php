@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Document\Infrastructure\Persistence\Doctrine\Type;
+namespace App\Shared\Infrastructure\Persistence\Doctrine\Type;
 
 trait DoctrineStringValueTypeTrait
 {

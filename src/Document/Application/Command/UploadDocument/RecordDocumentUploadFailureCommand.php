@@ -6,6 +6,7 @@ namespace App\Document\Application\Command\UploadDocument;
 
 use App\Shared\Domain\Bus\Command\Command;
 
+/** @implements Command<null> */
 final class RecordDocumentUploadFailureCommand implements Command
 {
     public function __construct(

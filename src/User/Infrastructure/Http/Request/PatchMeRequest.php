@@ -20,17 +20,17 @@ final class PatchMeRequest extends JsonRequest
 
     public function firstName(): ?string
     {
-        return $this->data['firstName'] ?? null;
+        return self::assertOptionalString($this->data['firstName'] ?? null, 'firstName');
     }
 
     public function lastName(): ?string
     {
-        return $this->data['lastName'] ?? null;
+        return self::assertOptionalString($this->data['lastName'] ?? null, 'lastName');
     }
 
     public function email(): ?string
     {
-        return $this->data['email'] ?? null;
+        return self::assertOptionalString($this->data['email'] ?? null, 'email');
     }
 
     public function isEmpty(): bool

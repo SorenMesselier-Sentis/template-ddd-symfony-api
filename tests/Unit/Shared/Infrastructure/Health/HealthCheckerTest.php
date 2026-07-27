@@ -24,8 +24,8 @@ final class HealthCheckerTest extends UnitTestCase
         $this->assertSame(200, $result->httpStatusCode());
         $this->assertSame('ok', $result->status->state()->value);
         $this->assertSame(['api' => 'ok', 'database' => 'ok'], $result->checks);
-        $this->assertSame('ok', $result->checksDetails['database']['status']);
-        $this->assertIsInt($result->checksDetails['database']['duration_ms']);
+        $this->assertSame('ok', $result->checksDetails['database']->status);
+        $this->assertIsInt($result->checksDetails['database']->durationMs);
     }
 
     public function testItReturnsErrorAnd503WhenOneCheckFails(): void
@@ -41,7 +41,7 @@ final class HealthCheckerTest extends UnitTestCase
         $this->assertSame(503, $result->httpStatusCode());
         $this->assertSame('error', $result->status->state()->value);
         $this->assertSame('error', $result->checks['database']);
-        $this->assertSame('Connection refused', $result->checksDetails['database']['detail']);
+        $this->assertSame('Connection refused', $result->checksDetails['database']->detail);
     }
 
     public function testItKeepsSequentialExecutionOrder(): void
@@ -76,7 +76,7 @@ final class HealthCheckerTest extends UnitTestCase
         $result = (new HealthCheckRegistry($checks))->run();
 
         $this->assertSame('error', $result->checks['database']);
-        $this->assertSame('DB down', $result->checksDetails['database']['detail']);
+        $this->assertSame('DB down', $result->checksDetails['database']->detail);
     }
 
     public function testItTruncatesErrorDetailTo200Characters(): void
@@ -88,7 +88,7 @@ final class HealthCheckerTest extends UnitTestCase
 
         $result = (new HealthCheckRegistry($checks))->run();
 
-        $this->assertSame(200, mb_strlen($result->checksDetails['rabbitmq']['detail']));
+        $this->assertSame(200, mb_strlen((string) $result->checksDetails['rabbitmq']->detail));
     }
 
     /** @param callable():HealthCheckStatus $callback */

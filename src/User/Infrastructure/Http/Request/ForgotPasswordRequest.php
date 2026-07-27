@@ -16,6 +16,6 @@ final class ForgotPasswordRequest extends JsonRequest
 
     public function email(): string
     {
-        return $this->data['email'];
+        return self::assertString($this->data['email'] ?? null, 'email');
     }
 }

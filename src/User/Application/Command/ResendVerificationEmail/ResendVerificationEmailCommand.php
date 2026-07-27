@@ -8,6 +8,7 @@ use App\Shared\Domain\Bus\Command\Command;
 use App\Shared\Domain\Security\RoleRequirement;
 use App\User\Application\Security\AuthorizedMessage;
 
+/** @implements Command<null> */
 final class ResendVerificationEmailCommand implements Command, AuthorizedMessage
 {
     public function roleRequirement(): RoleRequirement

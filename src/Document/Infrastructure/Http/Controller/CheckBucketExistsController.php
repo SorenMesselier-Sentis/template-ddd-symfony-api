@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Query\CheckBucketExists\CheckBucketExistsQuery;
-use App\Document\Application\Query\CheckBucketExists\CheckBucketExistsResult;
 use App\Shared\Domain\Bus\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -34,7 +33,6 @@ final class CheckBucketExistsController
 
     public function __invoke(string $name): JsonResponse
     {
-        /** @var CheckBucketExistsResult $result */
         $result = $this->queryBus->ask(new CheckBucketExistsQuery(name: $name));
 
         return $this->apiResponse->success([

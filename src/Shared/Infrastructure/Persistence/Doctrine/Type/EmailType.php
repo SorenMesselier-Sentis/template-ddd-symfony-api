@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Shared\Infrastructure\Persistence\Doctrine\Type;
 
 use App\Shared\Domain\ValueObject\Email;
@@ -8,6 +10,8 @@ use Doctrine\DBAL\Types\Type;
 
 final class EmailType extends Type
 {
+    use DoctrineStringValueTypeTrait;
+
     public const NAME = 'email';
 
     /**
@@ -24,16 +28,20 @@ final class EmailType extends Type
             return null;
         }
 
-        return Email::fromString($value);
+        return Email::fromString(self::assertString($value, self::NAME));
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
     {
+        if (null === $value) {
+            return null;
+        }
+
         if ($value instanceof Email) {
             return $value->value();
         }
 
-        return $value;
+        return self::assertString($value, self::NAME);
     }
 
     public function getName(): string

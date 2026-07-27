@@ -6,6 +6,7 @@ namespace App\User\Application\Command\ResetPassword;
 
 use App\Shared\Domain\Bus\Command\Command;
 
+/** @implements Command<null> */
 final class ResetPasswordCommand implements Command
 {
     public function __construct(

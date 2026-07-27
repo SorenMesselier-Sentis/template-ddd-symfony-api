@@ -49,6 +49,6 @@ final class DoctrineRefreshTokenRepository implements RefreshTokenRepositoryInte
             ->getQuery()
             ->execute();
 
-        return (int) $deleted;
+        return $deleted;
     }
 }

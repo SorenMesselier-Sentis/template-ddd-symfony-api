@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\MultipartUpload\InitiateMultipartUploadCommand;
-use App\Document\Application\Command\MultipartUpload\InitiateMultipartUploadResult;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -60,7 +59,6 @@ final class InitiateMultipartUploadController
 
         $documentId = Uuid::v4()->toRfc4122();
 
-        /** @var InitiateMultipartUploadResult $result */
         $result = $this->commandBus->dispatch(new InitiateMultipartUploadCommand(
             documentId: $documentId,
             bucket: $bucket,

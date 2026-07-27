@@ -31,17 +31,19 @@ final class OutboxRelay
 
         $published = 0;
         foreach ($messages as $message) {
+            $row = OutboxMessageRow::fromDatabaseRow($message);
+
             $event = $this->rehydrateEvent(
-                eventClass: (string) $message['event_class'],
-                aggregateId: (string) $message['aggregate_id'],
-                payloadJson: (string) $message['payload'],
+                eventClass: $row->eventClass,
+                aggregateId: $row->aggregateId,
+                payload: $row->payload,
             );
 
             $this->eventBus->dispatch($event);
             $this->connection->update('outbox_messages', [
                 'published_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
             ], [
-                'id' => (string) $message['id'],
+                'id' => $row->id,
             ]);
             $this->metrics->incrementCounter('outbox_messages_relayed_total');
 
@@ -59,14 +61,22 @@ final class OutboxRelay
     {
         $count = $this->connection->fetchOne('SELECT COUNT(*) FROM outbox_messages WHERE published_at IS NULL');
 
-        return (int) $count;
+        if (\is_int($count)) {
+            return $count;
+        }
+
+        if (\is_string($count) && '' !== $count && ctype_digit($count)) {
+            return (int) $count;
+        }
+
+        throw new \RuntimeException(sprintf('Unexpected COUNT(*) result for unpublished outbox messages: %s.', \get_debug_type($count)));
     }
 
-    private function rehydrateEvent(string $eventClass, string $aggregateId, string $payloadJson): DomainEvent
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function rehydrateEvent(string $eventClass, string $aggregateId, array $payload): DomainEvent
     {
-        /** @var array<string, mixed> $payload */
-        $payload = json_decode($payloadJson, true, 512, JSON_THROW_ON_ERROR);
-
         if (!class_exists($eventClass)) {
             throw new \RuntimeException(sprintf('Unknown event class "%s".', $eventClass));
         }

@@ -9,6 +9,7 @@ use App\Shared\Domain\Bus\Query\Query;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\Security\RoleRequirement;
 
+/** @implements Query<DocumentsResponse> */
 final class GetDocumentsQuery implements Query, AuthorizedMessage
 {
     public function __construct(

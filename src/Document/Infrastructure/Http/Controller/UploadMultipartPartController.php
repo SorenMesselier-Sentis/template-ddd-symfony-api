@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\MultipartUpload\UploadMultipartPartCommand;
-use App\Document\Application\Command\MultipartUpload\UploadMultipartPartResult;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -52,7 +51,6 @@ final class UploadMultipartPartController
 
         $isLastPart = filter_var($request->query->get('isLastPart', 'false'), FILTER_VALIDATE_BOOLEAN);
 
-        /** @var UploadMultipartPartResult $result */
         $result = $this->commandBus->dispatch(new UploadMultipartPartCommand(
             uploadId: $uploadId,
             partNumber: $partNumber,

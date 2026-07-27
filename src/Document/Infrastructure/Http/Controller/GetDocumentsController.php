@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Document\Infrastructure\Http\Controller;
 
-use App\Document\Application\Query\GetDocuments\DocumentsResponse;
 use App\Document\Application\Query\GetDocuments\GetDocumentsQuery;
 use App\Shared\Domain\Bus\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Http\Filter\FiltersBuilder;
@@ -55,9 +54,6 @@ final class GetDocumentsController
         $filters = FiltersBuilder::fromRequest($request, self::ALLOWED_FILTERS);
 
         $result = $this->queryBus->ask(new GetDocumentsQuery($filters));
-        if (!$result instanceof DocumentsResponse) {
-            throw new \RuntimeException(sprintf('Expected %s, %s given.', DocumentsResponse::class, get_debug_type($result)));
-        }
 
         return $this->apiResponse->paginated(
             data: $result->documents,

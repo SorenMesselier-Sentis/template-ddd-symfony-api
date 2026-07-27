@@ -6,6 +6,10 @@ namespace App\Shared\Domain\Health;
 
 final class HealthCheckResult
 {
+    /**
+     * @param array<string, string>            $checks
+     * @param array<string, HealthCheckDetail> $checksDetails
+     */
     public function __construct(
         public readonly HealthCheckStatus $status,
         public readonly array $checks,
@@ -13,6 +17,10 @@ final class HealthCheckResult
     ) {
     }
 
+    /**
+     * @param array<string, string>            $checks
+     * @param array<string, HealthCheckDetail> $checksDetails
+     */
     public static function fromChecks(array $checks, array $checksDetails = []): self
     {
         $hasError = in_array('error', $checks, true);

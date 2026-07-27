@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\CreateBucket\CreateBucketCommand;
-use App\Document\Application\Command\CreateBucket\CreateBucketResult;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -54,7 +53,6 @@ final class CreateBucketController
             throw new BadRequestHttpException('A bucket name is required.');
         }
 
-        /** @var CreateBucketResult $result */
         $result = $this->commandBus->dispatch(new CreateBucketCommand(name: $name));
 
         return $this->apiResponse->created([

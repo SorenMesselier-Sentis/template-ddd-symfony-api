@@ -89,11 +89,10 @@ final class HttpMetricsListener
         $labels = [
             'method' => $request->getMethod(),
             'route' => $this->resolveRouteLabel($request),
-            'status_code' => (string) ($event->getResponse()?->getStatusCode() ?? 500),
+            'status_code' => (string) $event->getResponse()->getStatusCode(),
         ];
 
         $this->metrics->incrementCounter(self::METRIC_HTTP_REQUESTS_TOTAL, $labels);
-
         $this->metrics->observeHistogram(
             self::METRIC_HTTP_REQUEST_DURATION_SECONDS,
             microtime(true) - $startedAt,

@@ -8,6 +8,7 @@ use App\Document\Application\Security\AuthorizedMessage;
 use App\Shared\Domain\Bus\Query\Query;
 use App\Shared\Domain\Security\RoleRequirement;
 
+/** @implements Query<CheckBucketExistsResult> */
 final class CheckBucketExistsQuery implements Query, AuthorizedMessage
 {
     public function __construct(

@@ -6,5 +6,12 @@ namespace App\Shared\Domain\Bus\Query;
 
 interface QueryBusInterface
 {
-    public function ask(Query $query): Response;
+    /**
+     * @template TResponse
+     *
+     * @param Query<TResponse> $query
+     *
+     * @return TResponse
+     */
+    public function ask(Query $query): mixed;
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\DeleteBucket\DeleteBucketCommand;
-use App\Document\Application\Command\DeleteBucket\DeleteBucketResult;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -35,7 +34,6 @@ final class DeleteBucketController
 
     public function __invoke(string $name): JsonResponse
     {
-        /** @var DeleteBucketResult $result */
         $result = $this->commandBus->dispatch(new DeleteBucketCommand(name: $name));
 
         return $this->apiResponse->success(['name' => $result->name]);

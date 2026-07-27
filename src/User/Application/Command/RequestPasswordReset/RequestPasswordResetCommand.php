@@ -7,6 +7,7 @@ namespace App\User\Application\Command\RequestPasswordReset;
 use App\Shared\Domain\Bus\Command\Command;
 use App\Shared\Domain\ValueObject\Email;
 
+/** @implements Command<null> */
 final class RequestPasswordResetCommand implements Command
 {
     public function __construct(

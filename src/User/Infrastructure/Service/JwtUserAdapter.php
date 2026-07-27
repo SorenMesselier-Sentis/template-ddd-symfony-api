@@ -17,12 +17,7 @@ final class JwtUserAdapter implements UserInterface
 
     public function getUserIdentifier(): string
     {
-        $identifier = $this->user->email()->value();
-        if ('' === $identifier) {
-            throw new \LogicException('User identifier cannot be empty.');
-        }
-
-        return $identifier;
+        return $this->user->email()->value();
     }
 
     public function getRoles(): array

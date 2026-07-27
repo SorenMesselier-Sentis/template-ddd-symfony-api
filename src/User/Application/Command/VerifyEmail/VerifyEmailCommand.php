@@ -6,6 +6,7 @@ namespace App\User\Application\Command\VerifyEmail;
 
 use App\Shared\Domain\Bus\Command\Command;
 
+/** @implements Command<null> */
 final class VerifyEmailCommand implements Command
 {
     public function __construct(

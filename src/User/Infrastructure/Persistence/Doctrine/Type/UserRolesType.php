@@ -32,7 +32,11 @@ final class UserRolesType extends Type
         }
 
         if (\is_resource($value)) {
-            $value = \stream_get_contents($value);
+            $contents = \stream_get_contents($value);
+            if (false === $contents) {
+                throw ValueNotConvertible::new('', self::NAME, 'Unable to read roles stream.');
+            }
+            $value = $contents;
         }
 
         if (\is_string($value)) {
@@ -62,17 +66,21 @@ final class UserRolesType extends Type
         return $roles;
     }
 
-    /**
-     * @param list<UserRole>|null $value
-     */
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
     {
         if (null === $value) {
             return null;
         }
 
+        if (!\is_array($value)) {
+            throw ValueNotConvertible::new($value, self::NAME, 'Expected a list of UserRole.');
+        }
+
         $strings = [];
         foreach ($value as $role) {
+            if (!$role instanceof UserRole) {
+                throw ValueNotConvertible::new($value, self::NAME, 'Each item must be a UserRole.');
+            }
             $strings[] = $role->value;
         }
 

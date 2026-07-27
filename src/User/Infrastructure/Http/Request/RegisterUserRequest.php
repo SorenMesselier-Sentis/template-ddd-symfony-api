@@ -21,21 +21,21 @@ final class RegisterUserRequest extends JsonRequest
 
     public function firstName(): string
     {
-        return $this->data['firstName'];
+        return self::assertString($this->data['firstName'] ?? null, 'firstName');
     }
 
     public function lastName(): string
     {
-        return $this->data['lastName'];
+        return self::assertString($this->data['lastName'] ?? null, 'lastName');
     }
 
     public function email(): string
     {
-        return $this->data['email'];
+        return self::assertString($this->data['email'] ?? null, 'email');
     }
 
     public function password(): string
     {
-        return $this->data['password'];
+        return self::assertString($this->data['password'] ?? null, 'password');
     }
 }

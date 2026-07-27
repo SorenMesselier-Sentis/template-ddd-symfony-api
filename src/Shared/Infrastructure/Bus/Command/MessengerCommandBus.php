@@ -21,6 +21,10 @@ final class MessengerCommandBus implements CommandBusInterface
         $envelope = $this->commandBus->dispatch($command);
         $stamp = $envelope->last(HandledStamp::class);
 
-        return $stamp?->getResult();
+        if (null === $stamp) {
+            throw new \LogicException(sprintf('Command %s was not handled. Is a handler registered?', $command::class));
+        }
+
+        return $stamp->getResult();
     }
 }

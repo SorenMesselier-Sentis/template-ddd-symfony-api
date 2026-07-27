@@ -18,10 +18,6 @@ final class OtlpTracer implements TracerInterface
         $builder = $this->tracer->spanBuilder('' !== $name ? $name : 'span');
 
         foreach ($attributes as $key => $value) {
-            if (!\is_string($key) || '' === $key) {
-                continue;
-            }
-
             if (\is_array($value) || \is_bool($value) || \is_float($value) || \is_int($value) || \is_string($value) || null === $value) {
                 $builder->setAttribute($key, $value);
             }

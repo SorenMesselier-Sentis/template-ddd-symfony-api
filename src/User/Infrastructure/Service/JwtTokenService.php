@@ -62,15 +62,7 @@ final class JwtTokenService implements TokenServiceInterface
 
     public function decodeAccessToken(string $token): TokenClaims
     {
-        $payload = $this->parsePayload($token);
-
-        return new TokenClaims(
-            sub: $payload['sub'],
-            email: $payload['email'],
-            roles: $payload['roles'],
-            iat: $payload['iat'],
-            exp: $payload['exp'],
-        );
+        return TokenClaims::fromAccessTokenPayload($this->parsePayload($token));
     }
 
     public function decodeRefreshToken(string $token): TokenClaims
@@ -81,13 +73,7 @@ final class JwtTokenService implements TokenServiceInterface
             throw InvalidTokenException::create();
         }
 
-        return new TokenClaims(
-            sub: $payload['sub'],
-            email: $payload['email'] ?? '',
-            roles: $payload['roles'] ?? [],
-            iat: $payload['iat'] ?? 0,
-            exp: $payload['exp'] ?? 0,
-        );
+        return TokenClaims::fromRefreshTokenPayload($payload);
     }
 
     /**
@@ -96,7 +82,7 @@ final class JwtTokenService implements TokenServiceInterface
     private function parsePayload(string $token): array
     {
         try {
-            return $this->jwtManager->parse($token);
+            return $this->normalizePayload($this->jwtManager->parse($token));
         } catch (ExpiredTokenException) {
             throw TokenExpiredException::create();
         } catch (LexikInvalidTokenException) {
@@ -108,5 +94,25 @@ final class JwtTokenService implements TokenServiceInterface
 
             throw InvalidTokenException::create();
         }
+    }
+
+    /**
+     * @param array<mixed, mixed> $payload
+     *
+     * @return array<string, mixed>
+     */
+    private function normalizePayload(array $payload): array
+    {
+        $normalized = [];
+
+        foreach ($payload as $claim => $value) {
+            if (!\is_string($claim) || '' === $claim) {
+                throw InvalidTokenException::create();
+            }
+
+            $normalized[$claim] = $value;
+        }
+
+        return $normalized;
     }
 }

@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Health;
 
+use App\Shared\Domain\Health\HealthCheckDetail;
 use App\Shared\Domain\Health\HealthCheckInterface;
 use App\Shared\Domain\Health\HealthCheckResult;
 use App\Shared\Domain\Health\HealthCheckStatus;
 
 final class HealthCheckRegistry
 {
-    /** @var HealthCheckInterface[] */
+    /** @var list<HealthCheckInterface> */
     private array $checks = [];
 
+    /**
+     * @param iterable<HealthCheckInterface> $checks
+     */
     public function __construct(iterable $checks)
     {
         foreach ($checks as $check) {
@@ -22,7 +26,9 @@ final class HealthCheckRegistry
 
     public function run(): HealthCheckResult
     {
+        /** @var array<string, string> $results */
         $results = [];
+        /** @var array<string, HealthCheckDetail> $checksDetails */
         $checksDetails = [];
 
         foreach ($this->checks as $check) {
@@ -36,16 +42,14 @@ final class HealthCheckRegistry
 
             $checkName = $check->name();
             $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+            $detail = $status->detail();
 
             $results[$checkName] = $status->state()->value;
-            $checksDetails[$checkName] = [
-                'status' => $status->state()->value,
-                'duration_ms' => $durationMs,
-            ];
-
-            if (null !== $status->detail()) {
-                $checksDetails[$checkName]['detail'] = $this->truncateDetail($status->detail());
-            }
+            $checksDetails[$checkName] = new HealthCheckDetail(
+                status: $status->state()->value,
+                durationMs: $durationMs,
+                detail: null !== $detail ? $this->truncateDetail($detail) : null,
+            );
         }
 
         return HealthCheckResult::fromChecks($results, $checksDetails);

@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 abstract class JsonRequest
 {
+    use RequestTypeAssertTrait;
+
     /** @var array<string, mixed> */
     protected array $data;
 

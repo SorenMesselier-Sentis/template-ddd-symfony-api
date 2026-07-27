@@ -49,6 +49,6 @@ final class DoctrinePasswordResetTokenRepository implements PasswordResetTokenRe
             ->getQuery()
             ->execute();
 
-        return (int) $deleted;
+        return $deleted;
     }
 }
