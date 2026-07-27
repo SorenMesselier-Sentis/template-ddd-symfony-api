@@ -17,6 +17,6 @@ final class LogoutUserRequest extends JsonRequest
 
     public function refreshToken(): string
     {
-        return $this->data['refresh_token'];
+        return self::assertString($this->data['refresh_token'] ?? null, 'refresh_token');
     }
 }

@@ -6,7 +6,6 @@ namespace App\User\Infrastructure\Http\Controller;
 
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
-use App\User\Application\Command\LoginUser\LoginUserResponse;
 use App\User\Application\Command\RefreshToken\RefreshTokenCommand;
 use App\User\Infrastructure\Http\Request\RefreshTokenRequest;
 use OpenApi\Attributes as OA;
@@ -67,7 +66,6 @@ final class RefreshTokenController
 
     public function __invoke(RefreshTokenRequest $request): JsonResponse
     {
-        /** @var LoginUserResponse $response */
         $response = $this->commandBus->dispatch(
             new RefreshTokenCommand(
                 refreshToken: $request->refreshToken(),

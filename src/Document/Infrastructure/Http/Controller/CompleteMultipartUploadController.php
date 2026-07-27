@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\MultipartUpload\CompleteMultipartUploadCommand;
-use App\Document\Application\Command\UploadDocument\UploadDocumentResult;
 use App\Document\Infrastructure\Http\Response\DocumentResponseData;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
@@ -32,7 +31,6 @@ final class CompleteMultipartUploadController
 
     public function __invoke(string $uploadId): JsonResponse
     {
-        /** @var UploadDocumentResult $result */
         $result = $this->commandBus->dispatch(new CompleteMultipartUploadCommand(
             uploadId: $uploadId,
         ));

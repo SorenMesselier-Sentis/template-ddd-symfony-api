@@ -19,11 +19,11 @@ final class ResetPasswordRequest extends JsonRequest
 
     public function token(): string
     {
-        return $this->data['token'];
+        return self::assertString($this->data['token'] ?? null, 'token');
     }
 
     public function password(): string
     {
-        return $this->data['password'];
+        return self::assertString($this->data['password'] ?? null, 'password');
     }
 }

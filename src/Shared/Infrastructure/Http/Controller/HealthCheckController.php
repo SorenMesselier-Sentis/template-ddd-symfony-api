@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Http\Controller;
 
+use App\Shared\Domain\Health\HealthCheckDetail;
 use App\Shared\Infrastructure\Health\HealthCheckRegistry;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -119,7 +120,10 @@ final class HealthCheckController
             data: [
                 'status' => $result->status->state()->value,
                 'checks' => $result->checks,
-                'checks_details' => $result->checksDetails,
+                'checks_details' => array_map(
+                    static fn (HealthCheckDetail $detail): array => $detail->toArray(),
+                    $result->checksDetails,
+                ),
             ],
             status: $result->httpStatusCode(),
         );

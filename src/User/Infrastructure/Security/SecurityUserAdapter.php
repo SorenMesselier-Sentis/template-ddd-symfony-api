@@ -22,7 +22,7 @@ final class SecurityUserAdapter implements UserInterface, PasswordAuthenticatedU
         return $this->user->email()->value();
     }
 
-    public function getPassword(): ?string
+    public function getPassword(): string
     {
         return $this->user->password()->value();
     }

@@ -42,7 +42,7 @@ final class UpdateUserRolesCommandHandler
             $roles[] = UserRole::USER;
         }
 
-        $user->updateRoles(array_values($roles));
+        $user->updateRoles($roles);
 
         $this->repository->save($user);
         $this->eventBus->publish(...$user->pullDomainEvents());

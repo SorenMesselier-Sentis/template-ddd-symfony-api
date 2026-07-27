@@ -26,9 +26,9 @@ final class JwtAuthenticator extends AbstractAuthenticator
     ) {
     }
 
-    public function supports(Request $request): ?bool
+    public function supports(Request $request): bool
     {
-        return !$this->publicApiRequestMatcher->matches($request);
+        return false === $this->publicApiRequestMatcher->matches($request);
     }
 
     public function authenticate(Request $request): Passport
@@ -69,7 +69,7 @@ final class JwtAuthenticator extends AbstractAuthenticator
     public function onAuthenticationFailure(
         Request $request,
         AuthenticationException $exception,
-    ): ?Response {
+    ): Response {
         $errorCode = $exception->getMessage();
 
         return new JsonResponse([

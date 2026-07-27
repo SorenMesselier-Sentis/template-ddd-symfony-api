@@ -46,7 +46,7 @@ final class UserName
             throw new InvalidUserNameException('User name cannot exceed 30 characters.');
         }
 
-        if (!preg_match('/^[a-z0-9_]+$/', $value)) {
+        if (1 !== preg_match('/^[a-z0-9_]+$/', $value)) {
             throw new InvalidUserNameException('User name can only contain lowercase letters, numbers and underscores.');
         }
     }

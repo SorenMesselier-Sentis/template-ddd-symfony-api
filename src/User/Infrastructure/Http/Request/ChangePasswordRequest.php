@@ -19,11 +19,11 @@ final class ChangePasswordRequest extends JsonRequest
 
     public function currentPassword(): string
     {
-        return $this->data['currentPassword'];
+        return self::assertString($this->data['currentPassword'] ?? null, 'currentPassword');
     }
 
     public function newPassword(): string
     {
-        return $this->data['newPassword'];
+        return self::assertString($this->data['newPassword'] ?? null, 'newPassword');
     }
 }

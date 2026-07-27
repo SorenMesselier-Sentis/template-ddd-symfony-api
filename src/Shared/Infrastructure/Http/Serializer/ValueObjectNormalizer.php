@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Http\Serializer;
 
-use App\Shared\Domain\ValueObject\Email;
-use App\Shared\Domain\ValueObject\Uuid;
+use App\Shared\Domain\ValueObject\StringValueObject;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class ValueObjectNormalizer implements NormalizerInterface
@@ -15,19 +14,22 @@ final class ValueObjectNormalizer implements NormalizerInterface
         ?string $format = null,
         array $context = [],
     ): string {
+        if (!$object instanceof StringValueObject) {
+            throw new \InvalidArgumentException(sprintf('Expected %s, %s given.', StringValueObject::class, \get_debug_type($object)));
+        }
+
         return $object->value();
     }
 
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        return $data instanceof Uuid || $data instanceof Email;
+        return $data instanceof StringValueObject;
     }
 
     public function getSupportedTypes(?string $format): array
     {
         return [
-            Uuid::class => true,
-            Email::class => true,
+            StringValueObject::class => true,
         ];
     }
 }

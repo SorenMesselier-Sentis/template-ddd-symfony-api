@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Query\GetDocumentPresignedUrl\GetDocumentPresignedUrlQuery;
-use App\Document\Application\Query\GetDocumentPresignedUrl\GetDocumentPresignedUrlResult;
 use App\Shared\Domain\Bus\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -45,7 +44,6 @@ final class GetDocumentPresignedUrlController
             ? $request->query->getInt('ttl')
             : null;
 
-        /** @var GetDocumentPresignedUrlResult $result */
         $result = $this->queryBus->ask(new GetDocumentPresignedUrlQuery(
             documentId: $id,
             ttlSeconds: $ttl,

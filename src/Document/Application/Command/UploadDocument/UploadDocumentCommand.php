@@ -8,6 +8,7 @@ use App\Document\Application\Security\AuthorizedMessage;
 use App\Shared\Domain\Bus\Command\Command;
 use App\Shared\Domain\Security\RoleRequirement;
 
+/** @implements Command<UploadDocumentResult> */
 final class UploadDocumentCommand implements Command, AuthorizedMessage
 {
     public function __construct(

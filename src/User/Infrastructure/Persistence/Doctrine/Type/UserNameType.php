@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\User\Infrastructure\Persistence\Doctrine\Type;
 
+use App\Shared\Infrastructure\Persistence\Doctrine\Type\DoctrineStringValueTypeTrait;
 use App\User\Domain\ValueObject\UserName;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
 
 final class UserNameType extends Type
 {
+    use DoctrineStringValueTypeTrait;
+
     public const NAME = 'user_name';
 
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
@@ -23,7 +26,7 @@ final class UserNameType extends Type
             return null;
         }
 
-        return UserName::fromString($value);
+        return UserName::fromString(self::assertString($value, self::NAME));
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
@@ -36,7 +39,7 @@ final class UserNameType extends Type
             return $value->value();
         }
 
-        return $value;
+        return self::assertString($value, self::NAME);
     }
 
     public function getName(): string

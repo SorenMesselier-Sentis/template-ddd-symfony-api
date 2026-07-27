@@ -29,8 +29,15 @@ final class OutboxRelayCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $limit = max(1, (int) $input->getOption('limit'));
-        $count = $this->outboxRelay->relay($limit);
+        $rawLimit = $input->getOption('limit');
+
+        if (!\is_int($rawLimit) && !(\is_string($rawLimit) && '' !== $rawLimit && ctype_digit($rawLimit))) {
+            $io->error('Option --limit must be a positive integer.');
+
+            return Command::FAILURE;
+        }
+
+        $count = $this->outboxRelay->relay(max(1, (int) $rawLimit));
 
         $io->success(sprintf('Published %d outbox event(s).', $count));
 

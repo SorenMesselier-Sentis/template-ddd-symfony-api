@@ -49,6 +49,6 @@ final class DoctrineEmailVerificationTokenRepository implements EmailVerificatio
             ->getQuery()
             ->execute();
 
-        return (int) $deleted;
+        return $deleted;
     }
 }

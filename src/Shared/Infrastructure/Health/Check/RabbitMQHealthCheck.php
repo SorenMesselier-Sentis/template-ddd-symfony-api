@@ -64,7 +64,7 @@ final class RabbitMQHealthCheck implements HealthCheckInterface
             throw new \InvalidArgumentException('Invalid RABBITMQ_DSN format');
         }
 
-        $vhostPath = (string) ($parts['path'] ?? '/');
+        $vhostPath = $parts['path'] ?? '/';
         $vhost = urldecode(ltrim($vhostPath, '/'));
 
         if ('' === $vhost) {
@@ -73,9 +73,9 @@ final class RabbitMQHealthCheck implements HealthCheckInterface
 
         return [
             'host' => $parts['host'],
-            'port' => (int) ($parts['port'] ?? 5672),
-            'login' => urldecode((string) ($parts['user'] ?? 'guest')),
-            'password' => urldecode((string) ($parts['pass'] ?? 'guest')),
+            'port' => $parts['port'] ?? 5672,
+            'login' => urldecode($parts['user'] ?? 'guest'),
+            'password' => urldecode($parts['pass'] ?? 'guest'),
             'vhost' => $vhost,
             'connect_timeout' => 1,
             'read_timeout' => 1,

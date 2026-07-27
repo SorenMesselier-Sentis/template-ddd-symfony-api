@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Query\ListBuckets\ListBucketsQuery;
-use App\Document\Application\Query\ListBuckets\ListBucketsResult;
 use App\Shared\Domain\Bus\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -33,7 +32,6 @@ final class ListBucketsController
 
     public function __invoke(): JsonResponse
     {
-        /** @var ListBucketsResult $result */
         $result = $this->queryBus->ask(new ListBucketsQuery());
 
         return $this->apiResponse->success(['buckets' => $result->buckets]);

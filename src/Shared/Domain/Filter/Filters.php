@@ -10,7 +10,7 @@ final class Filters
     private array $filters;
 
     /**
-     * @param array<int,mixed> $filters
+     * @param Filter[] $filters
      */
     public function __construct(
         array $filters,
@@ -24,10 +24,5 @@ final class Filters
     public function all(): array
     {
         return $this->filters;
-    }
-
-    public function isEmpty(): bool
-    {
-        return empty($this->filters);
     }
 }

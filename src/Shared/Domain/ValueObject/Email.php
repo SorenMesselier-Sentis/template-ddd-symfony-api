@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Shared\Domain\ValueObject;
 
-final class Email
+final class Email implements StringValueObject
 {
+    /** @var non-empty-string */
     private readonly string $value;
 
     public function __construct(string $value)
     {
-        $this->ensureIsValid($value);
-        $this->value = mb_strtolower(trim($value));
+        $this->value = $this->normalize($value);
     }
 
     public static function fromString(string $value): self
@@ -19,6 +19,9 @@ final class Email
         return new self($value);
     }
 
+    /**
+     * @return non-empty-string
+     */
     public function value(): string
     {
         return $this->value;
@@ -29,14 +32,21 @@ final class Email
         return $this->value === $other->value;
     }
 
-    private function ensureIsValid(string $value): void
+    /**
+     * @return non-empty-string
+     */
+    private function normalize(string $value): string
     {
-        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+        $value = mb_strtolower(trim($value));
+
+        if ('' === $value || false === filter_var($value, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException(sprintf('"%s" is not a valid email address.', $value));
         }
 
         if (mb_strlen($value) > 254) {
-            throw new \InvalidArgumentException(sprintf('Email address "%s" exceeds the maximum length of 254 characters.', $value));
+            throw new \InvalidArgumentException(sprintf('Email address "%s" exceeds the maximum length.', $value));
         }
+
+        return $value;
     }
 }

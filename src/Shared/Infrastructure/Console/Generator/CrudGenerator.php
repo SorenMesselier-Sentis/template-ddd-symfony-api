@@ -1720,7 +1720,11 @@ final class CrudGenerator
     private function registerDoctrineType(string $context, string $entity, SymfonyStyle $io): void
     {
         $path = $this->projectDir.'/config/packages/doctrine.yaml';
-        $content = file_get_contents($path);
+        $content = $this->readFile($path, $io);
+        if (null === $content) {
+            return;
+        }
+
         $typeName = $this->toSnakeCase($entity).'_id';
         $entry = sprintf(
             "            %s: App\\%s\\Infrastructure\\Persistence\\Doctrine\\Type\\%sIdType\n",
@@ -1755,7 +1759,11 @@ final class CrudGenerator
     private function registerRepositoryAlias(string $context, string $entity, SymfonyStyle $io): void
     {
         $path = $this->projectDir.'/config/services.yaml';
-        $content = file_get_contents($path);
+        $content = $this->readFile($path, $io);
+        if (null === $content) {
+            return;
+        }
+
         $interface = sprintf('App\\%s\\Domain\\Repository\\%sRepositoryInterface', $context, $entity);
 
         if (str_contains($content, $interface)) {
@@ -1791,7 +1799,11 @@ final class CrudGenerator
     private function registerMessengerBinding(string $context, string $entity, SymfonyStyle $io): void
     {
         $path = $this->projectDir.'/config/packages/messenger.yaml';
-        $content = file_get_contents($path);
+        $content = $this->readFile($path, $io);
+        if (null === $content) {
+            return;
+        }
+
         $lower = $this->toSnakeCase($entity);
         $queueName = 'events.'.$lower;
 
@@ -1822,6 +1834,19 @@ final class CrudGenerator
 
         file_put_contents($path, $updated);
         $io->writeln(sprintf('  <info>updated</info> config/packages/messenger.yaml (binding %s.#)', $lower));
+    }
+
+    private function readFile(string $path, SymfonyStyle $io): ?string
+    {
+        $content = file_get_contents($path);
+
+        if (false === $content) {
+            $io->error(sprintf('Unable to read %s', $path));
+
+            return null;
+        }
+
+        return $content;
     }
 
     private function printNextSteps(string $context, string $entity, SymfonyStyle $io): void

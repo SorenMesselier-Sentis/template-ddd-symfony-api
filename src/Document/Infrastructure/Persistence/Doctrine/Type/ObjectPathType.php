@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Persistence\Doctrine\Type;
 
 use App\Document\Domain\ValueObject\ObjectPath;
+use App\Shared\Infrastructure\Persistence\Doctrine\Type\DoctrineStringValueTypeTrait;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
 

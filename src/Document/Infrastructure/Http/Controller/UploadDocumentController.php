@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\UploadDocument\UploadDocumentCommand;
-use App\Document\Application\Command\UploadDocument\UploadDocumentResult;
 use App\Document\Infrastructure\Http\Response\DocumentResponseData;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
@@ -90,7 +89,6 @@ final class UploadDocumentController
         $content = (string) file_get_contents($file->getPathname());
         $mimeType = $file->getMimeType() ?? 'application/octet-stream';
 
-        /** @var UploadDocumentResult $result */
         $result = $this->commandBus->dispatch(new UploadDocumentCommand(
             id: $id,
             bucket: $bucket,

@@ -6,6 +6,7 @@ namespace App\User\Application\Command\RegisterUser;
 
 use App\Shared\Domain\Bus\Command\Command;
 
+/** @implements Command<null> */
 final class RegisterUserCommand implements Command
 {
     public function __construct(

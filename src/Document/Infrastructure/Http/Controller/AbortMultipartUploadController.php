@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Document\Infrastructure\Http\Controller;
 
 use App\Document\Application\Command\MultipartUpload\AbortMultipartUploadCommand;
-use App\Document\Application\Command\MultipartUpload\AbortMultipartUploadResult;
 use App\Shared\Domain\Bus\Command\CommandBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use OpenApi\Attributes as OA;
@@ -31,7 +30,6 @@ final class AbortMultipartUploadController
 
     public function __invoke(string $uploadId): JsonResponse
     {
-        /** @var AbortMultipartUploadResult $result */
         $result = $this->commandBus->dispatch(new AbortMultipartUploadCommand(
             uploadId: $uploadId,
         ));

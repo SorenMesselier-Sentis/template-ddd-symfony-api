@@ -16,6 +16,8 @@ use Doctrine\DBAL\Types\Type;
  */
 abstract class AbstractUuidType extends Type
 {
+    use DoctrineStringValueTypeTrait;
+
     /**
      * Doctrine unique type name.
      */
@@ -43,7 +45,7 @@ abstract class AbstractUuidType extends Type
             return $value;
         }
 
-        return $class::fromString((string) $value);
+        return $class::fromString(self::assertString($value, static::typeName()));
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): ?string
@@ -56,7 +58,7 @@ abstract class AbstractUuidType extends Type
             return $value->value();
         }
 
-        return (string) $value;
+        return self::assertString($value, static::typeName());
     }
 
     public function getName(): string

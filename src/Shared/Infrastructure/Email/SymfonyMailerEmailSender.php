@@ -45,12 +45,11 @@ final class SymfonyMailerEmailSender implements EmailSenderInterface
 
     private function buildSymfonyEmail(EmailMessage $message): SymfonyEmail
     {
-        $from = $message->hasFrom()
-            ? $message->from()->value()
-            : $this->defaultFrom;
+        $from = $message->from();
+        $fromAddress = null !== $from ? $from->value() : $this->defaultFrom;
 
         $email = (new SymfonyEmail())
-            ->from($from)
+            ->from($fromAddress)
             ->to($message->to()->value())
             ->subject($message->subject())
             ->text($message->textBody());

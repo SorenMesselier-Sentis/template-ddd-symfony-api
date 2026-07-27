@@ -7,7 +7,6 @@ namespace App\User\Infrastructure\Http\Controller;
 use App\Shared\Domain\Bus\Query\QueryBusInterface;
 use App\Shared\Infrastructure\Http\Response\ApiResponse;
 use App\User\Application\Query\GetMe\GetMeQuery;
-use App\User\Application\Query\GetUser\UserResponse;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -31,7 +30,6 @@ final class GetMeController
 
     public function __invoke(): JsonResponse
     {
-        /** @var UserResponse $user */
         $user = $this->queryBus->ask(new GetMeQuery());
 
         return $this->apiResponse->success($user);

@@ -6,7 +6,7 @@ namespace App\Shared\Domain\ValueObject;
 
 use Symfony\Component\Uid\Uuid as SymfonyUuid;
 
-abstract class Uuid
+abstract class Uuid implements StringValueObject
 {
     private readonly string $value;
 

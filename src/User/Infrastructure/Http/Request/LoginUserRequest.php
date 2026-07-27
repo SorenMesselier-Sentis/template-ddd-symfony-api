@@ -19,11 +19,11 @@ final class LoginUserRequest extends JsonRequest
 
     public function email(): string
     {
-        return $this->data['email'];
+        return self::assertString($this->data['email'] ?? null, 'email');
     }
 
     public function password(): string
     {
-        return $this->data['password'];
+        return self::assertString($this->data['password'] ?? null, 'password');
     }
 }
