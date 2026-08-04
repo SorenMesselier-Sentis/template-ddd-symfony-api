@@ -54,5 +54,32 @@ final class CorsListenerTest extends UnitTestCase
         $listener->onKernelResponse($event);
 
         $this->assertSame('*', $response->headers->get('Access-Control-Allow-Origin'));
+        $this->assertFalse($response->headers->has('Vary'));
+    }
+
+    public function testAllowedOriginSetsVaryHeaderToAvoidCachePoisoning(): void
+    {
+        $listener = new CorsListener('http://localhost:3000', 'GET, POST, OPTIONS');
+        $request = Request::create('/api/v1/users', Request::METHOD_GET);
+        $request->headers->set('Origin', 'http://localhost:3000');
+        $response = new Response();
+        $event = new ResponseEvent($this->createStub(HttpKernelInterface::class), $request, HttpKernelInterface::MAIN_REQUEST, $response);
+
+        $listener->onKernelResponse($event);
+
+        $this->assertSame(['Origin'], $response->getVary());
+    }
+
+    public function testAllowedOriginExposesLocationAndRequestIdHeaders(): void
+    {
+        $listener = new CorsListener('http://localhost:3000', 'GET, POST, OPTIONS');
+        $request = Request::create('/api/v1/users', Request::METHOD_POST);
+        $request->headers->set('Origin', 'http://localhost:3000');
+        $response = new Response();
+        $event = new ResponseEvent($this->createStub(HttpKernelInterface::class), $request, HttpKernelInterface::MAIN_REQUEST, $response);
+
+        $listener->onKernelResponse($event);
+
+        $this->assertSame('Location, X-Request-Id', $response->headers->get('Access-Control-Expose-Headers'));
     }
 }
