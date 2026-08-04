@@ -1,6 +1,8 @@
 {
+    "name": "sorenmesselier-sentis/template-ddd-symfony-api",
+    "description": "Production-ready Symfony 8 / PHP 8.4 REST API template built around Domain-Driven Design with bounded contexts.",
     "type": "project",
-    "license": "proprietary",
+    "license": "Apache-2.0",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
