@@ -140,6 +140,9 @@ services:
     App\Shared\Domain\Logging\LoggerInterface:
         alias: App\Shared\Infrastructure\Logging\MonologLogger
 
+    App\Shared\Domain\Audit\AuditTrailInterface:
+        alias: App\Shared\Infrastructure\Persistence\Doctrine\DoctrineAuditTrailRepository
+
     # Metrics
     App\Shared\Infrastructure\Monitoring\Metrics\PrometheusCollectorRegistryFactory:
         arguments:

@@ -216,6 +216,14 @@ Two layers of Symfony RateLimiter policies protect the API, both defined in `con
 
 A rejected request raises `Shared\Domain\Exception\RateLimitExceededException`, mapped by `ExceptionListener` to `429` with the standard `{ "error": { "code": "rate_limit.exceeded", "message": "..." } }` body plus a `Retry-After` header (seconds).
 
+### Audit trail
+
+Sensitive actions are recorded to a queryable `audit_log` table (centralized migration, `Shared/Infrastructure/Persistence/Migrations/`) instead of only Monolog — who did what, to what, and when:
+
+Declared on the message, the same way authorization is: a command implements `Shared\Domain\Audit\AuditableMessage` (`auditAction(): string`, `auditTargetId(): string`, `auditContext(): array`). `AuditMessageMiddleware` (`command.bus`) records an `AuditEntry` (actor id from Symfony Security — `null` for unauthenticated actions like login — action, target, context, timestamp) after the command has actually succeeded; nothing is written on failure. Currently wired on `UpdateUserRolesCommand` (`user.roles_updated`), `DeleteUserCommand` (`user.deleted`), `LoginUserCommand` (`user.logged_in`) and `DeleteDocumentCommand` (`document.deleted`) — add `AuditableMessage` to any other command that needs a trail.
+
+> **Sync-transport gotcha:** every command is routed to the `sync` transport (`config/packages/messenger.yaml`), which re-enters `command.bus`'s full middleware chain to actually dispatch the command — so anything positioned before the implicit `send_message`/`handle_message` pair (as `AuditMessageMiddleware` is, right after `AuthorizeMessageMiddleware`) runs twice per command unless it deduplicates. `AuditMessageMiddleware` does so via a marker stamp (`AuditProcessingStamp`) that survives the re-entry; other side-effecting middleware added to `command.bus` in the future needs the same treatment (existing ones — auth checks, the Doctrine transaction — tolerate the double pass only because they're idempotent).
+
 ### CORS
 
 `CorsListener` (`Shared/Infrastructure/Http/Listener/`) answers preflight `OPTIONS` requests and adds CORS headers to every response, driven by a single env var:

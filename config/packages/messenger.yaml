@@ -8,6 +8,7 @@ framework:
                     - App\Shared\Infrastructure\Monitoring\Metrics\BusMetricsMiddleware
                     - App\Shared\Infrastructure\Monitoring\Tracing\TracerMiddleware
                     - App\Shared\Infrastructure\Messaging\AuthorizeMessageMiddleware
+                    - App\Shared\Infrastructure\Messaging\AuditMessageMiddleware
                     - doctrine_transaction
             query.bus:
                 middleware:
