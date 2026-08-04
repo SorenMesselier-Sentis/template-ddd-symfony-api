@@ -21,20 +21,18 @@ Application metrics are collected through the domain port `MetricsCollectorInter
 
 | Variable | Values | Default | Purpose |
 | --- | --- | --- | --- |
-| `METRICS_STORAGE` | `apcu`, `redis` | `apcu` | Selects the Prometheus client storage adapter |
-| `METRICS_REDIS_HOST` | host | `127.0.0.1` | Redis host when `METRICS_STORAGE=redis` |
-| `METRICS_REDIS_PORT` | port | `6379` | Redis port when `METRICS_STORAGE=redis` |
-| `METRICS_REDIS_PASSWORD` | string | _(empty)_ | Optional Redis password |
+| `METRICS_STORAGE` | `apcu`, `redis` | `redis` | Selects the Prometheus client storage adapter |
+| `METRICS_REDIS_HOST` | host | `redis` | Redis host when `METRICS_STORAGE=redis` (Docker service name) |
+| `METRICS_REDIS_PORT` | port | `${REDIS_PORT}` | Redis port when `METRICS_STORAGE=redis` |
+| `METRICS_REDIS_PASSWORD` | string | `${REDIS_PASSWORD}` | Redis password when `METRICS_STORAGE=redis` |
 
-### APCu (default)
+### Redis (default — required for scale-out)
 
-`\Prometheus\Storage\APC` is the default backend. It fits single-container deployments where the PHP runtime already has APCu available for userland caching. No extra infrastructure is required.
+`docker/compose.yaml` ships a password-protected `redis:7-alpine` service, reused across the app for more than just metrics — see "Cache and scale-out (Redis)" in the README for the full picture (cache pool, rate limiter storage, scheduler state). With multiple PHP workers or replicas scraped through a load balancer, each process only ever sees its own subset of requests; without a shared store, Prometheus would read disjoint, undercounted samples depending on which replica answered the scrape.
 
-### Redis (scale-out)
+### APCu (single-container only)
 
-For multiple PHP workers or replicas that must share the same metric samples, set `METRICS_STORAGE=redis` and point the `METRICS_REDIS_*` variables at a Redis instance reachable from every worker.
-
-Adding a Redis service to `docker/compose.yaml` is intentionally out of scope for this template phase; wire an external Redis (or add the service in your own fork) before enabling this mode.
+`\Prometheus\Storage\APC` fits a single-container deployment where the PHP runtime already has APCu available for userland caching and no cross-replica consistency is needed. Set `METRICS_STORAGE=apcu` to opt out of Redis for metrics specifically — the cache pool and rate limiter storage (`config/packages/cache.yaml`) are configured independently and stay on Redis unless you also change `framework.cache.app`.
 
 An unrecognized `METRICS_STORAGE` value causes a `LogicException` at container boot so misconfiguration fails loudly instead of falling back silently.
 

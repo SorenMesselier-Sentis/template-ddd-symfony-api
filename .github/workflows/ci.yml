@@ -35,7 +35,7 @@ jobs:
               run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" build php
 
             - name: Start services
-              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" up -d --wait postgres rabbitmq rustfs php
+              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" up -d --wait postgres rabbitmq rustfs redis php
 
             - name: Install Composer dependencies
               run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php composer install --no-interaction --prefer-dist --no-progress

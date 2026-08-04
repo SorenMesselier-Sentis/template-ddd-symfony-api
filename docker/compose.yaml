@@ -25,6 +25,8 @@ services:
                 condition: service_healthy
             rustfs:
                 condition: service_healthy
+            redis:
+                condition: service_healthy
 
     # =========================================================
     # Nginx
@@ -83,6 +85,23 @@ services:
         healthcheck:
             test: ["CMD", "rabbitmq-diagnostics", "ping"]
             interval: 10s
+            timeout: 5s
+            retries: 5
+
+    # =========================================================
+    # Redis (shared cache pool, rate limiter storage, scheduler
+    # state and Prometheus metrics)
+    # =========================================================
+    redis:
+        image: redis:7-alpine
+        command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+        volumes:
+            - redis_data:/data
+        ports:
+            - "${REDIS_PORT}:6379"
+        healthcheck:
+            test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+            interval: 5s
             timeout: 5s
             retries: 5
 
@@ -176,3 +195,4 @@ volumes:
     prometheus_data:
     grafana_data:
     rustfs_data:
+    redis_data:

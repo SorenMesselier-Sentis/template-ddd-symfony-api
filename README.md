@@ -12,6 +12,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Database | PostgreSQL 16 |
 | Message Bus | Symfony Messenger |
 | Queue | RabbitMQ |
+| Cache / shared state | Redis 7 — cache pool, rate limiter storage, scheduler state, Prometheus metrics |
 | Scheduler | Symfony Scheduler (cron + periodic) |
 | Mailer | Symfony Mailer + Twig templates, Mailpit for dev |
 | Logging | Monolog |
@@ -304,6 +305,10 @@ POSTGRES_PASSWORD=your_password
 # RabbitMQ
 RABBITMQ_PASSWORD=your_password
 
+# Redis (cache pool, rate limiter storage, scheduler state, metrics — see
+# "Cache and scale-out (Redis)")
+REDIS_PASSWORD=your_password
+
 # Grafana
 GRAFANA_ADMIN_PASSWORD=your_password
 
@@ -402,11 +407,24 @@ make logs-php     # tail PHP logs only
 make restart      # stop then start containers (pick up image / config changes)
 ```
 
-### Cache
+### Cache and scale-out (Redis)
 
 ```bash
 make clear        # Symfony cache:clear
 ```
+
+Redis (`docker/compose.yaml`, `redis:7-alpine`, password-protected via `REDIS_PASSWORD`) backs everything that must stay **consistent across `php` replicas** once the service is scaled beyond a single container:
+
+| Consumer | Config | Why it needs Redis |
+|---|---|---|
+| `cache.app` pool | `config/packages/cache.yaml` (`framework.cache.app: cache.adapter.redis`) | Symfony's default is a filesystem pool, local to one container |
+| Rate limiter storage (`api_default`, `auth_login`, …) | `cache.rate_limiter` inherits from `cache.app` | With a local pool, each replica keeps its own counters — the effective limit multiplies by the replica count |
+| Scheduler missed-run state | `DefaultSchedule::stateful()`, injected `CacheInterface` resolves to `cache.app` | Keeps "last processed tick" consistent no matter which replica the lock (see `LOCK_DSN`) lets run |
+| Prometheus metrics | `METRICS_STORAGE=redis` (`PrometheusCollectorRegistryFactory`) | APCu/in-memory storage is per-process; a load-balanced scrape would otherwise see disjoint, undercounted samples |
+
+`when@test` overrides `cache.app` back to `cache.adapter.filesystem` (see `config/packages/cache.yaml`) — tests don't need cross-replica state and shouldn't depend on a reachable Redis; rate limiter policies are separately forced to `no_limit` in test (`config/packages/rate_limiter.yaml`) and `METRICS_STORAGE=in_memory` in `.env.test`.
+
+Single-container/dev-only deployments can still set `METRICS_STORAGE=apcu` and drop `framework.cache.app` back to its Symfony default — Redis only becomes a correctness requirement once you actually run more than one `php`/`scheduler` replica.
 
 ### Database
 
