@@ -26,6 +26,7 @@
         "symfony/dotenv": "8.0.*",
         "symfony/flex": "^2.10",
         "symfony/framework-bundle": "8.0.*",
+        "symfony/lock": "8.0.*",
         "symfony/mailer": "8.0.*",
         "symfony/messenger": "8.0.*",
         "symfony/property-access": "8.0.*",

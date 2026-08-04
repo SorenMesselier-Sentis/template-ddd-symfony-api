@@ -134,7 +134,7 @@ templates/email/
 
 **Channel-agnostic notifications** — `NotificationSenderInterface` (in `Shared/Domain/Notification/`) lets the domain dispatch a `Notification` without knowing its delivery channel. `ChannelNotificationSender` resolves the right `NotificationChannelHandler` from the `NotificationChannel` enum (`email`, `in_app`). For the `email` channel, the handler delegates to `EmailSenderInterface` so the mailer stays a single integration point. This is the path used by `SendWelcomeEmailOnUserCreated` and `SendAccountDeletionEmailOnUserDeleted`, both registered as async `event.bus` handlers in `User/Infrastructure/EventHandler/`.
 
-**Scheduled recurring tasks** — `DefaultSchedule` (in `Shared/Infrastructure/Scheduler/`) is the single `#[AsSchedule('default')]` provider for the application. It is stateful (`stateful(cache)` + `processOnlyLastMissedRun(true)`), so missed ticks during a worker restart are recovered without flooding. The schedule currently registers three tasks:
+**Scheduled recurring tasks** — `DefaultSchedule` (in `Shared/Infrastructure/Scheduler/`) is the single `#[AsSchedule('default')]` provider for the application. It is stateful (`stateful(cache)` + `processOnlyLastMissedRun(true)`), so missed ticks during a worker restart are recovered without flooding. It is also `lock()`-guarded with a PostgreSQL advisory lock (`symfony/lock`, DSN in `LOCK_DSN`, `postgresql+advisory://...`): if the `scheduler` worker is scaled to more than one replica, only the replica holding the lock generates and dispatches due messages, so recurring tasks never run twice concurrently. The schedule currently registers three tasks:
 
 | Cadence | Task | Handler |
 |---|---|---|

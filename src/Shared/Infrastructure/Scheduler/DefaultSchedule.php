@@ -8,6 +8,7 @@ use App\Shared\Infrastructure\Scheduler\Message\CleanupExpiredRefreshTokens;
 use App\Shared\Infrastructure\Scheduler\Message\CleanupExpiredUserTokens;
 use App\Shared\Infrastructure\Scheduler\Message\CleanupStaleOutboxMessages;
 use App\Shared\Infrastructure\Scheduler\Message\RelayOutboxMessages;
+use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Scheduler\Attribute\AsSchedule;
 use Symfony\Component\Scheduler\RecurringMessage;
 use Symfony\Component\Scheduler\Schedule;
@@ -19,6 +20,7 @@ final class DefaultSchedule implements ScheduleProviderInterface
 {
     public function __construct(
         private readonly CacheInterface $cache,
+        private readonly LockFactory $lockFactory,
     ) {
     }
 
@@ -28,6 +30,7 @@ final class DefaultSchedule implements ScheduleProviderInterface
 
         return (new Schedule())
             ->stateful($this->cache)
+            ->lock($this->lockFactory->createLock('scheduler_default'))
             ->processOnlyLastMissedRun(true)
             ->add(
                 RecurringMessage::every('10 seconds', new RelayOutboxMessages()),
