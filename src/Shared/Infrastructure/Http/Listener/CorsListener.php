@@ -12,6 +12,7 @@ use Symfony\Component\HttpKernel\Event\ResponseEvent;
 final class CorsListener
 {
     private const string ALLOWED_HEADERS = 'Content-Type, Authorization, X-Request-Id';
+    private const string EXPOSED_HEADERS = 'Location, X-Request-Id';
 
     public function __construct(
         private readonly string $allowedOriginsRaw,
@@ -62,7 +63,12 @@ final class CorsListener
         $response->headers->set('Access-Control-Allow-Origin', $allowedOrigin);
         $response->headers->set('Access-Control-Allow-Methods', $this->allowedMethods);
         $response->headers->set('Access-Control-Allow-Headers', self::ALLOWED_HEADERS);
+        $response->headers->set('Access-Control-Expose-Headers', self::EXPOSED_HEADERS);
         $response->headers->set('Access-Control-Max-Age', '86400');
+
+        if ('*' !== $allowedOrigin) {
+            $response->setVary('Origin', false);
+        }
     }
 
     private function resolveAllowedOrigin(string $origin): ?string

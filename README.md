@@ -194,6 +194,17 @@ public function roleRequirement(): RoleRequirement
 
 To add a new role, extend the `UserRole` enum in the User bounded context and use it in `RoleRequirement` on the relevant command or query. Do not add path-based rules in Shared.
 
+### CORS
+
+`CorsListener` (`Shared/Infrastructure/Http/Listener/`) answers preflight `OPTIONS` requests and adds CORS headers to every response, driven by a single env var:
+
+```bash
+# Comma-separated list of allowed origins, or * for all (no credentials/cookies are used, so * is safe here)
+CORS_ALLOWED_ORIGINS=http://localhost:3000,https://app.example.com
+```
+
+Left empty (the `.env` default), no cross-origin browser request is allowed — same-origin and non-browser clients (curl, server-to-server) are unaffected, since CORS is a browser-enforced mechanism. `Location` (returned on `201 Created`) and `X-Request-Id` are exposed via `Access-Control-Expose-Headers` so frontend JS can read them; a `Vary: Origin` header is added whenever a specific origin (not `*`) is reflected, so intermediary caches don't serve one origin's CORS headers to another.
+
 ## Getting started
 
 ### Requirements
@@ -925,4 +936,4 @@ vendor/bin/deptrac analyse --config-file=deptrac.yaml
 
 ### License
 
-Proprietary
+Apache License 2.0 — see [LICENSE](LICENSE).
