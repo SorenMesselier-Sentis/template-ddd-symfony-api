@@ -194,6 +194,19 @@ public function roleRequirement(): RoleRequirement
 
 To add a new role, extend the `UserRole` enum in the User bounded context and use it in `RoleRequirement` on the relevant command or query. Do not add path-based rules in Shared.
 
+### Rate limiting
+
+Two layers of Symfony RateLimiter policies protect the API, both defined in `config/packages/rate_limiter.yaml` (disabled — `no_limit` — in the `test` environment):
+
+| Limiter | Scope | Policy | Keyed by |
+|---|---|---|---|
+| `auth_login`, `auth_forgot_password`, `auth_register` | The three brute-force-sensitive `POST` endpoints (`AuthRateLimitListener`, User BC) | 5/3/3 requests per 15 minutes | Client IP |
+| `api_default` | Every `/api/v1/*` request (`ApiRateLimitListener`, Shared) | 300 requests per minute | Authenticated user id, falling back to client IP for anonymous requests |
+
+`/health`, `/health/live`, `/metrics` and `/api/doc*` are outside `/api/v1` and are never throttled — scraping and liveness checks must stay unaffected. `ApiRateLimitListener` runs on `kernel.controller` (after the security firewall authenticates the request) so it can key by user identity rather than IP whenever possible.
+
+A rejected request raises `Shared\Domain\Exception\RateLimitExceededException`, mapped by `ExceptionListener` to `429` with the standard `{ "error": { "code": "rate_limit.exceeded", "message": "..." } }` body plus a `Retry-After` header (seconds).
+
 ### CORS
 
 `CorsListener` (`Shared/Infrastructure/Http/Listener/`) answers preflight `OPTIONS` requests and adds CORS headers to every response, driven by a single env var:

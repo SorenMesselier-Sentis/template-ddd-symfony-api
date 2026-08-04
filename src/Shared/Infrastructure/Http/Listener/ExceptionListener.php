@@ -9,6 +9,7 @@ use App\Shared\Domain\Exception\DomainException;
 use App\Shared\Domain\Exception\ForbiddenException;
 use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
+use App\Shared\Domain\Exception\RateLimitExceededException;
 use App\Shared\Domain\Exception\UnauthorizedException;
 use App\Shared\Domain\Exception\ValidationException;
 use App\Shared\Domain\Logging\LoggerInterface;
@@ -62,10 +63,16 @@ final class ExceptionListener
             );
         }
 
-        $event->setResponse(new JsonResponse(
+        $response = new JsonResponse(
             data: ['error' => $errorPayload],
             status: $statusCode,
-        ));
+        );
+
+        if ($exception instanceof RateLimitExceededException && null !== $exception->retryAfterSeconds) {
+            $response->headers->set('Retry-After', (string) $exception->retryAfterSeconds);
+        }
+
+        $event->setResponse($response);
     }
 
     /**
@@ -89,6 +96,7 @@ final class ExceptionListener
             $exception instanceof AlreadyExistsException => [409, $exception->errorCode()],
             $exception instanceof InvalidArgumentException => [400, $exception->errorCode()],
             $exception instanceof UnauthorizedException => [401, $exception->errorCode()],
+            $exception instanceof RateLimitExceededException => [429, $exception->errorCode()],
             $exception instanceof DomainException => [422, 'domain_error'],
             $exception instanceof NotFoundHttpException => [404, 'route.not_found'],
             $exception instanceof MethodNotAllowedHttpException => [405, 'method.not_allowed'],

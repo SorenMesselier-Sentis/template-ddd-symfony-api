@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Infrastructure\Http\Listener;
 
 use App\Shared\Domain\Exception\DomainException;
+use App\Shared\Domain\Exception\RateLimitExceededException;
 use App\Shared\Domain\Exception\ValidationError;
 use App\Shared\Domain\Exception\ValidationException;
 use App\Shared\Domain\Logging\LoggerInterface;
@@ -83,6 +84,24 @@ final class ExceptionListenerTest extends UnitTestCase
 
         $this->assertSame(500, $status);
         $this->assertSame('internal_server_error', $code);
+    }
+
+    public function testRateLimitExceededExceptionMapsTo429WithRetryAfterHeader(): void
+    {
+        $exception = RateLimitExceededException::create(retryAfterSeconds: 42);
+
+        $listener = new ExceptionListener($this->createStub(LoggerInterface::class), []);
+        $kernel = $this->createStub(HttpKernelInterface::class);
+        $event = new ExceptionEvent($kernel, Request::create('/'), HttpKernelInterface::MAIN_REQUEST, $exception);
+
+        $listener->onKernelException($event);
+
+        $response = $event->getResponse();
+        $this->assertNotNull($response);
+        $payload = json_decode((string) $response->getContent(), true);
+        $this->assertSame(429, $response->getStatusCode());
+        $this->assertSame('rate_limit.exceeded', $payload['error']['code']);
+        $this->assertSame('42', $response->headers->get('Retry-After'));
     }
 
     // Feature: api-platform-improvements, Property 1: Unhandled DomainException subclasses fall back to 422
