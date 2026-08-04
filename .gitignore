@@ -23,10 +23,6 @@ docker/data
 /.php-cs-fixer.cache
 ###< friendsofphp/php-cs-fixer ###
 
-###> kiro/kiro ###
-.kiro/
-###< kiro/kiro ###
-
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
