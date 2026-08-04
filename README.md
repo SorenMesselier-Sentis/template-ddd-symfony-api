@@ -194,6 +194,14 @@ public function roleRequirement(): RoleRequirement
 
 To add a new role, extend the `UserRole` enum in the User bounded context and use it in `RoleRequirement` on the relevant command or query. Do not add path-based rules in Shared.
 
+### HTTP caching (ETag)
+
+`ConditionalGetListener` (`Shared/Infrastructure/Http/Listener/`) adds a strong `ETag` — an MD5 hash of the raw response body — to every successful (`2xx`) `GET` response under `/api/v1`, and sets `Cache-Control: private, no-cache` so the response is never stored by shared/CDN caches but the client is allowed to keep a local copy that it must revalidate on every reuse.
+
+Because the hash covers the whole response body, this works uniformly for single resources and paginated collections alike (a `links`/`meta` or pagination-state change also changes the ETag) without any per-entity `updatedAt` bookkeeping — this is why the template only implements `ETag`, not `Last-Modified`: per RFC 7232, a validator-aware client already prefers the strong `ETag` over `Last-Modified` when both are present, so adding the latter would be extra bookkeeping for the same outcome.
+
+When a client resends the same `ETag` via `If-None-Match`, the listener short-circuits the response to `304 Not Modified` (empty body, `Content-Type` stripped per spec, `ETag` kept) using `Symfony\Component\HttpFoundation\Response::isNotModified()` — no controller changes required. `/health`, `/metrics` and `/api/doc*` are outside `/api/v1` and are never touched.
+
 ### Rate limiting
 
 Two layers of Symfony RateLimiter policies protect the API, both defined in `config/packages/rate_limiter.yaml` (disabled — `no_limit` — in the `test` environment):
