@@ -30,6 +30,12 @@ erDiagram
         boolean revoked
         timestamp0withouttimezone created_at
     }
+    feature_flags {
+        varchar100 flag_key
+        boolean enabled
+        varchar255 description
+        timestamp0withouttimezone updated_at
+    }
     multipart_upload_sessions {
         varchar255 upload_id
         uuid document_id
