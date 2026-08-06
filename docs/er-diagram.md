@@ -68,6 +68,14 @@ erDiagram
         boolean revoked
         timestamp0withouttimezone created_at
     }
+    projects {
+        uuid id
+        uuid owner_id
+        varchar100 name
+        varchar20 status
+        timestamp0withouttimezone created_at
+        timestamp0withouttimezone updated_at
+    }
     refresh_tokens {
         uuid id
         uuid user_id
@@ -75,6 +83,16 @@ erDiagram
         timestamp0withouttimezone expires_at
         boolean revoked
         timestamp0withouttimezone created_at
+    }
+    tasks {
+        uuid id
+        uuid project_id
+        varchar200 title
+        uuid assignee_id
+        uuid attachment_id
+        varchar20 status
+        timestamp0withouttimezone created_at
+        timestamp0withouttimezone updated_at
     }
     users {
         uuid id
@@ -93,5 +111,7 @@ erDiagram
     multipart_upload_sessions }o--|| documents : "document_id"
     multipart_upload_sessions }o--|| users : "owner_id"
     password_reset_tokens }o--|| users : "user_id"
+    projects }o--|| users : "owner_id"
     refresh_tokens }o--|| users : "user_id"
+    tasks }o--|| projects : "project_id"
 ```
