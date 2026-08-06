@@ -7,6 +7,7 @@ namespace App\Tests\Http;
 use App\Shared\Infrastructure\Fixture\FixtureData;
 use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
+use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -56,6 +57,22 @@ abstract class HttpTestCase extends WebTestCase
         $purger->purge();
         $executor = new ORMExecutor($em, $purger);
         $executor->execute($container->get('doctrine.fixtures.loader')->getFixtures());
+
+        $this->resetFeatureFlags($em->getConnection());
+    }
+
+    /**
+     * feature_flags is plain DBAL (see DoctrineFeatureFlagRepository), not an
+     * ORM-managed entity, so ORMPurger never touches it — without this, a test
+     * that toggles a flag (e.g. disabling cursor_pagination) would leak that
+     * state into every other test in the suite.
+     */
+    private function resetFeatureFlags(Connection $connection): void
+    {
+        $connection->executeStatement('TRUNCATE TABLE feature_flags');
+        $connection->executeStatement(
+            "INSERT INTO feature_flags (flag_key, enabled, description, updated_at) VALUES ('cursor_pagination', true, 'Keyset (cursor) pagination on GET /users and GET /documents.', now())",
+        );
     }
 
     protected function assertJsonEnvelope(Response $response, int $expectedStatus): void

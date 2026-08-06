@@ -27,6 +27,15 @@ trait RequestTypeAssertTrait
         return self::assertString($value, $field);
     }
 
+    protected static function assertBool(mixed $value, string $field): bool
+    {
+        if (!\is_bool($value)) {
+            throw new ValidationException([new ValidationError(field: $field, code: 'type_mismatch', message: sprintf('Field "%s" must be of type bool.', $field))]);
+        }
+
+        return $value;
+    }
+
     /**
      * @return list<string>
      */

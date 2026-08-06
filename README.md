@@ -260,6 +260,27 @@ Bounded contexts don't know about each other, so the aggregation follows the sam
 - Only *active* records are included, matching what the user can already see through the regular endpoints (`Document\Application\Privacy\DocumentPersonalDataExporter` calls the same `findByOwnerId()` the documents list uses) — soft-deleted rows kept for audit purposes are not exported.
 - `Content-Disposition: attachment` is set so the response downloads as a file rather than rendering inline.
 
+### Feature flags
+
+Toggle a feature on/off at runtime, without a redeploy — kill a broken feature in prod, or roll one out gradually — backed by a `feature_flags` table (centralized migration) so changes persist and are visible to every `php` replica immediately, unlike an env var.
+
+```bash
+# list flags (admin)
+curl -s http://localhost:8080/api/v1/feature-flags -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# disable one (admin) — full replace (PUT), recorded in the audit trail
+curl -s -X PUT http://localhost:8080/api/v1/feature-flags/cursor_pagination \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"enabled": false, "description": "Kill switch — rolling back a regression."}'
+```
+
+Two ways to consult a flag from code, covering both use cases:
+
+- **Ad-hoc, inside a handler/controller**: inject `Shared\Domain\FeatureFlag\FeatureFlagRepositoryInterface` and call `isEnabled(string $key): bool` (an unregistered key is treated as disabled — a flag only takes effect once explicitly created via `PUT`).
+- **Declarative, gating a whole command/query**: implement `Shared\Domain\FeatureFlag\FeatureGatedMessage` (`requiredFeatureFlag(): string`) on the message — the same "declared on the message" convention as `AuthorizedMessage`/`AuditableMessage`. `FeatureFlagMessageMiddleware` (registered on both `command.bus` and `query.bus`, right after authorization) rejects the message with `403 feature_flag.disabled` while the flag is off. `GetUsersCursorQuery`/`GetDocumentsCursorQuery` (see "Cursor pagination") are gated by `cursor_pagination` this way as a working example — seeded `enabled = true` by the migration, so the default behavior is unchanged; disable it to fall back to `page`/`limit` only.
+
+Admin-only (`PUT`/`GET /feature-flags`, `RoleRequirement::admin()`) — one deliberate architectural wart worth calling out: these commands/queries live under `User/Application/` purely because `Shared/` has no `Application` layer of its own (see "Architecture" above — cross-cutting code is `Domain`/`Infrastructure` only), and the "auth declared on message" convention requires every command to belong to some bounded context's `Application` layer. Feature flags aren't really a `User` concern; if this grows into something bigger, it's a good candidate to become its own bounded context.
+
 ### CORS
 
 `CorsListener` (`Shared/Infrastructure/Http/Listener/`) answers preflight `OPTIONS` requests and adds CORS headers to every response, driven by a single env var:
@@ -907,6 +928,7 @@ curl -s "http://localhost:8080/api/v1/users?pagination=cursor&limit=20&cursor=ey
 - No `total_items`/`total_pages`/`page` — a `COUNT(*)` over the whole filtered set would defeat the purpose (it's the expensive part of offset pagination on a large table). No `previous` link either — walking backward through a keyset series needs a second, reversed cursor scheme, which this template doesn't implement; if you need bidirectional cursor pagination, extend `Cursor`/`CursorPagination` (`Shared/Domain/Filter/`) accordingly.
 - Backed by a composite `(created_at, id)` index (`(owner_id, created_at, id)` for documents, since every query is owner-scoped) — see migration `Version20260101000009`. Without it, `WHERE (created_at, id) < (?, ?) ORDER BY created_at DESC, id DESC LIMIT n` falls back to a full sort.
 - Implemented for the two reference contexts (`User`, `Document`) as a pattern to copy — `make crud`-scaffolded contexts get `page`/`limit` only. See `DoctrineUserRepository::findByFiltersCursor()` / `DoctrineDocumentRepository::findByOwnerIdAndFiltersCursor()` for the keyset query, and `GetUsersController`/`GetDocumentsController` for the `pagination=cursor` branch.
+- Gated behind the `cursor_pagination` feature flag (enabled by default) — see "Feature flags" below; `PUT /feature-flags/cursor_pagination` with `enabled: false` turns it off instantly if it needs to be rolled back, falling back to `page`/`limit`.
 
 ### HTTP status codes
 

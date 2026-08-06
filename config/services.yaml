@@ -149,6 +149,9 @@ services:
     App\Shared\Domain\Audit\AuditTrailInterface:
         alias: App\Shared\Infrastructure\Persistence\Doctrine\DoctrineAuditTrailRepository
 
+    App\Shared\Domain\FeatureFlag\FeatureFlagRepositoryInterface:
+        alias: App\Shared\Infrastructure\Persistence\Doctrine\DoctrineFeatureFlagRepository
+
     # Metrics
     App\Shared\Infrastructure\Monitoring\Metrics\PrometheusCollectorRegistryFactory:
         arguments:

@@ -47,6 +47,23 @@ final class JsonRequestTest extends UnitTestCase
         }
     }
 
+    public function testTypeMismatchForBoolField(): void
+    {
+        try {
+            $this->createJsonRequest(['enabled' => 'yes'], ['enabled' => ['type' => 'bool']]);
+            $this->fail('Expected ValidationException');
+        } catch (ValidationException $e) {
+            $this->assertSame('type_mismatch', $e->errors()[0]->code);
+        }
+    }
+
+    public function testFalseIsNotTreatedAsAMissingRequiredBoolValue(): void
+    {
+        $request = $this->createJsonRequest(['enabled' => false], ['enabled' => ['required' => true, 'type' => 'bool']]);
+
+        $this->assertInstanceOf(\App\Shared\Infrastructure\Http\Request\JsonRequest::class, $request);
+    }
+
     /**
      * @param array<string, mixed>                                      $body
      * @param array<string, bool|array{required?: bool, type?: string}> $rules
