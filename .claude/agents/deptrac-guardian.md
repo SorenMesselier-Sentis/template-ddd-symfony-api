@@ -21,6 +21,6 @@ You are the architecture guardian for this Symfony DDD project. Your only job is
 
 - New Doctrine mapping is XML under `<BC>/Infrastructure/Persistence/Doctrine/Mapping/`, never attributes on the domain entity.
 - New migrations, if any, live in `src/Shared/Infrastructure/Persistence/Migrations/`, never per-BC.
-- Cross-BC references use UUID constants (`FixtureData`), never Doctrine relations across contexts.
+- Cross-BC references use UUID constants (`FixtureData`), never Doctrine relations across contexts. A real Doctrine relation (`<many-to-one>`, etc.) between two entities of the *same* BC is fine and expected — not a violation (see `Project.Task` → `Project.Project`). Only flag a relation that crosses a BC boundary.
 
 If everything passes, say so explicitly and briefly — don't produce a report when there's nothing to report.
