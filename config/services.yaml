@@ -15,6 +15,8 @@ services:
     _instanceof:
         App\Shared\Domain\Health\HealthCheckInterface:
             tags: ['app.health_check']
+        App\Shared\Domain\Privacy\PersonalDataExporterInterface:
+            tags: ['app.gdpr_data_exporter']
 
     # Autowire src/ folder
     App\:
@@ -104,6 +106,10 @@ services:
     App\Shared\Infrastructure\Health\HealthCheckRegistry:
         arguments:
             $checks: !tagged_iterator app.health_check
+
+    App\User\Application\Query\ExportUserData\ExportUserDataQueryHandler:
+        arguments:
+            $exporters: !tagged_iterator app.gdpr_data_exporter
 
     # Scheduler
     App\Shared\Infrastructure\Scheduler\Handler\CleanupStaleOutboxMessagesHandler:

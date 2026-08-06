@@ -236,6 +236,30 @@ Clients can safely retry a `POST` (e.g. after a timeout with an uncertain outcom
 
 Applies to every `POST` under `/api/v1`, generically — no per-command opt-in required (unlike the audit trail's `AuditableMessage`), since replay-safety is a transport-level concern, not a business one. There is no distributed lock: two requests racing with a brand-new key can both miss the cache and both execute — this covers "retry after a timeout," not true concurrent double-submission.
 
+### GDPR data export
+
+`GET /users/me/export` (any authenticated user, their own data only) returns every piece of personal data the application holds about the caller — the right of access / data portability, in one downloadable JSON:
+
+```bash
+curl -s http://localhost:8080/api/v1/users/me/export -H "Authorization: Bearer $TOKEN" -o my-data.json
+```
+
+```json
+{
+    "data": {
+        "exported_at": "2026-08-06T12:00:00+00:00",
+        "profile": { "id": "...", "email": "...", "first_name": "...", "roles": ["ROLE_USER"], "created_at": "..." },
+        "documents": [{ "id": "...", "original_name": "invoice.pdf", "bucket": "documents", "size": 1024, "created_at": "..." }]
+    }
+}
+```
+
+Bounded contexts don't know about each other, so the aggregation follows the same "inject via tagged services, not imports" convention already used for exception mapping: each context that holds personal data implements `Shared\Domain\Privacy\PersonalDataExporterInterface` (`key(): string`, `export(string $subjectId): array`) — `User\Application\Privacy\UserPersonalDataExporter` and `Document\Application\Privacy\DocumentPersonalDataExporter` today — auto-tagged `app.gdpr_data_exporter` via `_instanceof` in `config/services.yaml`. `ExportUserDataQueryHandler` collects every tagged exporter generically and nests each one's output under its `key()`; adding personal data to a new bounded context means implementing the interface there, nothing else to wire.
+
+- Self-service only — exports the caller's own data (`RoleRequirement::authenticated()`, subject id from `UserContextInterface`). There's no admin-triggered "export this other user's data" endpoint; add one following the same query if you need to fulfill requests on a user's behalf.
+- Only *active* records are included, matching what the user can already see through the regular endpoints (`Document\Application\Privacy\DocumentPersonalDataExporter` calls the same `findByOwnerId()` the documents list uses) — soft-deleted rows kept for audit purposes are not exported.
+- `Content-Disposition: attachment` is set so the response downloads as a file rather than rendering inline.
+
 ### CORS
 
 `CorsListener` (`Shared/Infrastructure/Http/Listener/`) answers preflight `OPTIONS` requests and adds CORS headers to every response, driven by a single env var:
