@@ -7,6 +7,7 @@ namespace App\Shared\Infrastructure\Http\Listener;
 use App\Shared\Domain\Exception\AlreadyExistsException;
 use App\Shared\Domain\Exception\DomainException;
 use App\Shared\Domain\Exception\ForbiddenException;
+use App\Shared\Domain\Exception\IdempotencyKeyConflictException;
 use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
 use App\Shared\Domain\Exception\RateLimitExceededException;
@@ -94,6 +95,7 @@ final class ExceptionListener
             $exception instanceof LexikInvalidTokenException => [401, 'invalid_token'],
             $exception instanceof NotFoundException => [404, $exception->errorCode()],
             $exception instanceof AlreadyExistsException => [409, $exception->errorCode()],
+            $exception instanceof IdempotencyKeyConflictException => [409, $exception->errorCode()],
             $exception instanceof InvalidArgumentException => [400, $exception->errorCode()],
             $exception instanceof UnauthorizedException => [401, $exception->errorCode()],
             $exception instanceof RateLimitExceededException => [429, $exception->errorCode()],

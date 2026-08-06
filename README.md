@@ -224,6 +224,18 @@ Declared on the message, the same way authorization is: a command implements `Sh
 
 > **Sync-transport gotcha:** every command is routed to the `sync` transport (`config/packages/messenger.yaml`), which re-enters `command.bus`'s full middleware chain to actually dispatch the command — so anything positioned before the implicit `send_message`/`handle_message` pair (as `AuditMessageMiddleware` is, right after `AuthorizeMessageMiddleware`) runs twice per command unless it deduplicates. `AuditMessageMiddleware` does so via a marker stamp (`AuditProcessingStamp`) that survives the re-entry; other side-effecting middleware added to `command.bus` in the future needs the same treatment (existing ones — auth checks, the Doctrine transaction — tolerate the double pass only because they're idempotent).
 
+### Idempotency-Key
+
+Clients can safely retry a `POST` (e.g. after a timeout with an uncertain outcome) by sending an `Idempotency-Key` header — `IdempotencyKeyListener` (`Shared/Infrastructure/Http/Listener/`) caches the first successful (`2xx`) response in `cache.app` (Redis — see "Cache and scale-out (Redis)", so replays work no matter which `php` replica handles them) for 24h and replays it verbatim on a repeat request with the same key, instead of re-running the command:
+
+- **Same key, same body** → the cached response is replayed as-is (status, `Content-Type`, `Location`), with an `Idempotency-Replayed: true` header added; the command never runs again, so no duplicate resource is created.
+- **Same key, different body** → rejected with `409 idempotency_key.conflict` — reusing a key for a different request is always a client bug, never silently served from the wrong cache entry.
+- **No header** → unchanged default behavior; this is entirely opt-in per request.
+- Failed (`4xx`/`5xx`) responses are never cached, so a failed attempt can simply be retried with the same key.
+- The cache key is scoped per authenticated user (or client IP if anonymous) and route, so one client can't collide with or read another's cached response.
+
+Applies to every `POST` under `/api/v1`, generically — no per-command opt-in required (unlike the audit trail's `AuditableMessage`), since replay-safety is a transport-level concern, not a business one. There is no distributed lock: two requests racing with a brand-new key can both miss the cache and both execute — this covers "retry after a timeout," not true concurrent double-submission.
+
 ### CORS
 
 `CorsListener` (`Shared/Infrastructure/Http/Listener/`) answers preflight `OPTIONS` requests and adds CORS headers to every response, driven by a single env var:

@@ -203,6 +203,11 @@ services:
         arguments:
             $apiDefaultLimiter: '@limiter.api_default'
 
+    App\Shared\Infrastructure\Http\Listener\IdempotencyKeyListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: -5 }
+            - { name: kernel.event_listener, event: kernel.response }
+
     App\Shared\Infrastructure\Http\Listener\CorsListener:
         arguments:
             $allowedOriginsRaw: '%env(default:cors_allowed_origins_default:CORS_ALLOWED_ORIGINS)%'
