@@ -83,6 +83,21 @@ src/
 │       ├── Health/ObjectStorageHealthCheck.php
 │       └── Http/Controller/        # /documents, /buckets
 │
+├── Project/                         # Second reference BC — richer relations than User/Document (see "Key design decisions")
+│   ├── Domain/
+│   │   ├── Entity/                 # Project, Task
+│   │   ├── ValueObject/            # ProjectId, OwnerId, ProjectName, TaskId, TaskTitle, AssigneeId, AttachmentId, …
+│   │   ├── Repository/              # ProjectRepositoryInterface, TaskRepositoryInterface
+│   │   └── Exception/
+│   ├── Application/
+│   │   ├── Command/                # CreateProject, CreateTask, DeleteProject (blocks on active tasks), …
+│   │   └── Query/                  # GetProjects, GetTasks (scoped to a project), …
+│   └── Infrastructure/
+│       ├── Fixture/                # ProjectFixture, TaskFixture (DependentFixtureInterface — see below)
+│       ├── Persistence/Doctrine/   # Task.orm.xml has the template's only <many-to-one>
+│       ├── Http/ProjectExceptionMapper.php
+│       └── Http/Controller/        # /projects, /projects/{projectId}/tasks, /tasks/{id}
+│
 └── <BoundedContext>/               # e.g. Product, Order — scaffold with `make bc`, entities with `make crud`
     ├── Domain/                     # Pure PHP — no framework dependency
     │   ├── Entity/
@@ -146,6 +161,10 @@ templates/email/
 Handlers are registered on `command.bus` only (no auto-broadcast to other buses). Failures are logged via `LoggerInterface` and swallowed so a single bad tick never crashes the scheduler worker. The manual `make outbox-relay` and `app:outbox:relay` console command remain available for on-demand triggering.
 
 **Object storage (Document BC)** — file bytes live in S3-compatible object storage (RustFS in Docker); the `Document` aggregate stores metadata only (name, size, MIME type, bucket, object path, owner ID, status). Bounded contexts interact through domain ports (`DocumentStorageInterface`, `BucketManagerInterface`); infrastructure adapters use the AWS SDK for PHP against the configured `S3_ENDPOINT`. `OwnerId` is a UUID reference with no foreign key to the User BC, preserving bounded-context isolation. Presigned URLs delegate direct download to object storage without streaming through PHP.
+
+**Cross-BC references vs. real relations (Project BC)** — `User` and `Document` only ever reference each other by stable UUID (`OwnerId`, no Doctrine relation) because they're in different bounded contexts. `Project` is the template's second reference BC, added specifically to show the *other* half of that rule: `Task.project` is a genuine Doctrine `<many-to-one>` to `Project`, because both entities live in the **same** bounded context — real relations are fine (even expected) within a BC, and only become a violation once they'd cross a BC boundary. `Task` also carries `assigneeId` (→ User) and `attachmentId` (→ Document), both plain UUID fields with zero cross-BC validation, exactly like `Document.OwnerId` — Project's `Infrastructure` never imports anything from `User` or `Document`. Two consequences worth knowing if you copy this pattern:
+- The relation is `fetch="EAGER"`, not the Doctrine default `LAZY`. `Project::$id` is `readonly` (as recommended everywhere else in this template), and Doctrine's lazy ghost-object hydration needs to partially set an identifier before the rest of a proxy initializes — which conflicts with `readonly` and throws `LogicException: Attempting to change readonly property ...::$id`. Loading `Project` eagerly (a JOIN) sidesteps that entirely, and is the right call anyway since almost every `Task` handler needs the parent `Project` for the ownership check (`Task::project()->ownerId()`) — LAZY would just mean a second query on top of the JOIN you'd otherwise write by hand.
+- `TaskFixture` depends on `ProjectFixture` via Doctrine's `DependentFixtureInterface`/`getDependencies()` — the only place in this template fixtures need real load ordering, since every other cross-BC fixture link is a stable UUID from `FixtureData` with no persistence-order requirement.
 
 **OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers. Paths in attributes are relative to the API base (`/users`, `/auth/login`, …); the `/api/v1` prefix is configured once in `config/packages/nelmio_api_doc.yaml` (`servers`) and in `config/routes.yaml`. Swagger UI is served at `/api/doc` and the JSON spec at `/api/doc.json`. The health check (`GET /health`) is documented under the **Infrastructure** tag with the root server.
 
@@ -815,6 +834,25 @@ For files larger than 100 MB, use the multipart flow:
 | `GET` | `/buckets` | User | List buckets |
 | `GET` | `/buckets/{name}/exists` | User | Check whether a bucket exists |
 | `DELETE` | `/buckets/{name}` | Admin | Delete a bucket |
+
+#### Projects and tasks
+
+Second reference bounded context — see "Key design decisions" above for why `Task`↔`Project` is a real Doctrine relation while `assigneeId`/`attachmentId` stay plain cross-BC UUIDs. All endpoints require a valid JWT; a project (and its tasks) can only be read/written by its owner or `ROLE_ADMIN`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/projects` | Create a project (name unique per owner) |
+| `GET` | `/projects` | List the caller's projects (filterable by `name`, `status`, paginated) |
+| `GET` | `/projects/{id}` | Fetch a project |
+| `PATCH` | `/projects/{id}` | Rename and/or archive/reactivate (`status: active\|archived`) |
+| `PUT` | `/projects/{id}` | Rename (full replace); status untouched |
+| `DELETE` | `/projects/{id}` | Soft-delete — `409 project.has_active_tasks` while any task is `todo`/`in_progress` |
+| `POST` | `/projects/{projectId}/tasks` | Create a task — `409 project.not_active` if the project is archived/deleted |
+| `GET` | `/projects/{projectId}/tasks` | List a project's tasks (filterable by `status`, `assigneeId`, paginated) |
+| `GET` | `/tasks/{id}` | Fetch a task |
+| `PATCH` | `/tasks/{id}` | Update title/status/assignee (reassign only — no unassign, see `Task::update()`) |
+| `PUT` | `/tasks/{id}` | Rename and/or reassign (full replace); status and attachment untouched |
+| `DELETE` | `/tasks/{id}` | Soft-delete a task |
 
 ### Response format
 

@@ -39,6 +39,10 @@ framework:
                     queues:
                         events.user:
                             binding_keys: ['user.#']
+                        events.task:
+                            binding_keys: ['task.#']
+                        events.project:
+                            binding_keys: ['project.#']
                         events.document:
                             binding_keys: ['document.#']
                 retry_strategy:

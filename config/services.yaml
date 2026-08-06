@@ -178,6 +178,9 @@ services:
     App\Document\Infrastructure\Http\DocumentExceptionMapper:
         tags: ['app.exception_mapper']
 
+    App\Project\Infrastructure\Http\ProjectExceptionMapper:
+        tags: ['app.exception_mapper']
+
     App\Shared\Infrastructure\Http\Listener\ExceptionListener:
         arguments:
             $logger: '@App\Shared\Domain\Logging\LoggerInterface'
@@ -262,6 +265,13 @@ services:
             $environment: '%kernel.environment%'
 
     # Repositories
+    App\Project\Domain\Repository\TaskRepositoryInterface:
+        alias: App\Project\Infrastructure\Persistence\Doctrine\Repository\DoctrineTaskRepository
+    App\Project\Domain\Repository\ProjectRepositoryInterface:
+        alias: App\Project\Infrastructure\Persistence\Doctrine\Repository\DoctrineProjectRepository
+
+    App\Project\Domain\Security\OwnerContextInterface:
+        alias: App\Project\Infrastructure\Security\HttpOwnerContext
     App\User\Domain\Repository\UserRepositoryInterface:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository
 

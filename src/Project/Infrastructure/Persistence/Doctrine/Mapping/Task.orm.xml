@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping
+    xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                        https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd"
+>
+    <entity name="App\Project\Domain\Entity\Task" table="tasks">
+
+        <id name="id" type="task_id" column="id"/>
+
+        <!--
+            EAGER, not LAZY: every Task handler needs the parent Project (for
+            ownership checks — see Task::project()->ownerId()), and Project::$id
+            is a readonly property. Doctrine's lazy ghost objects need to
+            partially initialize identifier fields before the rest of the proxy
+            hydrates, which conflicts with `readonly` (see LogicException
+            "Attempting to change readonly property ...::$id" if this is set
+            back to LAZY). EAGER sidesteps that by loading Project via a JOIN
+            instead of a lazy proxy — which also avoids an N+1 query, since the
+            owner check runs on essentially every Task request anyway.
+        -->
+        <many-to-one field="project" target-entity="App\Project\Domain\Entity\Project" fetch="EAGER">
+            <join-column name="project_id" referenced-column-name="id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+
+        <field name="title" type="task_title" column="title" length="200" nullable="false"/>
+        <field name="assigneeId" type="project_assignee_id" column="assignee_id" nullable="true"/>
+        <field name="attachmentId" type="project_attachment_id" column="attachment_id" nullable="true"/>
+        <field name="status" type="task_status" column="status" length="20" nullable="false"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="false"/>
+
+    </entity>
+</doctrine-mapping>

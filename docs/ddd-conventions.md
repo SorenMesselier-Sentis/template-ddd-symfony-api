@@ -212,6 +212,7 @@ Unmapped `DomainException` subclasses fall back to `422 / domain_error`. Unknown
 |---|---|---|
 | **User** | Auth, users, refresh tokens | JWT, `AuthorizedMessage`, welcome email event handlers |
 | **Document** | S3-compatible object storage (RustFS) | Storage ports, `OwnerId` without FK, `DocumentExceptionMapper` |
+| **Project** | Projects with tasks | Real `<many-to-one>` between `Task`→`Project` (same BC — contrast with `Document`'s FK-less `OwnerId`), cross-BC `assigneeId`/`attachmentId` UUIDs, `DependentFixtureInterface` for fixture ordering |
 | **Shared** | Buses, outbox, email, health, HTTP envelope | No BC imports |
 
 ---

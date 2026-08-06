@@ -19,6 +19,15 @@ doctrine:
             document_mime_type: App\Document\Infrastructure\Persistence\Doctrine\Type\MimeTypeType
             document_status: App\Document\Infrastructure\Persistence\Doctrine\Type\DocumentStatusType
             multipart_upload_status: App\Document\Infrastructure\Persistence\Doctrine\Type\MultipartUploadStatusType
+            project_id: App\Project\Infrastructure\Persistence\Doctrine\Type\ProjectIdType
+            task_id: App\Project\Infrastructure\Persistence\Doctrine\Type\TaskIdType
+            project_owner_id: App\Project\Infrastructure\Persistence\Doctrine\Type\OwnerIdType
+            project_assignee_id: App\Project\Infrastructure\Persistence\Doctrine\Type\AssigneeIdType
+            project_attachment_id: App\Project\Infrastructure\Persistence\Doctrine\Type\AttachmentIdType
+            project_name: App\Project\Infrastructure\Persistence\Doctrine\Type\ProjectNameType
+            task_title: App\Project\Infrastructure\Persistence\Doctrine\Type\TaskTitleType
+            project_status: App\Project\Infrastructure\Persistence\Doctrine\Type\ProjectStatusType
+            task_status: App\Project\Infrastructure\Persistence\Doctrine\Type\TaskStatusType
     orm:
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         mappings:
@@ -46,6 +55,11 @@ doctrine:
                 type: xml
                 dir: "%kernel.project_dir%/src/Document/Infrastructure/Persistence/Doctrine/Mapping"
                 prefix: App\Document\Domain\Entity
+                is_bundle: false
+            Project:
+                type: xml
+                dir: "%kernel.project_dir%/src/Project/Infrastructure/Persistence/Doctrine/Mapping"
+                prefix: App\Project\Domain\Entity
                 is_bundle: false
 when@prod:
     doctrine:

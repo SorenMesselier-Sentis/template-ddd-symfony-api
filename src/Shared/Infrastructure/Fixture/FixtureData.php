@@ -26,4 +26,12 @@ final class FixtureData
     public const DOCUMENT_JOHN_INVOICE_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
     public const DOCUMENT_JOHN_AVATAR_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
     public const DOCUMENT_JANE_CONTRACT_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+
+    public const PROJECT_JOHN_WEBSITE_ID = '55555555-5555-4555-8555-555555555555';
+    public const PROJECT_JOHN_WEBSITE_NAME = 'Website Redesign';
+
+    // Assigned to Jane, attached to John's invoice document — demonstrates the
+    // Project BC's cross-BC UUID references (assigneeId -> User, attachmentId -> Document).
+    public const TASK_JOHN_WEBSITE_DESIGN_ID = '66666666-6666-4666-8666-666666666666';
+    public const TASK_JOHN_WEBSITE_DESIGN_TITLE = 'Design the homepage mockup';
 }
