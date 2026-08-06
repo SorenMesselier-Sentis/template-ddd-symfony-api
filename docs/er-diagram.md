@@ -2,6 +2,14 @@
 
 ```mermaid
 erDiagram
+    audit_log {
+        uuid id
+        varchar255 actor_id
+        varchar100 action
+        varchar255 target_id
+        json context
+        timestamp0withouttimezone occurred_at
+    }
     documents {
         uuid id
         uuid owner_id
