@@ -64,4 +64,39 @@ final class PaginationLinkBuilderTest extends UnitTestCase
         $this->assertNull($links['previous']);
         $this->assertSame('/v1/users?page=2&limit=10', $links['next']);
     }
+
+    public function testBuildCursorFirstPageHasNoCursorInSelfLink(): void
+    {
+        $request = Request::create('/api/v1/users', 'GET', ['pagination' => 'cursor', 'limit' => 10]);
+
+        $links = $this->builder->buildCursor($request, limit: 10, nextCursor: 'abc123');
+
+        $this->assertSame('/v1/users?pagination=cursor&limit=10', $links['self']);
+        $this->assertSame('/v1/users?pagination=cursor&limit=10&cursor=abc123', $links['next']);
+    }
+
+    public function testBuildCursorPreservesFilters(): void
+    {
+        $request = Request::create('/api/v1/users', 'GET', [
+            'pagination' => 'cursor',
+            'limit' => 10,
+            'cursor' => 'previous-token',
+            'email' => 'john@example.com',
+        ]);
+
+        $links = $this->builder->buildCursor($request, limit: 10, nextCursor: null);
+
+        $this->assertStringContainsString('email=john%40example.com', $links['self']);
+        $this->assertStringContainsString('cursor=previous-token', $links['self']);
+        $this->assertNull($links['next']);
+    }
+
+    public function testBuildCursorReturnsNullNextWhenNoMoreResults(): void
+    {
+        $request = Request::create('/api/v1/users', 'GET', ['pagination' => 'cursor', 'limit' => 10]);
+
+        $links = $this->builder->buildCursor($request, limit: 10, nextCursor: null);
+
+        $this->assertNull($links['next']);
+    }
 }

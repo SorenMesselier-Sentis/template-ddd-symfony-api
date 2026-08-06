@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\User\Infrastructure\Persistence\Doctrine\Repository;
 
+use App\Shared\Domain\Filter\Cursor;
+use App\Shared\Domain\Filter\CursorPage;
+use App\Shared\Domain\Filter\CursorPagination;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\ValueObject\Email;
 use App\Shared\Infrastructure\Persistence\Doctrine\DoctrineFilterApplier;
@@ -83,5 +86,41 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         DoctrineFilterApplier::applyFilters($qb, $filters, 'u');
 
         return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /** @return CursorPage<User> */
+    public function findByFiltersCursor(Filters $filters, CursorPagination $cursorPagination): CursorPage
+    {
+        $qb = $this->em->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->andWhere('u.status != :deleted')
+            ->setParameter('deleted', UserStatus::DELETED->value);
+
+        DoctrineFilterApplier::applyFilters($qb, $filters, 'u');
+
+        if (null !== $cursorPagination->after) {
+            $qb->andWhere('(u.createdAt < :cursorCreatedAt) OR (u.createdAt = :cursorCreatedAt AND u.id < :cursorId)')
+                ->setParameter('cursorCreatedAt', $cursorPagination->after->createdAt)
+                ->setParameter('cursorId', UserId::fromString($cursorPagination->after->id));
+        }
+
+        $qb->orderBy('u.createdAt', 'DESC')
+            ->addOrderBy('u.id', 'DESC')
+            ->setMaxResults($cursorPagination->limit + 1);
+
+        /** @var list<User> $rows */
+        $rows = $qb->getQuery()->getResult();
+
+        $hasMore = \count($rows) > $cursorPagination->limit;
+        $items = \array_slice($rows, 0, $cursorPagination->limit);
+
+        $nextCursor = null;
+        $last = end($items);
+
+        if ($hasMore && false !== $last) {
+            $nextCursor = (new Cursor($last->createdAt(), $last->id()->value()))->encode();
+        }
+
+        return new CursorPage($items, $nextCursor);
     }
 }

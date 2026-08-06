@@ -82,6 +82,49 @@ final class ApiResponseTest extends UnitTestCase
         $this->assertNull($payload['links']['previous']);
     }
 
+    public function testPaginatedByCursorResponseIncludesMetaAndLinks(): void
+    {
+        $request = Request::create('/api/v1/users', 'GET', ['pagination' => 'cursor', 'limit' => 10]);
+
+        $response = $this->apiResponse->paginatedByCursor(
+            data: [['id' => 'abc']],
+            limit: 10,
+            hasMore: true,
+            nextCursor: 'abc123',
+            request: $request,
+        );
+
+        $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame([['id' => 'abc']], $payload['data']);
+        $this->assertSame([
+            'limit' => 10,
+            'has_more' => true,
+            'next_cursor' => 'abc123',
+        ], $payload['meta']);
+        $this->assertLink('/v1/users', ['pagination' => 'cursor', 'limit' => '10'], $payload['links']['self']);
+        $this->assertLink('/v1/users', ['pagination' => 'cursor', 'limit' => '10', 'cursor' => 'abc123'], $payload['links']['next']);
+    }
+
+    public function testPaginatedByCursorResponseWithNoMoreResultsHasNullNextLink(): void
+    {
+        $request = Request::create('/api/v1/users', 'GET', ['pagination' => 'cursor', 'limit' => 10]);
+
+        $response = $this->apiResponse->paginatedByCursor(
+            data: [],
+            limit: 10,
+            hasMore: false,
+            nextCursor: null,
+            request: $request,
+        );
+
+        $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertFalse($payload['meta']['has_more']);
+        $this->assertNull($payload['meta']['next_cursor']);
+        $this->assertNull($payload['links']['next']);
+    }
+
     /**
      * @param array<string, string> $expectedQuery
      */

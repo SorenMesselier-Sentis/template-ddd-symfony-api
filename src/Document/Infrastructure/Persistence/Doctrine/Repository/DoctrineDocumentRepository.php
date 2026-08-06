@@ -10,6 +10,9 @@ use App\Document\Domain\Repository\DocumentRepositoryInterface;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\DocumentId;
 use App\Document\Domain\ValueObject\OwnerId;
+use App\Shared\Domain\Filter\Cursor;
+use App\Shared\Domain\Filter\CursorPage;
+use App\Shared\Domain\Filter\CursorPagination;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Infrastructure\Persistence\Doctrine\DoctrineFilterApplier;
 use App\Shared\Infrastructure\Persistence\Doctrine\Trait\DoctrineRepositoryTrait;
@@ -89,6 +92,38 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
         DoctrineFilterApplier::applyFilters($qb, $filters, 'd');
 
         return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /** @return CursorPage<Document> */
+    public function findByOwnerIdAndFiltersCursor(OwnerId $ownerId, Filters $filters, CursorPagination $cursorPagination): CursorPage
+    {
+        $qb = $this->activeByOwnerQueryBuilder($ownerId);
+        DoctrineFilterApplier::applyFilters($qb, $filters, 'd');
+
+        if (null !== $cursorPagination->after) {
+            $qb->andWhere('(d.createdAt < :cursorCreatedAt) OR (d.createdAt = :cursorCreatedAt AND d.id < :cursorId)')
+                ->setParameter('cursorCreatedAt', $cursorPagination->after->createdAt)
+                ->setParameter('cursorId', DocumentId::fromString($cursorPagination->after->id));
+        }
+
+        $qb->orderBy('d.createdAt', 'DESC')
+            ->addOrderBy('d.id', 'DESC')
+            ->setMaxResults($cursorPagination->limit + 1);
+
+        /** @var list<Document> $rows */
+        $rows = $qb->getQuery()->getResult();
+
+        $hasMore = \count($rows) > $cursorPagination->limit;
+        $items = \array_slice($rows, 0, $cursorPagination->limit);
+
+        $nextCursor = null;
+        $last = end($items);
+
+        if ($hasMore && false !== $last) {
+            $nextCursor = (new Cursor($last->createdAt(), $last->id()->value()))->encode();
+        }
+
+        return new CursorPage($items, $nextCursor);
     }
 
     private function activeByOwnerQueryBuilder(OwnerId $ownerId): QueryBuilder

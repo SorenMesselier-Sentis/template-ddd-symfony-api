@@ -8,6 +8,8 @@ use App\Document\Domain\Entity\Document;
 use App\Document\Domain\ValueObject\BucketName;
 use App\Document\Domain\ValueObject\DocumentId;
 use App\Document\Domain\ValueObject\OwnerId;
+use App\Shared\Domain\Filter\CursorPage;
+use App\Shared\Domain\Filter\CursorPagination;
 use App\Shared\Domain\Filter\Filters;
 
 interface DocumentRepositoryInterface
@@ -31,4 +33,7 @@ interface DocumentRepositoryInterface
     public function findByOwnerIdAndFilters(OwnerId $ownerId, Filters $filters): array;
 
     public function countByOwnerIdAndFilters(OwnerId $ownerId, Filters $filters): int;
+
+    /** @return CursorPage<Document> */
+    public function findByOwnerIdAndFiltersCursor(OwnerId $ownerId, Filters $filters, CursorPagination $cursorPagination): CursorPage;
 }

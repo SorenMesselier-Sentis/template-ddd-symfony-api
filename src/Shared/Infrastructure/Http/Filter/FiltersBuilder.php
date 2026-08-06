@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Http\Filter;
 
+use App\Shared\Domain\Filter\CursorPagination;
 use App\Shared\Domain\Filter\Filter;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\Filter\Order;
@@ -35,6 +36,22 @@ final class FiltersBuilder
         $pagination = self::buildPagination($queryParams);
 
         return new Filters($filters, $order, $pagination);
+    }
+
+    public static function isCursorMode(Request $request): bool
+    {
+        return 'cursor' === $request->query->get('pagination');
+    }
+
+    public static function cursorPaginationFromRequest(Request $request): CursorPagination
+    {
+        $queryParams = $request->query->all();
+        $cursor = $queryParams['cursor'] ?? null;
+
+        return CursorPagination::fromRequest(
+            cursorToken: \is_string($cursor) ? $cursor : null,
+            limit: self::toPositiveInt($queryParams['limit'] ?? null, 20),
+        );
     }
 
     /**

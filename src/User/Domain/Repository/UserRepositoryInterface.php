@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\User\Domain\Repository;
 
+use App\Shared\Domain\Filter\CursorPage;
+use App\Shared\Domain\Filter\CursorPagination;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Entity\User;
@@ -25,4 +27,7 @@ interface UserRepositoryInterface
     public function findByFilters(Filters $filters): array;
 
     public function countByFilters(Filters $filters): int;
+
+    /** @return CursorPage<User> */
+    public function findByFiltersCursor(Filters $filters, CursorPagination $cursorPagination): CursorPage;
 }

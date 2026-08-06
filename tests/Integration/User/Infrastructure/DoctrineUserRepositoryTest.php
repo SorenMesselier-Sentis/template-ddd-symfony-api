@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\User\Infrastructure;
 
+use App\Shared\Domain\Filter\CursorPagination;
+use App\Shared\Domain\Filter\Filters;
+use App\Shared\Domain\Filter\Order;
+use App\Shared\Domain\Filter\Pagination;
 use App\Shared\Domain\ValueObject\Email;
 use App\Tests\Integration\IntegrationTestCase;
 use App\Tests\Unit\User\Domain\Mother\EmailMother;
@@ -64,5 +68,49 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
         $this->assertFalse($this->repository->existsByEmail(
             Email::fromString('other@example.com')
         ));
+    }
+
+    public function testFindByFiltersCursorWalksAllPagesWithoutDuplicatesOrGaps(): void
+    {
+        $users = [];
+
+        for ($i = 0; $i < 5; ++$i) {
+            $user = UserMother::create();
+            $this->repository->save($user);
+            $users[] = $user;
+        }
+
+        $filters = new Filters([], Order::default(), Pagination::fromRequest(1, 20));
+        $cursorPagination = CursorPagination::fromRequest(null, 2);
+        $seenIds = [];
+
+        do {
+            $page = $this->repository->findByFiltersCursor($filters, $cursorPagination);
+
+            foreach ($page->items as $item) {
+                $seenIds[] = $item->id()->value();
+            }
+
+            $cursorPagination = CursorPagination::fromRequest($page->nextCursor, 2);
+        } while (null !== $page->nextCursor);
+
+        $expectedIds = array_map(static fn ($user) => $user->id()->value(), $users);
+        sort($expectedIds);
+        sort($seenIds);
+
+        $this->assertSame($expectedIds, $seenIds);
+        $this->assertCount(5, array_unique($seenIds));
+    }
+
+    public function testFindByFiltersCursorReportsNoMoreResultsOnLastPage(): void
+    {
+        $user = UserMother::create();
+        $this->repository->save($user);
+
+        $filters = new Filters([], Order::default(), Pagination::fromRequest(1, 20));
+        $page = $this->repository->findByFiltersCursor($filters, CursorPagination::fromRequest(null, 20));
+
+        $this->assertNull($page->nextCursor);
+        $this->assertGreaterThanOrEqual(1, \count($page->items));
     }
 }

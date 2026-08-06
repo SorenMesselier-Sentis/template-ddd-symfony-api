@@ -32,6 +32,59 @@ final class GetUsersControllerTest extends HttpTestCase
         $this->assertStringStartsWith('/v1/users?', $payload['links']['self']);
     }
 
+    public function testListUsersWithCursorPagination(): void
+    {
+        $client = $this->createAuthenticatedClient('admin');
+        $client->request('GET', '/api/v1/users?pagination=cursor&limit=10');
+
+        $response = $client->getResponse();
+        $this->assertJsonEnvelope($response, 200);
+
+        $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertArrayHasKey('meta', $payload);
+        $this->assertArrayHasKey('limit', $payload['meta']);
+        $this->assertArrayHasKey('has_more', $payload['meta']);
+        $this->assertArrayHasKey('next_cursor', $payload['meta']);
+        $this->assertArrayNotHasKey('page', $payload['meta']);
+        $this->assertArrayHasKey('self', $payload['links']);
+        $this->assertArrayNotHasKey('previous', $payload['links']);
+        $this->assertStringStartsWith('/v1/users?', $payload['links']['self']);
+    }
+
+    public function testListUsersWithCursorPaginationWalksAllPagesWithoutDuplicates(): void
+    {
+        $client = $this->createAuthenticatedClient('admin');
+
+        $seenIds = [];
+        $cursor = null;
+
+        do {
+            $query = 'pagination=cursor&limit=1'.(null !== $cursor ? '&cursor='.urlencode($cursor) : '');
+            $client->request('GET', '/api/v1/users?'.$query);
+            $payload = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+            foreach ($payload['data'] as $item) {
+                $seenIds[] = $item['id'];
+            }
+
+            $cursor = $payload['meta']['next_cursor'];
+        } while (null !== $cursor);
+
+        $this->assertCount(\count(array_unique($seenIds)), $seenIds);
+        $this->assertNotEmpty($seenIds);
+    }
+
+    public function testListUsersWithInvalidCursorReturns400(): void
+    {
+        $client = $this->createAuthenticatedClient('admin');
+        $client->request('GET', '/api/v1/users?pagination=cursor&cursor=not-a-valid-cursor!!!');
+
+        $payload = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame(400, $client->getResponse()->getStatusCode());
+        $this->assertSame('invalid_filter', $payload['error']['code']);
+    }
+
     public function testUserRoleCannotCreateUser(): void
     {
         $client = $this->createAuthenticatedClient('user');

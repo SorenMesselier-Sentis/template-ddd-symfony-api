@@ -11,6 +11,7 @@ use App\Document\Domain\ValueObject\MimeType;
 use App\Document\Domain\ValueObject\ObjectPath;
 use App\Document\Domain\ValueObject\OwnerId;
 use App\Document\Infrastructure\Persistence\Doctrine\Repository\DoctrineDocumentRepository;
+use App\Shared\Domain\Filter\CursorPagination;
 use App\Shared\Domain\Filter\Filter;
 use App\Shared\Domain\Filter\Filters;
 use App\Shared\Domain\Filter\Order;
@@ -103,6 +104,43 @@ final class DoctrineDocumentRepositoryTest extends IntegrationTestCase
             Pagination::fromRequest(1, 20),
         );
         $this->assertGreaterThanOrEqual(1, count($this->repository->findByOwnerIdAndFilters($ownerId, $dateFilters)));
+    }
+
+    public function testFindByOwnerIdAndFiltersCursorWalksAllPagesWithoutDuplicatesOrGapsAndExcludesOtherOwners(): void
+    {
+        $ownerId = OwnerId::random();
+        $otherOwnerId = OwnerId::random();
+
+        $documents = [];
+        for ($i = 0; $i < 5; ++$i) {
+            $document = $this->createDocument($ownerId, 'documents', 'application/pdf');
+            $this->repository->save($document);
+            $documents[] = $document;
+        }
+
+        $foreign = $this->createDocument($otherOwnerId, 'documents', 'application/pdf');
+        $this->repository->save($foreign);
+
+        $filters = new Filters([], Order::default(), Pagination::fromRequest(1, 20));
+        $cursorPagination = CursorPagination::fromRequest(null, 2);
+        $seenIds = [];
+
+        do {
+            $page = $this->repository->findByOwnerIdAndFiltersCursor($ownerId, $filters, $cursorPagination);
+
+            foreach ($page->items as $item) {
+                $seenIds[] = $item->id()->value();
+            }
+
+            $cursorPagination = CursorPagination::fromRequest($page->nextCursor, 2);
+        } while (null !== $page->nextCursor);
+
+        $expectedIds = array_map(static fn ($document) => $document->id()->value(), $documents);
+        sort($expectedIds);
+        sort($seenIds);
+
+        $this->assertSame($expectedIds, $seenIds);
+        $this->assertNotContains($foreign->id()->value(), $seenIds);
     }
 
     private function createDocument(OwnerId $ownerId, string $bucket, string $mimeType): Document

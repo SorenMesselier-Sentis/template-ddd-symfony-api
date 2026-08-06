@@ -817,6 +817,8 @@ The collection endpoint supports the following query parameters:
 | `sort` | order | `?sort=-createdAt` | Descending sort (prefix `-`) |
 | `page` | pagination | `?page=2` | Page number (default: 1) |
 | `limit` | pagination | `?limit=10` | Items per page (default: 20, max: 100) |
+| `pagination` | pagination | `?pagination=cursor` | Switch to cursor (keyset) pagination — see "Cursor pagination" below |
+| `cursor` | pagination | `?cursor=eyJ...` | Opaque position token from `meta.next_cursor` (cursor mode only) |
 
 Parameters can be combined freely:
 
@@ -848,6 +850,39 @@ curl -s -X PUT http://localhost:8080/api/v1/users/<id> \
 # delete
 curl -s -X DELETE http://localhost:8080/api/v1/users/<id>
 ```
+
+### Cursor pagination
+
+`page`/`limit` pagination re-scans and discards `offset` rows on every request — expensive on large tables, and prone to skipping or repeating rows when the collection changes between pages (a row inserted or deleted ahead of the current offset shifts every subsequent page). Collection endpoints (`GET /users`, `GET /documents`) also support keyset ("cursor") pagination as an opt-in alternative: pass `pagination=cursor` instead of `page`.
+
+```bash
+# first page
+curl -s "http://localhost:8080/api/v1/users?pagination=cursor&limit=20"
+
+# next page — cursor comes from the previous response's meta.next_cursor
+curl -s "http://localhost:8080/api/v1/users?pagination=cursor&limit=20&cursor=eyJjcmVhdGVkX2F0IjoiMjAyNi0wMS0xNSAxMDozMDowMCIsImlkIjoiLi4uIn0="
+```
+
+```json
+{
+    "data": [...],
+    "meta": {
+        "limit": 20,
+        "has_more": true,
+        "next_cursor": "eyJjcmVhdGVkX2F0IjoiMjAyNi0wMS0xNSAxMDozMDowMCIsImlkIjoiLi4uIn0="
+    },
+    "links": {
+        "self": "/v1/users?pagination=cursor&limit=20",
+        "next": "/v1/users?pagination=cursor&limit=20&cursor=..."
+    }
+}
+```
+
+- The cursor is an opaque, base64-encoded `(createdAt, id)` pair — the position of the last row of the previous page. `id` is the tie-breaker because `createdAt` alone (second-level precision) is not unique. A malformed or tampered cursor is rejected with `400 invalid_filter`.
+- Ordering is fixed at `createdAt DESC`; `sort` is ignored in cursor mode. Regular filters (`email`, `status`, `bucketName`, …) still apply and are preserved across `next` links.
+- No `total_items`/`total_pages`/`page` — a `COUNT(*)` over the whole filtered set would defeat the purpose (it's the expensive part of offset pagination on a large table). No `previous` link either — walking backward through a keyset series needs a second, reversed cursor scheme, which this template doesn't implement; if you need bidirectional cursor pagination, extend `Cursor`/`CursorPagination` (`Shared/Domain/Filter/`) accordingly.
+- Backed by a composite `(created_at, id)` index (`(owner_id, created_at, id)` for documents, since every query is owner-scoped) — see migration `Version20260101000009`. Without it, `WHERE (created_at, id) < (?, ?) ORDER BY created_at DESC, id DESC LIMIT n` falls back to a full sort.
+- Implemented for the two reference contexts (`User`, `Document`) as a pattern to copy — `make crud`-scaffolded contexts get `page`/`limit` only. See `DoctrineUserRepository::findByFiltersCursor()` / `DoctrineDocumentRepository::findByOwnerIdAndFiltersCursor()` for the keyset query, and `GetUsersController`/`GetDocumentsController` for the `pagination=cursor` branch.
 
 ### HTTP status codes
 

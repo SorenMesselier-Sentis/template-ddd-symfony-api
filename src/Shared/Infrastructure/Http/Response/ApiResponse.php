@@ -59,6 +59,27 @@ final class ApiResponse
         );
     }
 
+    public function paginatedByCursor(
+        mixed $data,
+        int $limit,
+        bool $hasMore,
+        ?string $nextCursor,
+        Request $request,
+    ): JsonResponse {
+        return new JsonResponse(
+            data: $this->normalize([
+                'data' => $data,
+                'meta' => [
+                    'limit' => $limit,
+                    'has_more' => $hasMore,
+                    'next_cursor' => $nextCursor,
+                ],
+                'links' => $this->paginationLinkBuilder->buildCursor($request, $limit, $nextCursor),
+            ]),
+            json: true,
+        );
+    }
+
     private function normalize(mixed $data): string
     {
         return $this->serializer->serialize($data, 'json', [

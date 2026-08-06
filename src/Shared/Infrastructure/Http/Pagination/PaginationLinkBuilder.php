@@ -20,12 +20,39 @@ final class PaginationLinkBuilder
         ];
     }
 
+    /**
+     * @return array<string, string|null>
+     */
+    public function buildCursor(Request $request, int $limit, ?string $nextCursor): array
+    {
+        $currentCursor = $request->query->getString('cursor');
+
+        return [
+            'self' => $this->cursorLink($request, $limit, '' !== $currentCursor ? $currentCursor : null),
+            'next' => null !== $nextCursor ? $this->cursorLink($request, $limit, $nextCursor) : null,
+        ];
+    }
+
     private function link(Request $request, int $page, int $limit): string
     {
         $query = $request->query->all();
         unset($query['per_page'], $query['page'], $query['limit']);
         $query['page'] = $page;
         $query['limit'] = $limit;
+
+        return $this->normalizePath($request->getPathInfo()).'?'.http_build_query($query);
+    }
+
+    private function cursorLink(Request $request, int $limit, ?string $cursor): string
+    {
+        $query = $request->query->all();
+        unset($query['page'], $query['limit'], $query['cursor']);
+        $query['pagination'] = 'cursor';
+        $query['limit'] = $limit;
+
+        if (null !== $cursor) {
+            $query['cursor'] = $cursor;
+        }
 
         return $this->normalizePath($request->getPathInfo()).'?'.http_build_query($query);
     }
