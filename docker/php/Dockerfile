@@ -1,7 +1,9 @@
 # =========================================================
-# Base PHP
+# Base PHP (FrankenPHP — replaces nginx + php-fpm with a single
+# Caddy-based server; still a standard PHP Alpine image under
+# the hood, docker-php-ext-*/pecl work exactly as before)
 # =========================================================
-FROM php:8.4-fpm-alpine
+FROM dunglas/frankenphp:1-php8.4-alpine
 
 # =========================================================
 # Install necessary deps
@@ -62,5 +64,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY php/php.ini     $PHP_INI_DIR/conf.d/app.ini
 COPY php/opcache.ini $PHP_INI_DIR/conf.d/opcache.ini
 
+# =========================================================
+# FrankenPHP (Caddy) config — classic (non-worker) mode: each
+# request boots a fresh kernel, same request-isolation model as
+# php-fpm had. Worker mode (persistent kernel between requests)
+# is available but not enabled by default — see README.
+# =========================================================
+COPY frankenphp/Caddyfile /etc/frankenphp/Caddyfile
+
 WORKDIR /app
-EXPOSE 9000
+EXPOSE 80 443
+
+CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]

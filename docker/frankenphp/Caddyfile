@@ -1,0 +1,24 @@
+{
+	frankenphp
+}
+
+# Port-only address (no hostname) => matches ANY Host header, plain HTTP,
+# no automatic HTTPS/ACME attempt. Matches the old nginx setup, which had
+# no `server_name` and so was also a catch-all — this matters inside Docker
+# Compose, where different callers reach this container under different
+# names (host machine via "localhost", other containers like Prometheus via
+# the service name "php"); a hostname-restricted site address would silently
+# not route those requests to the app. Override SERVER_NAME with a real
+# domain (no scheme) in a non-Docker production deployment to get Caddy's
+# automatic HTTPS instead.
+{$SERVER_NAME::80}
+
+root * public/
+encode zstd br gzip
+
+log {
+	output stdout
+	format console
+}
+
+php_server

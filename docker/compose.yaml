@@ -1,11 +1,13 @@
 services:
     # =========================================================
-    # PHP
+    # PHP (FrankenPHP — serves HTTP directly, no separate nginx)
     # =========================================================
     php:
         build:
             context: .
             dockerfile: php/Dockerfile
+        ports:
+            - "${HTTP_PORT}:80"
         volumes:
             - ../:/app
             # Filename must sort after app.ini/opcache.ini (conf.d loads
@@ -32,19 +34,6 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
-
-    # =========================================================
-    # Nginx
-    # =========================================================
-    nginx:
-        image: nginx:1.25-alpine
-        ports:
-            - "${NGINX_PORT}:80"
-        volumes:
-            - ../:/app
-            - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-        depends_on:
-            - php
 
     # =========================================================
     # PostgreSQL

@@ -17,17 +17,17 @@ help:
 		| sort \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-30s$(RESET) %s\n", $$1, $$2}'
 
-up: ## Start the core stack (php, nginx, postgres, rabbitmq, redis, garage, mailpit)
+up: ## Start the core stack (php/FrankenPHP, postgres, rabbitmq, redis, garage, mailpit)
 	$(DOCKER_COMPOSE) up -d
 
 up-monitoring: ## Start the core stack plus Prometheus, Grafana and postgres_exporter
 	$(DOCKER_COMPOSE_ALL) up -d
 
-down: ## Stop and remove all containers, including monitoring if running
-	$(DOCKER_COMPOSE_ALL) down
+down: ## Stop and remove all containers, including monitoring and renamed/removed services
+	$(DOCKER_COMPOSE_ALL) down --remove-orphans
 
 down-v: ## Like down, but also remove volumes (data loss)
-	$(DOCKER_COMPOSE_ALL) down -v
+	$(DOCKER_COMPOSE_ALL) down -v --remove-orphans
 
 build:
 	$(DOCKER_COMPOSE) build --no-cache

@@ -8,6 +8,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 |---|---|
 | Language | PHP 8.4 |
 | Framework | Symfony 8.0 |
+| Web server | [FrankenPHP](https://frankenphp.dev/) (Caddy-based) — single container serves HTTP directly, no separate nginx/php-fpm |
 | ORM | Doctrine ORM |
 | Database | PostgreSQL 16 |
 | Message Bus | Symfony Messenger |
@@ -328,7 +329,7 @@ cp .env .env.local        # then edit .env.local with your secrets
 make init
 ```
 
-`make init` will build the Docker images, start the core containers (**php, nginx, postgres, rabbitmq, redis, garage, mailpit** — the minimum needed to run and test the app), install Composer dependencies, create the database, run all migrations, and bootstrap Garage. Prometheus, Grafana and postgres_exporter are optional and not started by `make init`/`make up` — see "Monitoring stack (optional)" below.
+`make init` will build the Docker images, start the core containers (**php (FrankenPHP), postgres, rabbitmq, redis, garage, mailpit** — the minimum needed to run and test the app), install Composer dependencies, create the database, run all migrations, and bootstrap Garage. Prometheus, Grafana and postgres_exporter are optional and not started by `make init`/`make up` — see "Monitoring stack (optional)" below.
 
 ### Pre-commit hooks (recommended)
 
@@ -482,7 +483,7 @@ Existing PostgreSQL `documents` rows remain valid after the switch: no schema ch
 ## Development
 
 ```bash
-make up             # start the core stack (php, nginx, postgres, rabbitmq, redis, garage, mailpit)
+make up             # start the core stack (php/FrankenPHP, postgres, rabbitmq, redis, garage, mailpit)
 make up-monitoring  # core stack + Prometheus, Grafana, postgres_exporter
 make down           # stop and remove all containers (including monitoring, if running)
 make bash           # open a shell in the PHP container
