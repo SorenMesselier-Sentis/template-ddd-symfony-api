@@ -8,12 +8,14 @@ use App\Shared\Domain\Logging\LoggerInterface;
 use App\Shared\Domain\Notification\InAppNotification;
 use App\Shared\Domain\Notification\Notification;
 use App\Shared\Domain\Notification\NotificationChannel;
+use App\Shared\Domain\RealTime\RealtimePublisherInterface;
 use App\Shared\Infrastructure\Notification\NotificationChannelHandler;
 
 final class InAppChannelNotificationHandler implements NotificationChannelHandler
 {
     public function __construct(
         private readonly LoggerInterface $logger,
+        private readonly RealtimePublisherInterface $publisher,
     ) {
     }
 
@@ -27,6 +29,14 @@ final class InAppChannelNotificationHandler implements NotificationChannelHandle
             'recipientId' => $notification->recipientId()->value(),
             'subject' => $notification->subject(),
         ]);
+
+        $this->publisher->publish(
+            sprintf('/users/%s/notifications', $notification->recipientId()->value()),
+            [
+                'subject' => $notification->subject(),
+                'body' => $notification->body(),
+            ],
+        );
     }
 
     public function supports(): NotificationChannel
