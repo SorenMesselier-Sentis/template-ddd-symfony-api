@@ -1,6 +1,6 @@
 # Single-node Garage config for local development / CI.
-# Production uses Cloudflare R2 instead (see docs/rustfs-to-r2-garage-migration.md) —
-# this file is never used outside Docker.
+# Production uses Cloudflare R2 instead (see README "Production: Cloudflare
+# R2") — this file is never used outside Docker.
 metadata_dir = "/data/meta"
 data_dir = "/data/data"
 db_engine = "sqlite"

@@ -21,7 +21,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Object storage | S3-compatible: [Garage](https://garagehq.deuxfleurs.fr/) `dxflrs/garage:v2.3.0` in Docker (dev/CI), [Cloudflare R2](https://developers.cloudflare.com/r2/) (staging/prod), AWS SDK for PHP (`aws/aws-sdk-php`) |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
 
-> **Object storage split:** local development, integration and HTTP tests run against a self-hosted Garage container; staging/prod point the same `S3_*` env vars at a Cloudflare R2 bucket instead — both are plain S3-compatible endpoints behind the same adapter, no code branching required. See [`docs/rustfs-to-r2-garage-migration.md`](docs/rustfs-to-r2-garage-migration.md) for the migration rationale (this template previously used RustFS, which is pre-1.0).
+> **Object storage split:** local development, integration and HTTP tests run against a self-hosted Garage container; staging/prod point the same `S3_*` env vars at a Cloudflare R2 bucket instead — both are plain S3-compatible endpoints behind the same adapter, no code branching required.
 
 ## Architecture
 
@@ -428,8 +428,12 @@ S3_PRESIGNED_URL_TTL=3600
 | `S3_PRESIGNED_URL_TTL` | PHP app | Default presigned download URL TTL in seconds (60–604800) |
 
 See `.env` for the full list of available variables. Garage's own config
-(`docker/garage/garage.toml`) is not env-driven — see
-[`docs/rustfs-to-r2-garage-migration.md`](docs/rustfs-to-r2-garage-migration.md).
+(`docker/garage/garage.toml`) is not env-driven — it ships a fixed dev-only
+RPC secret, same trust model as other committed dev defaults like
+`POSTGRES_PASSWORD=change_me`. A fresh Garage node has no cluster layout,
+access key, or buckets until bootstrapped: `make garage-bootstrap` (wired
+into `make init`) does this idempotently — see the target itself in the
+`Makefile` for the exact sequence.
 
 ### Production: Cloudflare R2
 
@@ -445,40 +449,6 @@ S3_USE_SSL=true
 ```
 
 Create the bucket and an API token (with the access key/secret pair) from the Cloudflare dashboard or Terraform — this template's `garage-bootstrap` tooling only applies to the local Garage container. R2's S3 API supports `CreateBucket`/`DeleteBucket`/`ListBuckets`, so `BucketManagerInterface` works against R2 unchanged if the app ever needs to provision buckets dynamically.
-
-### Migrating from RustFS
-
-Earlier versions of this template used [RustFS](https://github.com/rustfs/rustfs) (pre-1.0, `1.0.0-beta.x`) instead of Garage/R2. If you're upgrading an existing deployment, update configuration and copy object data. **Automated Docker volume migration is out of scope for this template** — operators are responsible for moving blobs and updating environment variables.
-
-#### Configuration mapping
-
-| Legacy (RustFS) | New (application) | Notes |
-|---|---|---|
-| `S3_ENDPOINT=http://rustfs:9000` | `S3_ENDPOINT=http://garage:3900` (dev) or R2 endpoint (prod) | Port changes from `9000` to `3900` for Garage |
-| `S3_ACCESS_KEY` / `RUSTFS_ACCESS_KEY` | `S3_ACCESS_KEY` | No app-facing rename; Garage credentials are provisioned via `make garage-bootstrap` instead of `RUSTFS_ACCESS_KEY` env auto-provisioning |
-| `S3_SECRET_KEY` / `RUSTFS_SECRET_KEY` | `S3_SECRET_KEY` | Same as above |
-| *(hardcoded `us-east-1` in code)* | `S3_REGION` | New required variable — `garage` locally, `auto` for R2 |
-| *(hardcoded path-style in code)* | `S3_FORCE_PATH_STYLE` | New required variable — `true` for both backends |
-| `S3_CONSOLE_PORT` / `RUSTFS_CONSOLE_*` | — | Removed — Garage has no built-in web console |
-
-> **Health check name unchanged:** the `object_storage` health-check key stays the same across this migration — no probe changes needed.
-
-#### Object data migration
-
-Copy buckets and objects from the old RustFS endpoint to Garage or R2 with any S3-compatible tool, for example:
-
-```bash
-# AWS CLI (sync via a local staging directory, per bucket)
-aws --endpoint-url http://old-rustfs:9000 s3 sync s3://my-bucket ./staging/my-bucket
-aws --endpoint-url http://garage:3900 s3 sync ./staging/my-bucket s3://my-bucket
-
-# rclone (configure two remotes, then sync)
-rclone sync rustfs:source-bucket garage:source-bucket
-```
-
-#### Database metadata
-
-Existing PostgreSQL `documents` rows remain valid after the switch: no schema change is required. Ensure every `bucket` and `object_path` referenced in the database exists in the new backend (sync object data before or during cutover, and run `make garage-bootstrap` to create buckets locally). Soft-deleted documents may still reference objects that were purged from storage — that behaviour is unchanged.
 
 ## Development
 

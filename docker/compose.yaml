@@ -152,8 +152,8 @@ services:
 
     # =========================================================
     # Garage (S3-compatible object storage — local dev/CI only;
-    # staging/prod use Cloudflare R2, see
-    # docs/rustfs-to-r2-garage-migration.md)
+    # staging/prod use Cloudflare R2 instead, see README "Production:
+    # Cloudflare R2". Bootstrap via "make garage-bootstrap".
     # =========================================================
     garage:
         image: dxflrs/garage:v2.3.0
