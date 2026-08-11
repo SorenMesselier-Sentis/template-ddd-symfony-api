@@ -26,6 +26,10 @@ Application metrics are collected through the domain port `MetricsCollectorInter
 | `METRICS_REDIS_PORT` | port | `${REDIS_PORT}` | Redis port when `METRICS_STORAGE=redis` |
 | `METRICS_REDIS_PASSWORD` | string | `${REDIS_PASSWORD}` | Redis password when `METRICS_STORAGE=redis` |
 
+### Prometheus/Grafana containers are optional
+
+The app exposes `GET /metrics` regardless of whether anything is scraping it. The `prometheus`, `grafana` and `postgres_exporter` containers in `docker/compose.yaml` only add scraping/dashboards on top and are tagged with the `monitoring` Compose profile, so `make up`/`make init` skip them — start them with `make up-monitoring` when you actually want to look at Grafana or query Prometheus locally.
+
 ### Redis (default — required for scale-out)
 
 `docker/compose.yaml` ships a password-protected `redis:7-alpine` service, reused across the app for more than just metrics — see "Cache and scale-out (Redis)" in the README for the full picture (cache pool, rate limiter storage, scheduler state). With multiple PHP workers or replicas scraped through a load balancer, each process only ever sees its own subset of requests; without a shared store, Prometheus would read disjoint, undercounted samples depending on which replica answered the scrape.

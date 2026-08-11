@@ -66,7 +66,7 @@ final class DocumentSecurityHttpTest extends HttpTestCase
     public function testUploadResponseDoesNotExposeObjectPath(): void
     {
         if (!$this->isObjectStorageAvailable()) {
-            $this->markTestSkipped('RustFS is not available.');
+            $this->markTestSkipped('Object storage is not available.');
         }
 
         $client = $this->createAuthenticatedClient('user');

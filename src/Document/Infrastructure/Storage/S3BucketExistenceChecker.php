@@ -17,8 +17,10 @@ final class S3BucketExistenceChecker implements BucketExistenceCheckerInterface
         string $accessKey,
         string $secretKey,
         bool $useSsl,
+        string $region,
+        bool $forcePathStyle,
     ) {
-        $this->client = S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
+        $this->client = S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl, $region, $forcePathStyle);
     }
 
     public function exists(BucketName $bucket): bool

@@ -291,6 +291,8 @@ services:
             $accessKey: '%env(S3_ACCESS_KEY)%'
             $secretKey: '%env(S3_SECRET_KEY)%'
             $useSsl: '%env(bool:S3_USE_SSL)%'
+            $region: '%env(S3_REGION)%'
+            $forcePathStyle: '%env(bool:S3_FORCE_PATH_STYLE)%'
 
     App\Document\Infrastructure\Storage\S3BucketExistenceChecker:
         arguments:
@@ -298,6 +300,8 @@ services:
             $accessKey: '%env(S3_ACCESS_KEY)%'
             $secretKey: '%env(S3_SECRET_KEY)%'
             $useSsl: '%env(bool:S3_USE_SSL)%'
+            $region: '%env(S3_REGION)%'
+            $forcePathStyle: '%env(bool:S3_FORCE_PATH_STYLE)%'
 
     App\Document\Infrastructure\Storage\S3BucketManager:
         arguments:
@@ -305,6 +309,8 @@ services:
             $accessKey: '%env(S3_ACCESS_KEY)%'
             $secretKey: '%env(S3_SECRET_KEY)%'
             $useSsl: '%env(bool:S3_USE_SSL)%'
+            $region: '%env(S3_REGION)%'
+            $forcePathStyle: '%env(bool:S3_FORCE_PATH_STYLE)%'
 
     App\Document\Application\Service\BucketMimeTypeValidator:
         arguments:

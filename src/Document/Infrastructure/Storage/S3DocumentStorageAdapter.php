@@ -24,8 +24,10 @@ final class S3DocumentStorageAdapter implements DocumentStorageInterface, Multip
         string $accessKey,
         string $secretKey,
         bool $useSsl,
+        string $region,
+        bool $forcePathStyle,
     ) {
-        $this->client = S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl);
+        $this->client = S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl, $region, $forcePathStyle);
     }
 
     public function upload(
