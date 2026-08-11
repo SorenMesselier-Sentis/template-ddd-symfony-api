@@ -102,7 +102,7 @@ Also check, per new entity:
 
 ## Tests
 
-`tests/Unit/<BC>/` (domain + application, no I/O), `tests/Integration/<BC>/` (real Postgres/RustFS), `tests/Http/<BC>/` (full stack). HTTP tests extend `tests/Http/HttpTestCase.php`, which resets the DB, reloads fixtures, and offers `createAuthenticatedClient('admin'|'user')` using credentials from `FixtureData`.
+`tests/Unit/<BC>/` (domain + application, no I/O), `tests/Integration/<BC>/` (real Postgres / Garage), `tests/Http/<BC>/` (full stack). HTTP tests extend `tests/Http/HttpTestCase.php`, which resets the DB, reloads fixtures, and offers `createAuthenticatedClient('admin'|'user')` using credentials from `FixtureData`.
 
 Fixtures live per-BC in `<BC>/Infrastructure/Fixture/` and are auto-discovered — there is deliberately **no orchestrator in Shared**. Stable IDs/emails come from `Shared/Infrastructure/Fixture/FixtureData`, reference keys from `FixtureReference`; cross-BC links use `FixtureData` UUID constants so load order never matters.
 

@@ -16,11 +16,11 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Scheduler | Symfony Scheduler (cron + periodic) |
 | Mailer | Symfony Mailer + Twig templates, Mailpit for dev |
 | Logging | Monolog |
-| Monitoring | Prometheus + Grafana (preconfigured scrape targets + starter dashboard) |
-| Object storage | RustFS (S3-compatible) `rustfs/rustfs:1.0.0-beta.8`, AWS SDK for PHP (`aws/aws-sdk-php`) |
+| Monitoring (optional) | Prometheus + Grafana (preconfigured scrape targets + starter dashboard) — `make up-monitoring` |
+| Object storage | S3-compatible: [Garage](https://garagehq.deuxfleurs.fr/) `dxflrs/garage:v2.3.0` in Docker (dev/CI), [Cloudflare R2](https://developers.cloudflare.com/r2/) (staging/prod), AWS SDK for PHP (`aws/aws-sdk-php`) |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
 
-> **RustFS beta status:** RustFS is currently in beta (`1.0.0-beta.x`). This template uses it for local development and integration testing. Production adopters should independently evaluate maturity, licensing (Apache 2.0), and operational fit before relying on it in production.
+> **Object storage split:** local development, integration and HTTP tests run against a self-hosted Garage container; staging/prod point the same `S3_*` env vars at a Cloudflare R2 bucket instead — both are plain S3-compatible endpoints behind the same adapter, no code branching required. See [`docs/rustfs-to-r2-garage-migration.md`](docs/rustfs-to-r2-garage-migration.md) for the migration rationale (this template previously used RustFS, which is pre-1.0).
 
 ## Architecture
 
@@ -66,7 +66,7 @@ src/
 │       ├── Scheduler/              # e.g. CleanupExpiredRefreshTokensHandler
 │       └── Http/Controller/        # /users, /auth/*
 │
-├── Document/                       # Object storage (RustFS) — metadata in DB, files in buckets
+├── Document/                       # Object storage (Garage/R2, S3-compatible) — metadata in DB, files in buckets
 │   ├── Domain/
 │   │   ├── Entity/Document.php
 │   │   ├── ValueObject/            # DocumentId, OwnerId, BucketName, MimeType, PresignedUrl, …
@@ -160,7 +160,7 @@ templates/email/
 
 Handlers are registered on `command.bus` only (no auto-broadcast to other buses). Failures are logged via `LoggerInterface` and swallowed so a single bad tick never crashes the scheduler worker. The manual `make outbox-relay` and `app:outbox:relay` console command remain available for on-demand triggering.
 
-**Object storage (Document BC)** — file bytes live in S3-compatible object storage (RustFS in Docker); the `Document` aggregate stores metadata only (name, size, MIME type, bucket, object path, owner ID, status). Bounded contexts interact through domain ports (`DocumentStorageInterface`, `BucketManagerInterface`); infrastructure adapters use the AWS SDK for PHP against the configured `S3_ENDPOINT`. `OwnerId` is a UUID reference with no foreign key to the User BC, preserving bounded-context isolation. Presigned URLs delegate direct download to object storage without streaming through PHP.
+**Object storage (Document BC)** — file bytes live in S3-compatible object storage (Garage in Docker for dev/CI, Cloudflare R2 for staging/prod); the `Document` aggregate stores metadata only (name, size, MIME type, bucket, object path, owner ID, status). Bounded contexts interact through domain ports (`DocumentStorageInterface`, `BucketManagerInterface`); infrastructure adapters use the AWS SDK for PHP against the configured `S3_ENDPOINT`. `OwnerId` is a UUID reference with no foreign key to the User BC, preserving bounded-context isolation. Presigned URLs delegate direct download to object storage without streaming through PHP.
 
 **Cross-BC references vs. real relations (Project BC)** — `User` and `Document` only ever reference each other by stable UUID (`OwnerId`, no Doctrine relation) because they're in different bounded contexts. `Project` is the template's second reference BC, added specifically to show the *other* half of that rule: `Task.project` is a genuine Doctrine `<many-to-one>` to `Project`, because both entities live in the **same** bounded context — real relations are fine (even expected) within a BC, and only become a violation once they'd cross a BC boundary. `Task` also carries `assigneeId` (→ User) and `attachmentId` (→ Document), both plain UUID fields with zero cross-BC validation, exactly like `Document.OwnerId` — Project's `Infrastructure` never imports anything from `User` or `Document`. Two consequences worth knowing if you copy this pattern:
 - The relation is `fetch="EAGER"`, not the Doctrine default `LAZY`. `Project::$id` is `readonly` (as recommended everywhere else in this template), and Doctrine's lazy ghost-object hydration needs to partially set an identifier before the rest of a proxy initializes — which conflicts with `readonly` and throws `LogicException: Attempting to change readonly property ...::$id`. Loading `Project` eagerly (a JOIN) sidesteps that entirely, and is the right call anyway since almost every `Task` handler needs the parent `Project` for the ownership check (`Task::project()->ownerId()`) — LAZY would just mean a second query on top of the JOIN you'd otherwise write by hand.
@@ -328,7 +328,7 @@ cp .env .env.local        # then edit .env.local with your secrets
 make init
 ```
 
-`make init` will build the Docker images, start the containers, install Composer dependencies, create the database and run all migrations.
+`make init` will build the Docker images, start the core containers (**php, nginx, postgres, rabbitmq, redis, garage, mailpit** — the minimum needed to run and test the app), install Composer dependencies, create the database, run all migrations, and bootstrap Garage. Prometheus, Grafana and postgres_exporter are optional and not started by `make init`/`make up` — see "Monitoring stack (optional)" below.
 
 ### Pre-commit hooks (recommended)
 
@@ -403,93 +403,97 @@ MAILER_FROM=noreply@example.com
 # Outbox cleanup retention (days). Values <1 fall back to 30 with a warning log.
 OUTBOX_RETENTION_DAYS=30
 
-# S3-compatible object storage (RustFS in Docker — Document BC)
-# Application settings consumed by PHP adapters:
-S3_ACCESS_KEY=rustfsadmin
+# S3-compatible object storage — Garage in Docker for dev/CI, Cloudflare R2 for
+# staging/prod (Document BC). Application settings consumed by PHP adapters:
+S3_ACCESS_KEY=garageadmin
 S3_SECRET_KEY=your_password
-S3_ENDPOINT=http://rustfs:9000
+S3_ENDPOINT=http://garage:3900
+S3_REGION=garage
+S3_FORCE_PATH_STYLE=true
 S3_USE_SSL=false
-S3_API_PORT=9000
-S3_CONSOLE_PORT=9001
+S3_API_PORT=3900
 S3_PRESIGNED_URL_TTL=3600
-
-# RustFS container settings (wired in docker/compose.yaml; credentials mirror S3_*):
-# RUSTFS_ACCESS_KEY=${S3_ACCESS_KEY}
-# RUSTFS_SECRET_KEY=${S3_SECRET_KEY}
-# RUSTFS_ADDRESS=0.0.0.0:9000
-# RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
-# RUSTFS_CONSOLE_ENABLE=true
-# RUSTFS_VOLUMES=/data
 ```
 
 | Variable | Scope | Description |
 |---|---|---|
-| `S3_ENDPOINT` | PHP app | S3 API URL used by adapters and health check (Docker: `http://rustfs:9000`) |
-| `S3_ACCESS_KEY` | PHP app + RustFS | Access key for S3 API authentication |
-| `S3_SECRET_KEY` | PHP app + RustFS | Secret key for S3 API authentication |
+| `S3_ENDPOINT` | PHP app | S3 API URL used by adapters and health check (Docker: `http://garage:3900`; R2: `https://<account_id>.r2.cloudflarestorage.com`) |
+| `S3_ACCESS_KEY` | PHP app + Garage | Access key for S3 API authentication |
+| `S3_SECRET_KEY` | PHP app + Garage | Secret key for S3 API authentication |
+| `S3_REGION` | PHP app | Region passed to the S3 client (`garage` locally; `auto` for Cloudflare R2) |
+| `S3_FORCE_PATH_STYLE` | PHP app | Use path-style bucket addressing (`true` for both Garage and R2) |
 | `S3_USE_SSL` | PHP app | Enable TLS for the S3 client (`true` / `false`) |
-| `S3_API_PORT` | Docker host | Host port mapped to RustFS S3 API (container port `9000`) |
-| `S3_CONSOLE_PORT` | Docker host | Host port mapped to RustFS management console (container port `9001`) |
+| `S3_API_PORT` | Docker host | Host port mapped to Garage's S3 API (container port `3900`) |
 | `S3_PRESIGNED_URL_TTL` | PHP app | Default presigned download URL TTL in seconds (60–604800) |
-| `RUSTFS_ACCESS_KEY` | RustFS container | Mirrors `S3_ACCESS_KEY` (set in `docker/compose.yaml`) |
-| `RUSTFS_SECRET_KEY` | RustFS container | Mirrors `S3_SECRET_KEY` (set in `docker/compose.yaml`) |
-| `RUSTFS_ADDRESS` | RustFS container | S3 API listen address inside the container (`0.0.0.0:9000`) |
-| `RUSTFS_CONSOLE_ADDRESS` | RustFS container | Console listen address inside the container (`0.0.0.0:9001`) |
-| `RUSTFS_CONSOLE_ENABLE` | RustFS container | Enable the management console (`true`) |
-| `RUSTFS_VOLUMES` | RustFS container | Data directory path inside the container (`/data`) |
 
-See `.env` for the full list of available variables.
+See `.env` for the full list of available variables. Garage's own config
+(`docker/garage/garage.toml`) is not env-driven — see
+[`docs/rustfs-to-r2-garage-migration.md`](docs/rustfs-to-r2-garage-migration.md).
 
-### Migrating from MinIO
+### Production: Cloudflare R2
 
-If you run an existing deployment that still uses MinIO, update application configuration and copy object data to RustFS. **Automated Docker volume migration is out of scope for this template** — operators are responsible for moving blobs and updating environment variables.
+Point the same `S3_*` variables at a Cloudflare R2 bucket instead of Garage — no code or config-schema change needed, since both are S3-compatible endpoints behind the same adapter:
+
+```bash
+S3_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+S3_ACCESS_KEY=<r2-access-key-id>
+S3_SECRET_KEY=<r2-secret-access-key>
+S3_REGION=auto
+S3_FORCE_PATH_STYLE=true
+S3_USE_SSL=true
+```
+
+Create the bucket and an API token (with the access key/secret pair) from the Cloudflare dashboard or Terraform — this template's `garage-bootstrap` tooling only applies to the local Garage container. R2's S3 API supports `CreateBucket`/`DeleteBucket`/`ListBuckets`, so `BucketManagerInterface` works against R2 unchanged if the app ever needs to provision buckets dynamically.
+
+### Migrating from RustFS
+
+Earlier versions of this template used [RustFS](https://github.com/rustfs/rustfs) (pre-1.0, `1.0.0-beta.x`) instead of Garage/R2. If you're upgrading an existing deployment, update configuration and copy object data. **Automated Docker volume migration is out of scope for this template** — operators are responsible for moving blobs and updating environment variables.
 
 #### Configuration mapping
 
-| Legacy (MinIO) | New (application) | New (RustFS container) |
+| Legacy (RustFS) | New (application) | Notes |
 |---|---|---|
-| `MINIO_ENDPOINT` | `S3_ENDPOINT` | — |
-| `MINIO_ACCESS_KEY` / `MINIO_ROOT_USER` | `S3_ACCESS_KEY` | `RUSTFS_ACCESS_KEY` |
-| `MINIO_SECRET_KEY` / `MINIO_ROOT_PASSWORD` | `S3_SECRET_KEY` | `RUSTFS_SECRET_KEY` |
-| `MINIO_USE_SSL` | `S3_USE_SSL` | — |
-| `MINIO_API_PORT` | `S3_API_PORT` | — |
-| `MINIO_CONSOLE_PORT` | `S3_CONSOLE_PORT` | — |
-| `MINIO_PRESIGNED_URL_TTL` | `S3_PRESIGNED_URL_TTL` | — |
+| `S3_ENDPOINT=http://rustfs:9000` | `S3_ENDPOINT=http://garage:3900` (dev) or R2 endpoint (prod) | Port changes from `9000` to `3900` for Garage |
+| `S3_ACCESS_KEY` / `RUSTFS_ACCESS_KEY` | `S3_ACCESS_KEY` | No app-facing rename; Garage credentials are provisioned via `make garage-bootstrap` instead of `RUSTFS_ACCESS_KEY` env auto-provisioning |
+| `S3_SECRET_KEY` / `RUSTFS_SECRET_KEY` | `S3_SECRET_KEY` | Same as above |
+| *(hardcoded `us-east-1` in code)* | `S3_REGION` | New required variable — `garage` locally, `auto` for R2 |
+| *(hardcoded path-style in code)* | `S3_FORCE_PATH_STYLE` | New required variable — `true` for both backends |
+| `S3_CONSOLE_PORT` / `RUSTFS_CONSOLE_*` | — | Removed — Garage has no built-in web console |
 
-Point `S3_ENDPOINT` at your RustFS S3 API URL (e.g. `http://rustfs:9000` inside Docker, or the external endpoint in production). The RustFS container reads credentials from `RUSTFS_ACCESS_KEY` / `RUSTFS_SECRET_KEY`, which mirror `S3_ACCESS_KEY` / `S3_SECRET_KEY` in `docker/compose.yaml`.
-
-> **Health check rename:** readiness probes that scrape `/health` by check name must look for `object_storage` instead of the legacy `minio` key.
+> **Health check name unchanged:** the `object_storage` health-check key stays the same across this migration — no probe changes needed.
 
 #### Object data migration
 
-Copy buckets and objects from the old MinIO endpoint to RustFS with any S3-compatible tool, for example:
+Copy buckets and objects from the old RustFS endpoint to Garage or R2 with any S3-compatible tool, for example:
 
 ```bash
 # AWS CLI (sync via a local staging directory, per bucket)
-aws --endpoint-url http://old-minio:9000 s3 sync s3://my-bucket ./staging/my-bucket
-aws --endpoint-url http://new-rustfs:9000 s3 sync ./staging/my-bucket s3://my-bucket
+aws --endpoint-url http://old-rustfs:9000 s3 sync s3://my-bucket ./staging/my-bucket
+aws --endpoint-url http://garage:3900 s3 sync ./staging/my-bucket s3://my-bucket
 
 # rclone (configure two remotes, then sync)
-rclone sync minio:source-bucket rustfs:source-bucket
-
-# MinIO Client (mc) or rustfs-cli
-mc mirror old-minio/source-bucket rustfs/source-bucket
+rclone sync rustfs:source-bucket garage:source-bucket
 ```
 
 #### Database metadata
 
-Existing PostgreSQL `documents` rows remain valid after the switch: no schema change is required. Ensure every `bucket` and `object_path` referenced in the database exists in RustFS (sync object data before or during cutover). Soft-deleted documents may still reference objects that were purged from storage — that behaviour is unchanged.
+Existing PostgreSQL `documents` rows remain valid after the switch: no schema change is required. Ensure every `bucket` and `object_path` referenced in the database exists in the new backend (sync object data before or during cutover, and run `make garage-bootstrap` to create buckets locally). Soft-deleted documents may still reference objects that were purged from storage — that behaviour is unchanged.
 
 ## Development
 
 ```bash
-make up           # start containers
-make down         # stop containers
-make bash         # open a shell in the PHP container
-make logs         # tail all container logs
-make logs-php     # tail PHP logs only
-make restart      # stop then start containers (pick up image / config changes)
+make up             # start the core stack (php, nginx, postgres, rabbitmq, redis, garage, mailpit)
+make up-monitoring  # core stack + Prometheus, Grafana, postgres_exporter
+make down           # stop and remove all containers (including monitoring, if running)
+make bash           # open a shell in the PHP container
+make logs           # tail all container logs
+make logs-php       # tail PHP logs only
+make restart        # stop then start the core stack (pick up image / config changes)
 ```
+
+### Monitoring stack (optional)
+
+Prometheus, Grafana and postgres_exporter are tagged with the Docker Compose `monitoring` profile and excluded from `make up`/`make init` by default — the app's own `GET /metrics` endpoint (see [`docs/monitoring.md`](docs/monitoring.md)) works regardless, these three containers only add scraping + dashboards on top. Bring them up with `make up-monitoring`; `make down`/`make down-v` always tear them down too, whether or not they were started.
 
 ### Cache and scale-out (Redis)
 
@@ -1002,10 +1006,10 @@ make crud context=Product entity=Product
 | Swagger UI (OpenAPI) | http://localhost:8080/api/doc/ | — |
 | Metrics endpoint | http://localhost:8080/metrics | — |
 | RabbitMQ UI | http://localhost:15672 | app / see .env.local |
-| Prometheus | http://localhost:9090 | — |
-| Grafana | http://localhost:3000 | admin / see .env.local |
+| Prometheus *(`make up-monitoring`)* | http://localhost:9090 | — |
+| Grafana *(`make up-monitoring`)* | http://localhost:3000 | admin / see .env.local |
 | Mailpit UI | http://localhost:8025 | — |
-| RustFS Console | http://localhost:9001/rustfs/console/ (`S3_CONSOLE_PORT`) | `S3_ACCESS_KEY` / `S3_SECRET_KEY` (see `.env.local`) |
+| Garage S3 API | http://localhost:3900 (`S3_API_PORT`) | `S3_ACCESS_KEY` / `S3_SECRET_KEY` (see `.env.local`) — no web console; use `docker compose exec garage /garage bucket list` or `make garage-bootstrap` |
 | PostgreSQL | localhost:5432 | app / see .env.local |
 
 ## Event flow
@@ -1039,7 +1043,7 @@ Tests are organized in three suites matching the architecture layers:
 ```
 tests/
 ├── Unit/           # Domain + Application — no I/O, fast
-├── Integration/    # Infrastructure — hits the real database (and RustFS for Document)
+├── Integration/    # Infrastructure — hits the real database (and Garage for Document)
 └── Http/           # Full HTTP stack — routing, JWT, serialization, error handling
 ```
 
@@ -1060,11 +1064,12 @@ GitHub Actions runs on every **push** and **pull request** to `main` and `master
 
 The pipeline:
 
-1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **RustFS**, **PHP**
-2. Runs `composer install`
-3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
-4. Warms the Symfony dev container cache (required by PHPStan)
-5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **Garage**, **PHP**
+2. Bootstraps Garage (`make garage-bootstrap` — layout, access key, buckets)
+3. Runs `composer install`
+4. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
+5. Warms the Symfony dev container cache (required by PHPStan)
+6. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
 
 Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
 
@@ -1074,7 +1079,8 @@ Run `make ci` locally before opening a PR — it executes the same quality gates
 
 ```bash
 cp .env .env.local                              # skip if .env.local already exists
-docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq rustfs php
+docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq garage php
+make garage-bootstrap
 make install
 
 # Generate JWT keys once (required for auth / HTTP tests):

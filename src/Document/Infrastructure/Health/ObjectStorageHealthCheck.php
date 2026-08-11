@@ -14,7 +14,7 @@ final class ObjectStorageHealthCheck implements HealthCheckInterface
 {
     private const TIMEOUT_SECONDS = 3.0;
 
-    /** @var callable(string, string, string, bool, ?float): S3Client */
+    /** @var callable(string, string, string, bool, string, bool, ?float): S3Client */
     private $clientFactory;
 
     public function __construct(
@@ -26,6 +26,10 @@ final class ObjectStorageHealthCheck implements HealthCheckInterface
         private readonly string $secretKey,
         #[Autowire(env: 'bool:S3_USE_SSL')]
         private readonly bool $useSsl,
+        #[Autowire(env: 'S3_REGION')]
+        private readonly string $region,
+        #[Autowire(env: 'bool:S3_FORCE_PATH_STYLE')]
+        private readonly bool $forcePathStyle,
         ?callable $clientFactory = null,
     ) {
         $this->clientFactory = $clientFactory ?? static fn (
@@ -33,8 +37,10 @@ final class ObjectStorageHealthCheck implements HealthCheckInterface
             string $accessKey,
             string $secretKey,
             bool $useSsl,
+            string $region,
+            bool $forcePathStyle,
             ?float $timeoutSeconds,
-        ): S3Client => S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl, $timeoutSeconds);
+        ): S3Client => S3ClientFactory::create($endpoint, $accessKey, $secretKey, $useSsl, $region, $forcePathStyle, $timeoutSeconds);
     }
 
     public function name(): string
@@ -50,6 +56,8 @@ final class ObjectStorageHealthCheck implements HealthCheckInterface
                 $this->accessKey,
                 $this->secretKey,
                 $this->useSsl,
+                $this->region,
+                $this->forcePathStyle,
                 self::TIMEOUT_SECONDS,
             );
 

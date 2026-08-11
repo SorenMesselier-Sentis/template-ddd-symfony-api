@@ -13,6 +13,8 @@ final class S3ClientFactory
         string $accessKey,
         string $secretKey,
         bool $useSsl,
+        string $region,
+        bool $forcePathStyle,
         ?float $timeoutSeconds = null,
     ): S3Client {
         $http = [
@@ -26,9 +28,9 @@ final class S3ClientFactory
 
         return new S3Client([
             'version' => 'latest',
-            'region' => 'us-east-1',
+            'region' => $region,
             'endpoint' => $endpoint,
-            'use_path_style_endpoint' => true,
+            'use_path_style_endpoint' => $forcePathStyle,
             'credentials' => [
                 'key' => $accessKey,
                 'secret' => $secretKey,

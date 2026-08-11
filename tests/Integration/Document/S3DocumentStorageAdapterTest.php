@@ -32,7 +32,7 @@ final class S3DocumentStorageAdapterTest extends TestCase
     protected function setUp(): void
     {
         if (!$this->isObjectStorageAvailable()) {
-            $this->markTestSkipped('RustFS is not available.');
+            $this->markTestSkipped('Object storage is not available.');
         }
 
         $this->ensureBucket(self::BUCKET);
@@ -181,6 +181,8 @@ final class S3DocumentStorageAdapterTest extends TestCase
             accessKey: $this->s3AccessKey(),
             secretKey: $this->s3SecretKey(),
             useSsl: false,
+            region: $this->s3Region(),
+            forcePathStyle: $this->s3ForcePathStyle(),
         );
     }
 
@@ -191,6 +193,8 @@ final class S3DocumentStorageAdapterTest extends TestCase
             accessKey: $this->s3AccessKey(),
             secretKey: $this->s3SecretKey(),
             useSsl: false,
+            region: $this->s3Region(),
+            forcePathStyle: $this->s3ForcePathStyle(),
         );
     }
 
@@ -201,6 +205,8 @@ final class S3DocumentStorageAdapterTest extends TestCase
             accessKey: $this->s3AccessKey(),
             secretKey: $this->s3SecretKey(),
             useSsl: false,
+            region: $this->s3Region(),
+            forcePathStyle: $this->s3ForcePathStyle(),
         );
     }
 }

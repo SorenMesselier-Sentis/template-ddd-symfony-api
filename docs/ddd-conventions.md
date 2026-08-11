@@ -138,7 +138,7 @@ events.product:
 | Suite | Location | Scope |
 |---|---|---|
 | **Unit** | `tests/Unit/<Name>/` | Domain + Application handlers (no I/O) |
-| **Integration** | `tests/Integration/<Name>/` | Doctrine repositories, adapters (real DB / RustFS) |
+| **Integration** | `tests/Integration/<Name>/` | Doctrine repositories, adapters (real DB / Garage) |
 | **Http** | `tests/Http/<Name>/` | Full stack via `KernelBrowser`, extend `HttpTestCase` |
 
 `make crud` generates Unit and Integration tests. Add Http tests manually when needed.
@@ -214,7 +214,7 @@ Unmapped `DomainException` subclasses fall back to `422 / domain_error`. Unknown
 | BC | Purpose | Notable patterns |
 |---|---|---|
 | **User** | Auth, users, refresh tokens | JWT, `AuthorizedMessage`, welcome email event handlers |
-| **Document** | S3-compatible object storage (RustFS) | Storage ports, `OwnerId` without FK, `DocumentExceptionMapper` |
+| **Document** | S3-compatible object storage (Garage/R2) | Storage ports, `OwnerId` without FK, `DocumentExceptionMapper` |
 | **Project** | Projects with tasks | Real `<many-to-one>` between `Task`→`Project` (same BC — contrast with `Document`'s FK-less `OwnerId`), cross-BC `assigneeId`/`attachmentId` UUIDs, `DependentFixtureInterface` for fixture ordering |
 | **Shared** | Buses, outbox, email, health, HTTP envelope | No BC imports |
 

@@ -32,7 +32,7 @@ final class UploadDocumentControllerTest extends HttpTestCase
     public function testUploadDocumentReturns404ForMissingBucket(): void
     {
         if (!$this->isObjectStorageAvailable()) {
-            $this->markTestSkipped('RustFS is not available.');
+            $this->markTestSkipped('Object storage is not available.');
         }
 
         $client = $this->createAuthenticatedClient('user');
@@ -53,7 +53,7 @@ final class UploadDocumentControllerTest extends HttpTestCase
     public function testUploadDocumentRejectsInvalidMimeType(): void
     {
         if (!$this->isObjectStorageAvailable()) {
-            $this->markTestSkipped('RustFS is not available.');
+            $this->markTestSkipped('Object storage is not available.');
         }
 
         $client = $this->createAuthenticatedClient('user');
@@ -76,7 +76,7 @@ final class UploadDocumentControllerTest extends HttpTestCase
     public function testUploadDocumentSucceeds(): void
     {
         if (!$this->isObjectStorageAvailable()) {
-            $this->markTestSkipped('RustFS is not available.');
+            $this->markTestSkipped('Object storage is not available.');
         }
 
         $client = $this->createAuthenticatedClient('user');

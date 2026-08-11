@@ -8,6 +8,9 @@ services:
             dockerfile: php/Dockerfile
         volumes:
             - ../:/app
+            # Filename must sort after app.ini/opcache.ini (conf.d loads
+            # alphabetically) so display_errors=On actually wins.
+            - ./php/php.dev.ini:/usr/local/etc/php/conf.d/zz-app-dev.ini
         environment:
             APP_ENV: ${APP_ENV}
             APP_SECRET: ${APP_SECRET}
@@ -17,13 +20,15 @@ services:
             S3_ENDPOINT: ${S3_ENDPOINT}
             S3_ACCESS_KEY: ${S3_ACCESS_KEY}
             S3_SECRET_KEY: ${S3_SECRET_KEY}
+            S3_REGION: ${S3_REGION}
+            S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE}
             S3_USE_SSL: ${S3_USE_SSL}
         depends_on:
             postgres:
                 condition: service_healthy
             rabbitmq:
                 condition: service_healthy
-            rustfs:
+            garage:
                 condition: service_healthy
             redis:
                 condition: service_healthy
@@ -106,10 +111,12 @@ services:
             retries: 5
 
     # =========================================================
-    # PostgreSQL Exporter
+    # PostgreSQL Exporter (optional — monitoring profile only,
+    # see "make up-monitoring")
     # =========================================================
     postgres_exporter:
         image: quay.io/prometheuscommunity/postgres-exporter:latest
+        profiles: ["monitoring"]
         environment:
             DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
         depends_on:
@@ -117,10 +124,12 @@ services:
                 condition: service_healthy
 
     # =========================================================
-    # Prometheus
+    # Prometheus (optional — monitoring profile only, see
+    # "make up-monitoring")
     # =========================================================
     prometheus:
         image: prom/prometheus:v2.51.0
+        profiles: ["monitoring"]
         volumes:
             - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
             - prometheus_data:/prometheus
@@ -132,10 +141,12 @@ services:
             - "--storage.tsdb.retention.time=15d"
 
     # =========================================================
-    # Grafana
+    # Grafana (optional — monitoring profile only, see
+    # "make up-monitoring")
     # =========================================================
     grafana:
         image: grafana/grafana:10.4.0
+        profiles: ["monitoring"]
         environment:
             GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
             GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
@@ -151,34 +162,23 @@ services:
             - prometheus
 
     # =========================================================
-    # RustFS (S3-compatible object storage)
+    # Garage (S3-compatible object storage — local dev/CI only;
+    # staging/prod use Cloudflare R2, see
+    # docs/rustfs-to-r2-garage-migration.md)
     # =========================================================
-    rustfs:
-        image: rustfs/rustfs:1.0.0-beta.8
+    garage:
+        image: dxflrs/garage:v2.3.0
         volumes:
-            - rustfs_data:/data
-        environment:
-            RUSTFS_VOLUMES: /data
-            RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
-            RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
-            RUSTFS_ADDRESS: 0.0.0.0:9000
-            RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
-            RUSTFS_CONSOLE_ENABLE: "true"
+            - garage_data:/data
+            - ./garage/garage.toml:/etc/garage.toml:ro
         ports:
-            - "${S3_API_PORT}:9000"
-            - "${S3_CONSOLE_PORT}:9001"
+            - "${S3_API_PORT}:3900"
         healthcheck:
-            test:
-                [
-                    "CMD",
-                    "sh",
-                    "-c",
-                    "curl -f http://localhost:9000/health && curl -f http://localhost:9001/rustfs/console/health",
-                ]
-            interval: 10s
+            test: ["CMD", "/garage", "status"]
+            interval: 5s
             timeout: 5s
-            retries: 5
-            start_period: 40s
+            retries: 10
+            start_period: 10s
 
     # =========================================================
     # Mailpit
@@ -194,5 +194,5 @@ volumes:
     rabbitmq_data:
     prometheus_data:
     grafana_data:
-    rustfs_data:
+    garage_data:
     redis_data:

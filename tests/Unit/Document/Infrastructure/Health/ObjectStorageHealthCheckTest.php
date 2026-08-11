@@ -13,10 +13,12 @@ final class ObjectStorageHealthCheckTest extends UnitTestCase
     public function testNameIsObjectStorage(): void
     {
         $check = new ObjectStorageHealthCheck(
-            endpoint: 'http://rustfs:9000',
-            accessKey: 'rustfsadmin',
+            endpoint: 'http://garage:3900',
+            accessKey: 'garageadmin',
             secretKey: 'change_me',
             useSsl: false,
+            region: 'garage',
+            forcePathStyle: true,
         );
 
         $this->assertSame('object_storage', $check->name());
@@ -33,15 +35,19 @@ final class ObjectStorageHealthCheckTest extends UnitTestCase
         };
 
         $check = new ObjectStorageHealthCheck(
-            endpoint: 'http://rustfs:9000',
-            accessKey: 'rustfsadmin',
+            endpoint: 'http://garage:3900',
+            accessKey: 'garageadmin',
             secretKey: 'change_me',
             useSsl: false,
+            region: 'garage',
+            forcePathStyle: true,
             clientFactory: static function (
                 string $endpoint,
                 string $accessKey,
                 string $secretKey,
                 bool $useSsl,
+                string $region,
+                bool $forcePathStyle,
                 ?float $timeoutSeconds,
             ) use ($client, &$capturedTimeout) {
                 $capturedTimeout = $timeoutSeconds;
@@ -59,10 +65,12 @@ final class ObjectStorageHealthCheckTest extends UnitTestCase
     public function testCheckReturnsErrorWhenObjectStorageIsUnreachable(): void
     {
         $check = new ObjectStorageHealthCheck(
-            endpoint: 'http://rustfs:9000',
-            accessKey: 'rustfsadmin',
+            endpoint: 'http://garage:3900',
+            accessKey: 'garageadmin',
             secretKey: 'change_me',
             useSsl: false,
+            region: 'garage',
+            forcePathStyle: true,
             clientFactory: static function (): S3Client {
                 throw new \RuntimeException('Connection timed out after 3 seconds');
             },

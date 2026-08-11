@@ -33,9 +33,9 @@ trait ObjectStorageTestTrait
     {
         return new S3Client([
             'version' => 'latest',
-            'region' => 'us-east-1',
+            'region' => $this->s3Region(),
             'endpoint' => $this->s3Endpoint(),
-            'use_path_style_endpoint' => true,
+            'use_path_style_endpoint' => $this->s3ForcePathStyle(),
             'credentials' => [
                 'key' => $this->s3AccessKey(),
                 'secret' => $this->s3SecretKey(),
@@ -46,16 +46,26 @@ trait ObjectStorageTestTrait
 
     private function s3Endpoint(): string
     {
-        return $_ENV['S3_ENDPOINT'] ?? 'http://rustfs:9000';
+        return $_ENV['S3_ENDPOINT'] ?? 'http://garage:3900';
     }
 
     private function s3AccessKey(): string
     {
-        return $_ENV['S3_ACCESS_KEY'] ?? 'rustfsadmin';
+        return $_ENV['S3_ACCESS_KEY'] ?? 'garageadmin';
     }
 
     private function s3SecretKey(): string
     {
         return $_ENV['S3_SECRET_KEY'] ?? 'change_me';
+    }
+
+    private function s3Region(): string
+    {
+        return $_ENV['S3_REGION'] ?? 'garage';
+    }
+
+    private function s3ForcePathStyle(): bool
+    {
+        return !isset($_ENV['S3_FORCE_PATH_STYLE']) || 'false' !== $_ENV['S3_FORCE_PATH_STYLE'];
     }
 }

@@ -2,6 +2,7 @@
 .PHONY: help
 
 DOCKER_COMPOSE = docker compose -f docker/compose.yaml --env-file .env.local
+DOCKER_COMPOSE_ALL = $(DOCKER_COMPOSE) --profile monitoring
 PHP = $(DOCKER_COMPOSE) exec -w /app php
 PHP_TEST = $(DOCKER_COMPOSE) exec -w /app -e APP_ENV=test php
 CONSOLE = $(PHP) bin/console
@@ -16,14 +17,17 @@ help:
 		| sort \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-30s$(RESET) %s\n", $$1, $$2}'
 
-up:
+up: ## Start the core stack (php, nginx, postgres, rabbitmq, redis, garage, mailpit)
 	$(DOCKER_COMPOSE) up -d
 
-down:
-	$(DOCKER_COMPOSE) down
+up-monitoring: ## Start the core stack plus Prometheus, Grafana and postgres_exporter
+	$(DOCKER_COMPOSE_ALL) up -d
 
-down-v:
-	$(DOCKER_COMPOSE) down -v
+down: ## Stop and remove all containers, including monitoring if running
+	$(DOCKER_COMPOSE_ALL) down
+
+down-v: ## Like down, but also remove volumes (data loss)
+	$(DOCKER_COMPOSE_ALL) down -v
 
 build:
 	$(DOCKER_COMPOSE) build --no-cache
@@ -114,7 +118,30 @@ outbox-relay:
 scheduler:
 	$(CONSOLE) messenger:consume scheduler_default --time-limit=3600 -vv
 
-init: build up install db-fresh
+init: build up install db-fresh garage-bootstrap
+
+garage-bootstrap: ## One-time (idempotent) Garage bootstrap: layout, access key, buckets (keep bucket list in sync with document_storage.buckets)
+	@set -a; . ./.env.local; set +a; \
+	GARAGE="$(DOCKER_COMPOSE) exec -T garage /garage"; \
+	NODE_ID=$$($$GARAGE node id -q | cut -d@ -f1); \
+	if $$GARAGE status | grep -q "NO ROLE ASSIGNED"; then \
+		echo "Assigning single-node layout..."; \
+		$$GARAGE layout assign -z dc1 -c 1G "$$NODE_ID"; \
+		VERSION=$$($$GARAGE layout show | grep "Current cluster layout version:" | awk '{print $$NF}'); \
+		$$GARAGE layout apply --version $$((VERSION + 1)); \
+	fi; \
+	if ! $$GARAGE key info "$$S3_ACCESS_KEY" >/dev/null 2>&1; then \
+		echo "Importing app access key..."; \
+		$$GARAGE key import -n app-key "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" --yes; \
+	fi; \
+	$$GARAGE key allow --create-bucket "$$S3_ACCESS_KEY"; \
+	for BUCKET in documents invoices; do \
+		if ! $$GARAGE bucket info "$$BUCKET" >/dev/null 2>&1; then \
+			echo "Creating bucket $$BUCKET..."; \
+			$$GARAGE bucket create "$$BUCKET"; \
+		fi; \
+		$$GARAGE bucket allow "$$BUCKET" --read --write --owner --key "$$S3_ACCESS_KEY"; \
+	done
 
 bc:
 	$(CONSOLE) make:bounded-context $(name) $(if $(api-version),--api-version=$(api-version),)
@@ -165,13 +192,13 @@ ci: cs-check phpstan deptrac test-unit test-integration test-http ## Run all CI 
 test-coverage:
 	$(PHP_TEST) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage
 
-mail:
+mail: ## Open Mailpit UI
 	open http://localhost:8025
 
-metrics:
+metrics: ## Open Prometheus UI (requires "make up-monitoring")
 	open http://localhost:9090
 
-grafana:
+grafana: ## Open Grafana UI (requires "make up-monitoring")
 	open http://localhost:3000
 
 openapi-export-json:
