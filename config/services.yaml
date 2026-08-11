@@ -1,4 +1,5 @@
 parameters:
+    app_version_default: unknown
     metrics_storage_default: apcu
     metrics_redis_host_default: 127.0.0.1
     metrics_redis_port_default: 6379

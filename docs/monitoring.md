@@ -48,7 +48,7 @@ The application exposes Prometheus text format on `GET /metrics` at the **root**
 
 `/metrics` is intentionally **without JWT**. Scraping is intended to happen from trusted networks (e.g. Prometheus on the Docker internal network). In production you should rely on firewalling, segmentation, or a reverse-proxy allow-list rather than coupling scrapers to application auth—IP allow-listing or a scraper-specific secret header would be natural follow-ups but are **out of scope** for this phase.
 
-The Docker Compose Prometheus job `symfony` scrapes `http://nginx:80/metrics` so traffic follows the normal Nginx → PHP-FPM path (do not point scrapes at the FPM port).
+The Docker Compose Prometheus job `symfony` scrapes `http://php:80/metrics` — FrankenPHP serves HTTP directly (no separate reverse proxy/FPM hop), so this is the same path real traffic takes.
 
 ### Automatic HTTP metrics
 

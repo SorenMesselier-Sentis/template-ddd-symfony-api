@@ -1,11 +1,13 @@
 services:
     # =========================================================
-    # PHP
+    # PHP (FrankenPHP — serves HTTP directly, no separate nginx)
     # =========================================================
     php:
         build:
             context: .
             dockerfile: php/Dockerfile
+        ports:
+            - "${HTTP_PORT}:80"
         volumes:
             - ../:/app
             # Filename must sort after app.ini/opcache.ini (conf.d loads
@@ -32,19 +34,6 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
-
-    # =========================================================
-    # Nginx
-    # =========================================================
-    nginx:
-        image: nginx:1.25-alpine
-        ports:
-            - "${NGINX_PORT}:80"
-        volumes:
-            - ../:/app
-            - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-        depends_on:
-            - php
 
     # =========================================================
     # PostgreSQL
@@ -163,8 +152,8 @@ services:
 
     # =========================================================
     # Garage (S3-compatible object storage — local dev/CI only;
-    # staging/prod use Cloudflare R2, see
-    # docs/rustfs-to-r2-garage-migration.md)
+    # staging/prod use Cloudflare R2 instead, see README "Production:
+    # Cloudflare R2". Bootstrap via "make garage-bootstrap".
     # =========================================================
     garage:
         image: dxflrs/garage:v2.3.0
