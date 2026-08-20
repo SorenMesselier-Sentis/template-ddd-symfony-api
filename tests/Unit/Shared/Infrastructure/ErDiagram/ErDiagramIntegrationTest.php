@@ -32,8 +32,8 @@ final class ErDiagramIntegrationTest extends UnitTestCase
         $this->assertStringContainsString('documents {', $mermaid);
         $this->assertStringContainsString('multipart_upload_sessions {', $mermaid);
         $this->assertStringContainsString('outbox_messages {', $mermaid);
-        $this->assertStringContainsString('varchar100 first_name', $mermaid);
-        $this->assertStringContainsString('varchar255 password', $mermaid);
+        $this->assertStringContainsString('first_name varchar100', $mermaid);
+        $this->assertStringContainsString('password varchar255', $mermaid);
         $this->assertStringContainsString('refresh_tokens }o--|| users : "user_id"', $mermaid);
         $this->assertStringContainsString('documents }o--|| users : "owner_id"', $mermaid);
         $this->assertStringContainsString('multipart_upload_sessions }o--|| documents : "document_id"', $mermaid);

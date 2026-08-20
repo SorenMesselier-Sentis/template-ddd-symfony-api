@@ -10,11 +10,16 @@ point of the file for a template that gets forked repeatedly.
 
 ## Unreleased
 
+### Changed
+- ER diagram columns now render as `name type` (e.g. `owner_id uuid`) instead of `type name`, matching
+  the order columns are declared in SQL.
+
 ### Added
 - `CONTRIBUTING.md` and a GitHub pull request template (`.github/pull_request_template.md`).
 - Warning when a migration column looks like a cross-BC UUID foreign key but resolves to no known table
   (`ForeignKeyRelationInferrer`), instead of silently dropping it from the ER diagram.
 - Full `make help` coverage — every Makefile target now has a one-line description (was 11 of 58).
+- `CLAUDE.md` now instructs Claude to add a `CHANGELOG.md` entry alongside any user-facing change.
 
 ### Fixed
 - ER diagram generator was silently omitting `tasks.assignee_id → users` and `tasks.attachment_id →

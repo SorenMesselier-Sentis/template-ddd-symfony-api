@@ -19,7 +19,7 @@ final class ErDiagramValidator
             $tableBlock = $this->extractTableBlock($mermaidBlock, $table->tableName);
 
             foreach ($table->columns as $column) {
-                $expectedLine = sprintf('%s %s', $this->sanitizeType($column->type), $column->name);
+                $expectedLine = sprintf('%s %s', $column->name, $this->sanitizeType($column->type));
 
                 if (!str_contains($tableBlock, $expectedLine)) {
                     throw new \RuntimeException(sprintf('Column "%s" (%s) of table "%s" is missing from the generated diagram.', $column->name, $column->type, $table->tableName));

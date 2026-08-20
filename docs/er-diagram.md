@@ -3,108 +3,108 @@
 ```mermaid
 erDiagram
     audit_log {
-        uuid id
-        varchar255 actor_id
-        varchar100 action
-        varchar255 target_id
-        json context
-        timestamp0withouttimezone occurred_at
+        id uuid
+        actor_id varchar255
+        action varchar100
+        target_id varchar255
+        context json
+        occurred_at timestamp0withouttimezone
     }
     documents {
-        uuid id
-        uuid owner_id
-        varchar63 bucket_name
-        varchar1024 object_path
-        varchar255 original_name
-        int size
-        varchar127 mime_type
-        varchar20 status
-        timestamp0withouttimezone created_at
-        timestamp0withouttimezone updated_at
+        id uuid
+        owner_id uuid
+        bucket_name varchar63
+        object_path varchar1024
+        original_name varchar255
+        size int
+        mime_type varchar127
+        status varchar20
+        created_at timestamp0withouttimezone
+        updated_at timestamp0withouttimezone
     }
     email_verification_tokens {
-        uuid id
-        uuid user_id
-        varchar2048 token
-        timestamp0withouttimezone expires_at
-        boolean revoked
-        timestamp0withouttimezone created_at
+        id uuid
+        user_id uuid
+        token varchar2048
+        expires_at timestamp0withouttimezone
+        revoked boolean
+        created_at timestamp0withouttimezone
     }
     feature_flags {
-        varchar100 flag_key
-        boolean enabled
-        varchar255 description
-        timestamp0withouttimezone updated_at
+        flag_key varchar100
+        enabled boolean
+        description varchar255
+        updated_at timestamp0withouttimezone
     }
     multipart_upload_sessions {
-        varchar255 upload_id
-        uuid document_id
-        uuid owner_id
-        varchar63 bucket_name
-        varchar1024 object_path
-        varchar255 original_name
-        varchar127 mime_type
-        int total_size
-        varchar20 status
-        json parts
-        timestamp0withouttimezone created_at
-        timestamp0withouttimezone updated_at
+        upload_id varchar255
+        document_id uuid
+        owner_id uuid
+        bucket_name varchar63
+        object_path varchar1024
+        original_name varchar255
+        mime_type varchar127
+        total_size int
+        status varchar20
+        parts json
+        created_at timestamp0withouttimezone
+        updated_at timestamp0withouttimezone
     }
     outbox_messages {
-        uuid id
-        varchar255 event_name
-        varchar255 event_class
-        uuid aggregate_id
-        json payload
-        timestamp0withouttimezone occurred_on
-        timestamp0withouttimezone created_at
-        timestamp0withouttimezone published_at
+        id uuid
+        event_name varchar255
+        event_class varchar255
+        aggregate_id uuid
+        payload json
+        occurred_on timestamp0withouttimezone
+        created_at timestamp0withouttimezone
+        published_at timestamp0withouttimezone
     }
     password_reset_tokens {
-        uuid id
-        uuid user_id
-        varchar2048 token
-        timestamp0withouttimezone expires_at
-        boolean revoked
-        timestamp0withouttimezone created_at
+        id uuid
+        user_id uuid
+        token varchar2048
+        expires_at timestamp0withouttimezone
+        revoked boolean
+        created_at timestamp0withouttimezone
     }
     projects {
-        uuid id
-        uuid owner_id
-        varchar100 name
-        varchar20 status
-        timestamp0withouttimezone created_at
-        timestamp0withouttimezone updated_at
+        id uuid
+        owner_id uuid
+        name varchar100
+        status varchar20
+        created_at timestamp0withouttimezone
+        updated_at timestamp0withouttimezone
     }
     refresh_tokens {
-        uuid id
-        uuid user_id
-        varchar2048 token
-        timestamp0withouttimezone expires_at
-        boolean revoked
-        timestamp0withouttimezone created_at
+        id uuid
+        user_id uuid
+        token varchar2048
+        expires_at timestamp0withouttimezone
+        revoked boolean
+        created_at timestamp0withouttimezone
     }
     tasks {
-        uuid id
-        uuid project_id
-        varchar200 title
-        uuid assignee_id
-        uuid attachment_id
-        varchar20 status
-        timestamp0withouttimezone created_at
-        timestamp0withouttimezone updated_at
+        id uuid
+        project_id uuid
+        title varchar200
+        assignee_id uuid
+        attachment_id uuid
+        status varchar20
+        created_at timestamp0withouttimezone
+        updated_at timestamp0withouttimezone
     }
     users {
-        uuid id
-        varchar100 first_name
-        varchar100 last_name
-        varchar254 email
-        varchar255 password
-        varchar20 status
-        json roles
-        timestamp0withouttimezone email_verified_at
-        timestamp0withouttimezone created_at
-        timestamp0withouttimezone updated_at
+        id uuid
+        first_name varchar100
+        last_name varchar100
+        email varchar254
+        password varchar255
+        status varchar20
+        roles json
+        email_verified_at timestamp0withouttimezone
+        created_at timestamp0withouttimezone
+        updated_at timestamp0withouttimezone
     }
     documents }o--|| users : "owner_id"
     email_verification_tokens }o--|| users : "user_id"
