@@ -3,6 +3,10 @@
 
 DOCKER_COMPOSE = docker compose -f docker/compose.yaml --env-file .env.local
 DOCKER_COMPOSE_ALL = $(DOCKER_COMPOSE) --profile monitoring
+# Core stack : everything the app needs to run and be exercised manually.
+CORE_SERVICES = php postgres rabbitmq redis garage mailpit
+# CI stack: what the quality gate actually touches.
+CI_SERVICES = php postgres rabbitmq redis garage
 PHP = $(DOCKER_COMPOSE) exec -w /app php
 PHP_TEST = $(DOCKER_COMPOSE) exec -w /app -e APP_ENV=test php
 CONSOLE = $(PHP) bin/console
@@ -17,11 +21,15 @@ help:
 		| sort \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-30s$(RESET) %s\n", $$1, $$2}'
 
-up: ## Start the core stack (php/FrankenPHP, postgres, rabbitmq, redis, garage, mailpit)
-	$(DOCKER_COMPOSE) up -d
+up: ## Start the core stack (php/FrankenPHP, postgres, rabbitmq, redis, garage, mailpit) and wait until healthy
+	$(DOCKER_COMPOSE) up -d --wait $(CORE_SERVICES)
 
 up-monitoring: ## Start the core stack plus Prometheus, Grafana and postgres_exporter
-	$(DOCKER_COMPOSE_ALL) up -d
+	$(DOCKER_COMPOSE_ALL) up -d --wait
+
+up-ci: ## Start (and wait for) exactly the services CI's quality gate needs, then bootstrap Garage — mirrors .github/workflows/ci.yml, safe to run locally
+	$(DOCKER_COMPOSE) up -d --wait $(CI_SERVICES)
+	$(MAKE) garage-bootstrap
 
 down: ## Stop and remove all containers, including monitoring and renamed/removed services
 	$(DOCKER_COMPOSE_ALL) down --remove-orphans

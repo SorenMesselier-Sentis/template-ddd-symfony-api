@@ -499,6 +499,7 @@ Create the bucket and an API token (with the access key/secret pair) from the Cl
 ```bash
 make up             # start the core stack (php/FrankenPHP, postgres, rabbitmq, redis, garage, mailpit)
 make up-monitoring  # core stack + Prometheus, Grafana, postgres_exporter
+make up-ci          # start just what CI needs (no mailpit/monitoring) + bootstrap Garage see "Reproduce the CI pipeline locally"
 make down           # stop and remove all containers (including monitoring, if running)
 make bash           # open a shell in the PHP container
 make logs           # tail all container logs
@@ -1079,12 +1080,11 @@ GitHub Actions runs on every **push** and **pull request** to `main` and `master
 
 The pipeline:
 
-1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **Garage**, **PHP**
-2. Bootstraps Garage (`make garage-bootstrap` — layout, access key, buckets)
-3. Runs `composer install`
-4. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
-5. Warms the Symfony dev container cache (required by PHPStan)
-6. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+1. Starts Docker services and bootstraps Garage (`make up-ci` — **PostgreSQL**, **RabbitMQ**, **Garage**, **Redis**, **PHP**, then layout/access key/buckets). No Mailpit: email only happens in async event handlers, which nothing consumes during tests, so no SMTP connection is ever attempted.
+2. Runs `composer install`
+3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
+4. Warms the Symfony dev container cache (required by PHPStan)
+5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
 
 Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
 
@@ -1094,8 +1094,7 @@ Run `make ci` locally before opening a PR — it executes the same quality gates
 
 ```bash
 cp .env .env.local                              # skip if .env.local already exists
-docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq garage php
-make garage-bootstrap
+make up-ci                                      # starts postgres/rabbitmq/garage/redis/php + bootstraps Garage
 make install
 
 # Generate JWT keys once (required for auth / HTTP tests):
