@@ -312,6 +312,43 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,https://app.example.com
 
 Left empty (the `.env` default), no cross-origin browser request is allowed — same-origin and non-browser clients (curl, server-to-server) are unaffected, since CORS is a browser-enforced mechanism. `Location` (returned on `201 Created`) and `X-Request-Id` are exposed via `Access-Control-Expose-Headers` so frontend JS can read them; a `Vary: Origin` header is added whenever a specific origin (not `*`) is reflected, so intermediary caches don't serve one origin's CORS headers to another.
 
+### Real-time updates (Mercure)
+
+Push data to the browser instead of polling — a [Mercure](https://mercure.rocks/) hub, embedded directly in the `php` container's own FrankenPHP/Caddy process (`docker/frankenphp/Caddyfile`'s `mercure` directive). FrankenPHP ships this module built in, so there's no extra container: `/.well-known/mercure` requests are intercepted by Caddy itself and never reach the PHP/Symfony kernel.
+
+Publishing, from any bounded context, goes through one port:
+
+```php
+public function __construct(private RealtimePublisherInterface $publisher) {}
+
+$this->publisher->publish('/users/'.$userId.'/notifications', ['subject' => 'Hi', 'body' => '...']);
+```
+
+`Shared\Domain\RealTime\RealtimePublisherInterface`, backed by `MercureRealtimePublisher` — same ports-and-adapters shape as `EmailSenderInterface`. Wired as a working example on the `IN_APP` notification channel (`InAppChannelNotificationHandler`): every in-app notification is now pushed live, not just logged.
+
+Topics are **private** by default, so a frontend needs a subscriber token before it can listen:
+
+```bash
+# 1. Mint a subscriber authorization cookie scoped to the caller's own topics
+curl -i http://localhost:8080/api/v1/users/me/realtime-token -H "Authorization: Bearer $TOKEN"
+# -> Set-Cookie: mercureAuthorization=...; Path=/.well-known/mercure; HttpOnly
+
+# 2. Subscribe (send that cookie along)
+curl -N "http://localhost:8080/.well-known/mercure?topic=/users/<id>/notifications" \
+  -H "Cookie: mercureAuthorization=..."
+
+# 3. From another terminal, trigger a live update on that same connection
+curl -i -X POST http://localhost:8080/api/v1/users/me/realtime-test \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"message": "Hi there"}'
+```
+
+`POST /users/me/realtime-test` (`SendTestRealtimeNotificationController`) is a working example endpoint: it sends yourself an `IN_APP` notification, which travels the real path (`NotificationSenderInterface` → `InAppChannelNotificationHandler` → `RealtimePublisherInterface`) and arrives on the connection opened in step 2. `message` is optional, defaulting to `"Hello from Mercure!"`.
+
+From a browser, the cookie set in step 1 is sent automatically by `EventSource` as long as the page and the hub are same-origin — the common case, since the hub lives on the same host/port as the API. If your frontend runs on a **different origin** in dev (e.g. a Vite/webpack dev server on another port), two things change: `EventSource` needs `{ withCredentials: true }`, and the Caddy `mercure` block needs `cors_origins` set to that exact origin (not `*` — cookie-based auth requires a real origin with `Access-Control-Allow-Credentials`, unlike the API's own CORS above).
+
+Each hub instance keeps updates in memory only (the default "local" transport) — history/subscriptions don't survive a container restart, which is fine for dev/demo use. Switch to the `bolt` transport (`transport bolt <path>` in the Caddyfile, plus a volume to persist it) if you need updates to survive a restart.
+
 ## Getting started
 
 ### Requirements
@@ -404,6 +441,13 @@ MAILER_FROM=noreply@example.com
 # Outbox cleanup retention (days). Values <1 fall back to 30 with a warning log.
 OUTBOX_RETENTION_DAYS=30
 
+# Mercure (real-time push — see "Real-time updates (Mercure)"). Hub is
+# embedded in the "php" container; MERCURE_URL is the internal publish URL,
+# MERCURE_PUBLIC_URL is what browsers subscribe to.
+MERCURE_JWT_SECRET=your_secret
+MERCURE_URL="http://php/.well-known/mercure"
+MERCURE_PUBLIC_URL="http://localhost:${HTTP_PORT}/.well-known/mercure"
+
 # S3-compatible object storage — Garage in Docker for dev/CI, Cloudflare R2 for
 # staging/prod (Document BC). Application settings consumed by PHP adapters:
 S3_ACCESS_KEY=garageadmin
@@ -455,6 +499,7 @@ Create the bucket and an API token (with the access key/secret pair) from the Cl
 ```bash
 make up             # start the core stack (php/FrankenPHP, postgres, rabbitmq, redis, garage, mailpit)
 make up-monitoring  # core stack + Prometheus, Grafana, postgres_exporter
+make up-ci          # start just what CI needs (no mailpit/monitoring) + bootstrap Garage see "Reproduce the CI pipeline locally"
 make down           # stop and remove all containers (including monitoring, if running)
 make bash           # open a shell in the PHP container
 make logs           # tail all container logs
@@ -1035,12 +1080,11 @@ GitHub Actions runs on every **push** and **pull request** to `main` and `master
 
 The pipeline:
 
-1. Starts Docker services: **PostgreSQL**, **RabbitMQ**, **Garage**, **PHP**
-2. Bootstraps Garage (`make garage-bootstrap` — layout, access key, buckets)
-3. Runs `composer install`
-4. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
-5. Warms the Symfony dev container cache (required by PHPStan)
-6. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+1. Starts Docker services and bootstraps Garage (`make up-ci` — **PostgreSQL**, **RabbitMQ**, **Garage**, **Redis**, **PHP**, then layout/access key/buckets). No Mailpit: email only happens in async event handlers, which nothing consumes during tests, so no SMTP connection is ever attempted.
+2. Runs `composer install`
+3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
+4. Warms the Symfony dev container cache (required by PHPStan)
+5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
 
 Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
 
@@ -1050,8 +1094,7 @@ Run `make ci` locally before opening a PR — it executes the same quality gates
 
 ```bash
 cp .env .env.local                              # skip if .env.local already exists
-docker compose -f docker/compose.yaml --env-file .env.local up -d --wait postgres rabbitmq garage php
-make garage-bootstrap
+make up-ci                                      # starts postgres/rabbitmq/garage/redis/php + bootstraps Garage
 make install
 
 # Generate JWT keys once (required for auth / HTTP tests):

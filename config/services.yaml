@@ -250,6 +250,10 @@ services:
     App\Shared\Domain\Notification\NotificationSenderInterface:
         alias: App\Shared\Infrastructure\Notification\ChannelNotificationSender
 
+    # Real-time (Mercure)
+    App\Shared\Domain\RealTime\RealtimePublisherInterface:
+        alias: App\Shared\Infrastructure\RealTime\MercureRealtimePublisher
+
     App\User\Infrastructure\EventHandler\SendPasswordResetEmailOnPasswordResetRequested:
         arguments:
             $frontendUrl: '%env(default:app_frontend_url_default:APP_FRONTEND_URL)%'

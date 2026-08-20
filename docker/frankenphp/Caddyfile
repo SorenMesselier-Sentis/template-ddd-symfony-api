@@ -1,5 +1,7 @@
 {
 	frankenphp
+	order mercure after encode
+	order php_server before file_server
 }
 
 # Port-only address (no hostname) => matches ANY Host header, plain HTTP,
@@ -21,4 +23,20 @@ log {
 	format console
 }
 
-php_server
+# Mercure hub, embedded directly in this FrankenPHP/Caddy process (the
+# module ships built into the dunglas/frankenphp image — no separate
+# container). Exposed at /.well-known/mercure; requests there are handled
+# entirely by this Caddy module and never reach the PHP/Symfony kernel, so
+# there's nothing to wire in security.yaml for it. See Shared/Domain/RealTime
+# (publish side) and User's GetRealtimeSubscriberTokenController (private
+# topic subscriber auth) for the app-level wiring. Default (in-memory) "local"
+# transport — history/subscriptions don't survive a container restart; fine
+# for dev/demo use. Switch to the "bolt" transport (via a `transport bolt
+# <path>` directive) if you need updates to survive a restart.
+route {
+	mercure {
+		publisher_jwt {$MERCURE_JWT_SECRET}
+		subscriber_jwt {$MERCURE_JWT_SECRET}
+	}
+	php_server
+}
