@@ -31,6 +31,7 @@
         "symfony/mailer": "8.0.*",
         "symfony/mercure-bundle": "^0.5.0",
         "symfony/messenger": "8.0.*",
+        "symfony/monolog-bundle": "^4.0",
         "symfony/property-access": "8.0.*",
         "symfony/property-info": "8.0.*",
         "symfony/rate-limiter": "8.0.*",
@@ -111,7 +112,6 @@
         "symfony/browser-kit": "8.0.*",
         "symfony/css-selector": "8.0.*",
         "symfony/http-client": "^8.0",
-        "symfony/maker-bundle": "^1.67",
-        "symfony/monolog-bundle": "^4.0"
+        "symfony/maker-bundle": "^1.67"
     }
 }

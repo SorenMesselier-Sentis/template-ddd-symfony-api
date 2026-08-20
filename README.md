@@ -1132,6 +1132,24 @@ make ci
 
 If any step fails, PHPUnit output is printed directly in the terminal (same as in GitHub Actions job logs).
 
+### Building & publishing the production image
+
+`ci.yml` has a second job, `publish-image`, that only runs after `quality` passes, and only on a `push` (never on a pull request — so a fork's PRs never need registry credentials). It builds `docker/php/Dockerfile`'s `prod` target and pushes to GHCR at `ghcr.io/<owner>/<repo>`, using the repo's own built-in `GITHUB_TOKEN` — no registry secrets to configure, works out of the box for any fork. Tags: `latest` (pushes to `main`), the short git SHA (every push), and the semver version (pushes of a `vX.Y.Z` tag).
+
+The `prod` target differs from the `dev` image used everywhere else in this doc: it `COPY`s the app source in and runs `composer install --no-dev` instead of relying on the bind-mounted source `make up`/`make init` use, so the resulting image is self-contained and deployable as-is — no host volume required. `APP_VERSION` is baked in at build time (`--build-arg APP_VERSION=<git sha>`, wired into `ci.yml` already) so the image is self-identifying for Sentry release tracking (see [Error tracking (Sentry)](#error-tracking-sentry)).
+
+What this deliberately does **not** include: a deployment target. Where the image actually runs (Kubernetes, ECS, Fly.io, a bare VM pulling the image, …) varies per fork, and a template guessing wrong here would add false confidence rather than save work — this stops at "there's a pullable, deployable image," which is the universal prerequisite regardless of target.
+
+Two things any real deployment needs to handle itself, since the image intentionally doesn't:
+- **JWT keys** (`config/jwt/*.pem`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above).
+- **Non-root container user**: the image currently runs as root, same as the `dev` image — FrankenPHP binding port 80 as non-root needs an explicit Linux capability grant (`cap_net_bind_service`) at the deployment layer. Worth hardening before a real production rollout, not included here.
+
+Build it locally the same way CI does:
+
+```bash
+docker build -f docker/php/Dockerfile --target prod --build-arg APP_VERSION=$(git rev-parse --short HEAD) -t myapp:prod .
+```
+
 ## Code quality
 
 Run static analysis, architecture checks, and code style:

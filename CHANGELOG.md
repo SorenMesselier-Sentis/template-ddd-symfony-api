@@ -21,6 +21,7 @@ point of the file for a template that gets forked repeatedly.
   stack traces instead of bare strings.
 
 ### Added
+- A `publish-image` job in `ci.yml`: builds `docker/php/Dockerfile`'s new `prod` target (self-contained — source `COPY`d in, `composer install --no-dev`, no dev tooling) and pushes it to GHCR on every push to `main`/a version tag, gated on the quality gate passing first. Uses the repo's built-in `GITHUB_TOKEN`, no registry secrets to configure. Does not include an actual deployment target (Kubernetes/ECS/etc.) — that's fork-specific by nature. See README "Building & publishing the production image".
 - Error tracking via Sentry (`sentry/sentry-symfony`), opt-in and a safe no-op until `SENTRY_DSN` is set. Wired as Monolog handlers at `error` level (`config/packages/monolog.yaml`) rather than the bundle's own automatic exception listener, so it reports exactly what `ExceptionListener` already treats as a real error (unmapped/`5xx`) — never the expected `4xx` domain/validation/auth responses. See README "Error tracking (Sentry)".
 - `CONTRIBUTING.md` and a GitHub pull request template (`.github/pull_request_template.md`).
 - Warning when a migration column looks like a cross-BC UUID foreign key but resolves to no known table
@@ -29,6 +30,8 @@ point of the file for a template that gets forked repeatedly.
 - `CLAUDE.md` now instructs Claude to add a `CHANGELOG.md` entry alongside any user-facing change.
 
 ### Fixed
+- **The app could not boot in `prod` (or any env other than dev/test) at all.** `config/packages/doctrine_fixtures.yaml` had an unconditional top-level `doctrine_fixtures:` key, but `DoctrineFixturesBundle` (which provides that config extension) is only registered for `dev`/`test` — so container compilation threw a fatal `LogicException` in any other environment, on every single request. Invisible until now because nothing had ever actually run `composer install --no-dev` or booted the app outside dev/test — exactly what building the new `prod` Docker image (see "Added" above) finally exercised. Fixed by removing the redundant unconditional key (the correctly-scoped `when@dev`/`when@test` blocks already had the same config).
+- `symfony/monolog-bundle` was listed under `require-dev` even though `MonologBundle` is registered unconditionally (`config/bundles.php`, `'all' => true`) and prod logging (JSON to stdout, `monolog.yaml`) depends on it — a `composer install --no-dev` would leave the class missing and crash on the first log call. Moved to `require`. Same root cause as above: no prod-shaped install had ever been exercised before.
 - `SYMFONY_TRUSTED_PROXIES`/`SYMFONY_TRUSTED_HEADERS` were never wired through `docker/compose.yaml` or documented, so behind any real reverse proxy/load balancer, `Request::getClientIp()` silently returned the proxy's IP for every request — collapsing the IP-keyed auth and API rate limiters into one shared bucket. Added both env vars (empty by default, matching current behavior) and wired them through; see README "Rate limiting" and "Environment variables".
 - ER diagram generator was silently omitting `tasks.assignee_id → users` and `tasks.attachment_id →
   documents`: the FK-inference heuristic only pluralizes the column's base name (`user_id → users`),
