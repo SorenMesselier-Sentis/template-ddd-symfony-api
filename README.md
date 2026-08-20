@@ -336,7 +336,14 @@ curl -i http://localhost:8080/api/v1/users/me/realtime-token -H "Authorization: 
 # 2. Subscribe (send that cookie along)
 curl -N "http://localhost:8080/.well-known/mercure?topic=/users/<id>/notifications" \
   -H "Cookie: mercureAuthorization=..."
+
+# 3. From another terminal, trigger a live update on that same connection
+curl -i -X POST http://localhost:8080/api/v1/users/me/realtime-test \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"message": "Hi there"}'
 ```
+
+`POST /users/me/realtime-test` (`SendTestRealtimeNotificationController`) is a working example endpoint: it sends yourself an `IN_APP` notification, which travels the real path (`NotificationSenderInterface` → `InAppChannelNotificationHandler` → `RealtimePublisherInterface`) and arrives on the connection opened in step 2. `message` is optional, defaulting to `"Hello from Mercure!"`.
 
 From a browser, the cookie set in step 1 is sent automatically by `EventSource` as long as the page and the hub are same-origin — the common case, since the hub lives on the same host/port as the API. If your frontend runs on a **different origin** in dev (e.g. a Vite/webpack dev server on another port), two things change: `EventSource` needs `{ withCredentials: true }`, and the Caddy `mercure` block needs `cors_origins` set to that exact origin (not `*` — cookie-based auth requires a real origin with `Access-Control-Allow-Credentials`, unlike the API's own CORS above).
 
