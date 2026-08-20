@@ -70,6 +70,61 @@ final class ForeignKeyRelationInferrerTest extends UnitTestCase
         $this->assertSame('users', $documents->relations[0]->targetTable);
     }
 
+    public function testItInfersAssigneeIdAndAttachmentIdAsCrossBcReferences(): void
+    {
+        $tables = [
+            new TableMetadata(
+                tableName: 'users',
+                columns: [new ColumnMetadata('id', 'UUID', true)],
+                relations: [],
+            ),
+            new TableMetadata(
+                tableName: 'documents',
+                columns: [new ColumnMetadata('id', 'UUID', true)],
+                relations: [],
+            ),
+            new TableMetadata(
+                tableName: 'tasks',
+                columns: [
+                    new ColumnMetadata('id', 'UUID', true),
+                    new ColumnMetadata('assignee_id', 'UUID'),
+                    new ColumnMetadata('attachment_id', 'UUID'),
+                ],
+                relations: [],
+            ),
+        ];
+
+        $enriched = $this->inferrer->infer($tables);
+        $tasks = $enriched[2];
+
+        $this->assertCount(2, $tasks->relations);
+        $this->assertSame('users', $tasks->relations[0]->targetTable);
+        $this->assertSame('documents', $tasks->relations[1]->targetTable);
+    }
+
+    public function testItWarnsWhenAForeignKeyLikeColumnCannotBeResolved(): void
+    {
+        $tables = [
+            new TableMetadata(
+                tableName: 'outbox_messages',
+                columns: [
+                    new ColumnMetadata('id', 'UUID', true),
+                    new ColumnMetadata('aggregate_id', 'UUID'),
+                    new ColumnMetadata('mystery_id', 'UUID'),
+                ],
+                relations: [],
+            ),
+        ];
+
+        $warnings = [];
+        $this->inferrer->infer($tables, static function (string $message) use (&$warnings): void {
+            $warnings[] = $message;
+        });
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('outbox_messages.mystery_id', $warnings[0]);
+    }
+
     public function testItInfersForeignKeysFromCompositePrimaryKeyPivotColumns(): void
     {
         $tables = [

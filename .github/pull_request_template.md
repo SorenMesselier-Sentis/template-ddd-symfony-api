@@ -35,6 +35,7 @@
 - [ ] Response envelope + HATEOAS `links` followed for any new/changed endpoint
 - [ ] `docs/er-diagram.md` regenerated if the schema changed (`make er-diagram`, or let CI do it on `main`)
 - [ ] `README.md` / `CLAUDE.md` updated if this introduces a new convention
+- [ ] `CHANGELOG.md` — added an entry under `Unreleased` (skip for pure chore/ci/test-only changes)
 
 ## Screenshots / API examples
 

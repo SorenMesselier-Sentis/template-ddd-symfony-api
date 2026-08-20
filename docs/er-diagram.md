@@ -113,5 +113,7 @@ erDiagram
     password_reset_tokens }o--|| users : "user_id"
     projects }o--|| users : "owner_id"
     refresh_tokens }o--|| users : "user_id"
+    tasks }o--|| documents : "attachment_id"
     tasks }o--|| projects : "project_id"
+    tasks }o--|| users : "assignee_id"
 ```

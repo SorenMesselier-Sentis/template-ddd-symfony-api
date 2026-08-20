@@ -37,96 +37,96 @@ down: ## Stop and remove all containers, including monitoring and renamed/remove
 down-v: ## Like down, but also remove volumes (data loss)
 	$(DOCKER_COMPOSE_ALL) down -v --remove-orphans
 
-build:
+build: ## Build (or rebuild without cache) all service images
 	$(DOCKER_COMPOSE) build --no-cache
 
-restart: down up
+restart: down up ## Restart the stack (down + up)
 
-logs:
+logs: ## Tail logs for all services
 	$(DOCKER_COMPOSE) logs -f
 
-logs-php:
+logs-php: ## Tail logs for the php service only
 	$(DOCKER_COMPOSE) logs -f php
 
-ps:
+ps: ## List running containers and their status
 	$(DOCKER_COMPOSE) ps
 
-bash:
+bash: ## Open a shell inside the php container (working dir /app)
 	$(PHP) sh
 
-install:
+install: ## Install Composer dependencies
 	$(COMPOSER) install
 
-update:
+update: ## Update Composer dependencies
 	$(COMPOSER) update
 
-clear:
+clear: ## Clear the Symfony cache and re-dump the autoloader
 	$(CONSOLE) cache:clear
 	$(COMPOSER) dump-autoload -o
 
-warmup:
+warmup: ## Warm up the Symfony cache
 	$(CONSOLE) cache:warmup
 
-db-create:
+db-create: ## Create the database if it doesn't already exist
 	$(CONSOLE) doctrine:database:create --if-not-exists
 
-db-drop:
+db-drop: ## Drop the database, terminating active connections first
 	$(DOCKER_COMPOSE) exec -T postgres sh -lc 'psql -U "$$POSTGRES_USER" -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\''$$POSTGRES_DB'\'' AND pid <> pg_backend_pid();"'
 	$(CONSOLE) doctrine:database:drop --force --if-exists
 
-db-migrate:
+db-migrate: ## Run pending Doctrine migrations
 	$(CONSOLE) doctrine:migrations:migrate --no-interaction
 
-db-rollback:
+db-rollback: ## Roll back the last Doctrine migration
 	$(CONSOLE) doctrine:migrations:migrate prev --no-interaction
 
-db-status:
+db-status: ## Show the status of Doctrine migrations
 	$(CONSOLE) doctrine:migrations:status
 
-db-diff:
+db-diff: ## Generate a new migration from entity/mapping changes
 	$(CONSOLE) doctrine:migrations:diff
 
-db-fixtures:
+db-fixtures: ## Load fixtures (doctrine:fixtures:load)
 	$(CONSOLE) doctrine:fixtures:load --no-interaction
 
-db-fresh: db-reset db-fixtures
+db-fresh: db-reset db-fixtures ## Reset the database and reload fixtures (db-reset + db-fixtures)
 
-db-reset: db-drop db-create db-migrate
+db-reset: db-drop db-create db-migrate ## Drop, recreate and re-migrate the database
 
-db-validate:
+db-validate: ## Validate the Doctrine schema against mappings
 	$(CONSOLE) doctrine:schema:validate
 
-debug-router:
+debug-router: ## List all registered routes
 	$(CONSOLE) debug:router
 
-consume:
+consume: ## Consume the async Messenger transport
 	$(CONSOLE) messenger:consume async --time-limit=3600 -vv
 
-consume-dl:
+consume-dl: ## Consume the async dead-letter transport
 	$(CONSOLE) messenger:consume async.dead_letter --time-limit=3600 -vv
 
-messenger-stop:
+messenger-stop: ## Signal Messenger workers to stop gracefully
 	$(CONSOLE) messenger:stop-workers
 
-messenger-stats:
+messenger-stats: ## Show Messenger transport queue stats
 	$(CONSOLE) messenger:stats
 
-messenger-failed-show:
+messenger-failed-show: ## Show messages currently in the failure transport
 	$(CONSOLE) messenger:failed:show
 
-messenger-failed-retry:
+messenger-failed-retry: ## Retry all messages in the failure transport
 	$(CONSOLE) messenger:failed:retry --force
 
-messenger-failed-remove:
+messenger-failed-remove: ## Discard all messages in the failure transport
 	$(CONSOLE) messenger:failed:remove --all --force
 
-outbox-relay:
+outbox-relay: ## One-shot manual flush of the transactional outbox
 	$(CONSOLE) app:outbox:relay
 
-scheduler:
+scheduler: ## Run the Scheduler worker (outbox relay + daily cleanups)
 	$(CONSOLE) messenger:consume scheduler_default --time-limit=3600 -vv
 
-init: build up install db-fresh garage-bootstrap
+init: build up install db-fresh garage-bootstrap ## First-time setup: build + up + install + db-fresh + garage-bootstrap
 
 garage-bootstrap: ## One-time (idempotent) Garage bootstrap: layout, access key, buckets (keep bucket list in sync with document_storage.buckets)
 	@set -a; . ./.env.local; set +a; \
@@ -151,42 +151,42 @@ garage-bootstrap: ## One-time (idempotent) Garage bootstrap: layout, access key,
 		$$GARAGE bucket allow "$$BUCKET" --read --write --owner --key "$$S3_ACCESS_KEY"; \
 	done
 
-bc:
+bc: ## Scaffold a new bounded context (name=X [api-version=vN])
 	$(CONSOLE) make:bounded-context $(name) $(if $(api-version),--api-version=$(api-version),)
 
-crud:
+crud: ## Scaffold CRUD (Domain+Application+Infra+tests) for an entity (context=X entity=Y)
 	$(CONSOLE) make:bc-crud $(context) $(entity)
 
-remove-crud:
+remove-crud: ## Remove a scaffolded CRUD (context=X entity=Y [force=1])
 	$(CONSOLE) remove:bc-crud $(context) $(entity) $(if $(force),--force,)
 
-remove-bc:
+remove-bc: ## Remove a bounded context (name=X [force=1]) — User, Document, Shared are protected
 	$(CONSOLE) remove:bounded-context $(name) $(if $(force),--force,)
 
-deptrac:
+deptrac: ## Check architecture layer boundaries (run after every structural change)
 	$(PHP) vendor/bin/deptrac analyse
 
-phpstan:
+phpstan: ## Run static analysis (level 9)
 	$(PHP) vendor/bin/phpstan analyse
 
-cs-fix:
+cs-fix: ## Apply PHP CS Fixer (@Symfony ruleset)
 	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php
 
-cs-check:
+cs-check: ## Check code style without modifying files (dry-run, fails on drift)
 	$(PHP) vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
 
-test:
+test: ## Run the full PHPUnit suite
 	$(PHP_TEST) vendor/bin/phpunit
 
-test-unit:
+test-unit: ## Run unit tests only (tests/Unit — no I/O)
 	$(PHP_TEST) vendor/bin/phpunit --testsuite=Unit
 
-test-integration:
+test-integration: ## Create/migrate the test database, then run integration tests (real Postgres/Garage)
 	$(CONSOLE_TEST) doctrine:database:create --if-not-exists
 	$(CONSOLE_TEST) doctrine:migrations:migrate --no-interaction
 	$(PHP_TEST) vendor/bin/phpunit --testsuite=Integration
 
-test-http:
+test-http: ## Create/migrate the test database, then run full-stack HTTP tests
 	$(CONSOLE_TEST) doctrine:database:create --if-not-exists
 	$(CONSOLE_TEST) doctrine:migrations:migrate --no-interaction
 	$(PHP_TEST) vendor/bin/phpunit --testsuite=Http
@@ -197,7 +197,7 @@ er-diagram: ## Generate the ER diagram from Doctrine migrations
 
 ci: cs-check phpstan deptrac test-unit test-integration test-http ## Run all CI quality gates
 
-test-coverage:
+test-coverage: ## Generate an HTML coverage report in var/coverage/
 	$(PHP_TEST) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage
 
 mail: ## Open Mailpit UI
@@ -209,12 +209,12 @@ metrics: ## Open Prometheus UI (requires "make up-monitoring")
 grafana: ## Open Grafana UI (requires "make up-monitoring")
 	open http://localhost:3000
 
-openapi-export-json:
+openapi-export-json: ## Export the OpenAPI spec as JSON to var/openapi/openapi.json
 	mkdir -p var/openapi
 	$(CONSOLE) nelmio:apidoc:dump --format=json > var/openapi/openapi.json
 	@echo "OpenAPI JSON exported to var/openapi/openapi.json"
 
-openapi-export-yaml:
+openapi-export-yaml: ## Export the OpenAPI spec as YAML to var/openapi/openapi.yaml
 	mkdir -p var/openapi
 	$(CONSOLE) nelmio:apidoc:dump --format=yaml > var/openapi/openapi.yaml
 	@echo "OpenAPI YAML exported to var/openapi/openapi.yaml"

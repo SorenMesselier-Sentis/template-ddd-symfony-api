@@ -38,6 +38,8 @@ final class ErDiagramIntegrationTest extends UnitTestCase
         $this->assertStringContainsString('documents }o--|| users : "owner_id"', $mermaid);
         $this->assertStringContainsString('multipart_upload_sessions }o--|| documents : "document_id"', $mermaid);
         $this->assertStringContainsString('multipart_upload_sessions }o--|| users : "owner_id"', $mermaid);
+        $this->assertStringContainsString('tasks }o--|| users : "assignee_id"', $mermaid);
+        $this->assertStringContainsString('tasks }o--|| documents : "attachment_id"', $mermaid);
     }
 
     public function testDiagramWriterCreatesFileWithHeader(): void

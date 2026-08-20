@@ -49,7 +49,7 @@ final class MigrationParser
             return [];
         }
 
-        $inferredTables = $this->foreignKeyRelationInferrer->infer(array_values($tables));
+        $inferredTables = $this->foreignKeyRelationInferrer->infer(array_values($tables), $writeWarning);
 
         return $this->pivotTableResolver->resolve($inferredTables);
     }
