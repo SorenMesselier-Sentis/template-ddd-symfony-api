@@ -42,7 +42,8 @@ final class CleanupExpiredRefreshTokensHandlerTest extends UnitTestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('error')->with(
             'Scheduled refresh-token cleanup failed',
-            ['exception' => 'db down'],
+            $this->callback(static fn (array $context): bool => ($context['exception'] ?? null) instanceof \RuntimeException
+                && 'db down' === $context['exception']->getMessage()),
         );
 
         $metrics = $this->createMock(MetricsCollectorInterface::class);

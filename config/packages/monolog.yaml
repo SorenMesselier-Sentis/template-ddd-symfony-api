@@ -6,3 +6,14 @@ when@prod:
                 path: php://stdout
                 level: info
                 formatter: monolog.formatter.json
+            # Error tracking (Sentry) — no-op if SENTRY_DSN is empty, see
+            # config/packages/sentry.yaml. Two handlers because a LoggerInterface::error()
+            # call either carries a real exception in its context (reported with
+            # full stacktrace/grouping) or doesn't (reported as a plain issue);
+            # each handler only fires for the case it's built for.
+            sentry_exception:
+                type: service
+                id: Sentry\Monolog\ExceptionToSentryIssueHandler
+            sentry_log:
+                type: service
+                id: Sentry\Monolog\LogToSentryIssueHandler

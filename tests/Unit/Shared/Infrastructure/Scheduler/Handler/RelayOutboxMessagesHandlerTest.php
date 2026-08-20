@@ -69,7 +69,8 @@ final class RelayOutboxMessagesHandlerTest extends UnitTestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('error')->with(
             'Scheduled outbox relay failed',
-            ['exception' => 'boom'],
+            $this->callback(static fn (array $context): bool => ($context['exception'] ?? null) instanceof \RuntimeException
+                && 'boom' === $context['exception']->getMessage()),
         );
 
         $handler = new RelayOutboxMessagesHandler($relay, $logger, $metrics);

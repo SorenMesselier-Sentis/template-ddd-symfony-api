@@ -28,6 +28,10 @@ services:
             MERCURE_URL: ${MERCURE_URL}
             MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL}
             MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET}
+            SYMFONY_TRUSTED_PROXIES: ${SYMFONY_TRUSTED_PROXIES}
+            SYMFONY_TRUSTED_HEADERS: ${SYMFONY_TRUSTED_HEADERS}
+            SENTRY_DSN: ${SENTRY_DSN}
+            APP_VERSION: ${APP_VERSION}
         depends_on:
             postgres:
                 condition: service_healthy

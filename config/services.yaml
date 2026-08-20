@@ -367,3 +367,18 @@ services:
 
     App\Document\Domain\Security\OwnerContextInterface:
         alias: App\Document\Infrastructure\Security\HttpOwnerContext
+
+    # Sentry (error tracking) — referenced by config/packages/monolog.yaml at
+    # level "error". Two handlers, not one: an "error" log can either carry a
+    # real exception in its context (Shared\Domain\Logging\LoggerInterface::error()
+    # callers pass 'exception' => $throwable, per ExceptionListener and the
+    # scheduler/event-handler "swallow + log" pattern) or just a message. Each
+    # handler only fires for the case it's built for, so both are needed for
+    # full coverage — no-op (empty SENTRY_DSN) is safe, see sentry.yaml.
+    Sentry\Monolog\ExceptionToSentryIssueHandler:
+        arguments:
+            $level: !php/const Monolog\Logger::ERROR
+
+    Sentry\Monolog\LogToSentryIssueHandler:
+        arguments:
+            $level: !php/const Monolog\Logger::ERROR

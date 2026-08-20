@@ -35,7 +35,7 @@ final class CleanupExpiredRefreshTokensHandler
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Scheduled refresh-token cleanup failed', [
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             $this->metrics->incrementCounter('scheduler_task_runs_total', [
                 'task' => 'cleanup_refresh_tokens',

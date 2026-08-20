@@ -60,7 +60,7 @@ final class SendAccountDeletionEmailOnUserDeleted
             $this->logger->error('Failed to send account deletion email', [
                 'userId' => $event->aggregateId(),
                 'email' => $event->email,
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             $this->metrics->incrementCounter('emails_sent_total', [
                 'template' => 'account_deletion',

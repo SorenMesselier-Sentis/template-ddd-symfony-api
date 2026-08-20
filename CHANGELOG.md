@@ -13,8 +13,15 @@ point of the file for a template that gets forked repeatedly.
 ### Changed
 - ER diagram columns now render as `name type` (e.g. `owner_id uuid`) instead of `type name`, matching
   the order columns are declared in SQL.
+- Every `LoggerInterface::error()` call that logs a caught exception (`ExceptionListener`, the scheduler
+  cleanup/outbox handlers, the User BC email event handlers, `SymfonyMailerEmailSender`) now passes the
+  actual `\Throwable` under `context['exception']` instead of just `$e->getMessage()`/`$exception::class`.
+  This is the standard Monolog convention (JsonFormatter normalizes it into a structured `{class,
+  message, file, line, trace}` block) and is what makes the new Sentry integration able to report proper
+  stack traces instead of bare strings.
 
 ### Added
+- Error tracking via Sentry (`sentry/sentry-symfony`), opt-in and a safe no-op until `SENTRY_DSN` is set. Wired as Monolog handlers at `error` level (`config/packages/monolog.yaml`) rather than the bundle's own automatic exception listener, so it reports exactly what `ExceptionListener` already treats as a real error (unmapped/`5xx`) — never the expected `4xx` domain/validation/auth responses. See README "Error tracking (Sentry)".
 - `CONTRIBUTING.md` and a GitHub pull request template (`.github/pull_request_template.md`).
 - Warning when a migration column looks like a cross-BC UUID foreign key but resolves to no known table
   (`ForeignKeyRelationInferrer`), instead of silently dropping it from the ER diagram.
@@ -22,6 +29,7 @@ point of the file for a template that gets forked repeatedly.
 - `CLAUDE.md` now instructs Claude to add a `CHANGELOG.md` entry alongside any user-facing change.
 
 ### Fixed
+- `SYMFONY_TRUSTED_PROXIES`/`SYMFONY_TRUSTED_HEADERS` were never wired through `docker/compose.yaml` or documented, so behind any real reverse proxy/load balancer, `Request::getClientIp()` silently returned the proxy's IP for every request — collapsing the IP-keyed auth and API rate limiters into one shared bucket. Added both env vars (empty by default, matching current behavior) and wired them through; see README "Rate limiting" and "Environment variables".
 - ER diagram generator was silently omitting `tasks.assignee_id → users` and `tasks.attachment_id →
   documents`: the FK-inference heuristic only pluralizes the column's base name (`user_id → users`),
   which doesn't hold for `assignee_id`/`attachment_id`. Both are now mapped explicitly.

@@ -39,7 +39,7 @@ final class CleanupStaleOutboxMessagesHandler
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Scheduled outbox cleanup failed', [
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             $this->metrics->incrementCounter('scheduler_task_runs_total', [
                 'task' => 'cleanup_stale_outbox',

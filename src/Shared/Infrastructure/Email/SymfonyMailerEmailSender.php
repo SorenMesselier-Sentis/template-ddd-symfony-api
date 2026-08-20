@@ -36,7 +36,7 @@ final class SymfonyMailerEmailSender implements EmailSenderInterface
             $this->logger->error('Email delivery failed', [
                 'to' => $message->to()->value(),
                 'subject' => $message->subject(),
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
 
             throw EmailDeliveryException::create(recipient: $message->to()->value(), previous: $e);

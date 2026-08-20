@@ -17,6 +17,7 @@ A production-ready REST API template built with Symfony 8 and Domain-Driven Desi
 | Scheduler | Symfony Scheduler (cron + periodic) |
 | Mailer | Symfony Mailer + Twig templates, Mailpit for dev |
 | Logging | Monolog |
+| Error tracking (optional) | Sentry (`sentry/sentry-symfony`) — no-op until `SENTRY_DSN` is set |
 | Monitoring (optional) | Prometheus + Grafana (preconfigured scrape targets + starter dashboard) — `make up-monitoring` |
 | Object storage | S3-compatible: [Garage](https://garagehq.deuxfleurs.fr/) `dxflrs/garage:v2.3.0` in Docker (dev/CI), [Cloudflare R2](https://developers.cloudflare.com/r2/) (staging/prod), AWS SDK for PHP (`aws/aws-sdk-php`) |
 | API documentation | NelmioApiDocBundle, OpenAPI 3, Swagger UI (Twig + Asset) |
@@ -236,6 +237,8 @@ Two layers of Symfony RateLimiter policies protect the API, both defined in `con
 
 A rejected request raises `Shared\Domain\Exception\RateLimitExceededException`, mapped by `ExceptionListener` to `429` with the standard `{ "error": { "code": "rate_limit.exceeded", "message": "..." } }` body plus a `Retry-After` header (seconds).
 
+**Behind a reverse proxy / load balancer**, both IP-keyed limiters above rely on `Request::getClientIp()` — which, unless told otherwise, returns the *proxy's* IP for every request, collapsing every caller into one shared bucket (one noisy client can then rate-limit everyone else). Set `SYMFONY_TRUSTED_PROXIES` (see [Environment variables](#environment-variables)) to fix this; it's read automatically by FrameworkBundle, no `framework.yaml` change needed. Not needed for local Docker Compose — there's no proxy in front there.
+
 ### Audit trail
 
 Sensitive actions are recorded to a queryable `audit_log` table (centralized migration, `Shared/Infrastructure/Persistence/Migrations/`) instead of only Monolog — who did what, to what, and when:
@@ -441,6 +444,12 @@ MAILER_FROM=noreply@example.com
 # Outbox cleanup retention (days). Values <1 fall back to 30 with a warning log.
 OUTBOX_RETENTION_DAYS=30
 
+# Error tracking (Sentry — see "Error tracking (Sentry)"). Empty = disabled,
+# safe no-op. APP_VERSION doubles as the Sentry release — set it at
+# build/deploy time (e.g. the git SHA) so issues link back to a deploy.
+SENTRY_DSN=
+APP_VERSION=unknown
+
 # Mercure (real-time push — see "Real-time updates (Mercure)"). Hub is
 # embedded in the "php" container; MERCURE_URL is the internal publish URL,
 # MERCURE_PUBLIC_URL is what browsers subscribe to.
@@ -470,6 +479,11 @@ S3_PRESIGNED_URL_TTL=3600
 | `S3_USE_SSL` | PHP app | Enable TLS for the S3 client (`true` / `false`) |
 | `S3_API_PORT` | Docker host | Host port mapped to Garage's S3 API (container port `3900`) |
 | `S3_PRESIGNED_URL_TTL` | PHP app | Default presigned download URL TTL in seconds (60–604800) |
+
+| Variable | Scope | Description |
+|---|---|---|
+| `SYMFONY_TRUSTED_PROXIES` | PHP app | IP/CIDR of the reverse proxy/LB in front of the app, or `REMOTE_ADDR` to trust whoever connects directly. **Empty by default** (correct for local Docker Compose — no proxy in front); set this in production or `Request::getClientIp()` returns the proxy's IP for every request, breaking the IP-keyed rate limiters (see [Rate limiting](#rate-limiting)). Read automatically by FrameworkBundle — no `framework.yaml` change needed. |
+| `SYMFONY_TRUSTED_HEADERS` | PHP app | Optional. Only needed to customize which forwarded headers are honored (default, once `SYMFONY_TRUSTED_PROXIES` is set, is `x-forwarded-for,x-forwarded-port,x-forwarded-proto`); comma-separated. |
 
 See `.env` for the full list of available variables. Garage's own config
 (`docker/garage/garage.toml`) is not env-driven — it ships a fixed dev-only
@@ -510,6 +524,14 @@ make restart        # stop then start the core stack (pick up image / config cha
 ### Monitoring stack (optional)
 
 Prometheus, Grafana and postgres_exporter are tagged with the Docker Compose `monitoring` profile and excluded from `make up`/`make init` by default — the app's own `GET /metrics` endpoint (see [`docs/monitoring.md`](docs/monitoring.md)) works regardless, these three containers only add scraping + dashboards on top. Bring them up with `make up-monitoring`; `make down`/`make down-v` always tear them down too, whether or not they were started.
+
+### Error tracking (Sentry)
+
+`sentry/sentry-symfony` is installed and configured (`config/packages/sentry.yaml`), but sends nothing without a DSN: set `SENTRY_DSN` (empty by default — safe no-op, no network calls) to enable it.
+
+It's wired as two Monolog handlers (`config/packages/monolog.yaml`, `sentry_exception`/`sentry_log`, prod only), not through the bundle's own automatic exception listener (`register_error_listener: false`). The bundle's default would report every throwable indiscriminately, including expected `4xx` domain/validation/auth responses — pure noise for an API that treats those as normal control flow, not incidents. Instead, Sentry only sees what `ExceptionListener` already logs at `error` level: unmapped exceptions / `5xx` responses (see its `resolveException()`), plus any `Shared\Domain\Logging\LoggerInterface::error()` call elsewhere (the scheduler and event-handler "swallow + log" pattern — see `CLAUDE.md`) — both paths pass the actual exception object as `context['exception']`, not just its message, so Sentry gets proper grouping and a stack trace.
+
+Release tracking uses `APP_VERSION` (set this at build/deploy time, e.g. to the git SHA, so Sentry issues link back to the exact deploy); environment is `%kernel.environment%`. Explicitly disabled in the `test` environment regardless of `SENTRY_DSN`.
 
 ### Cache and scale-out (Redis)
 
