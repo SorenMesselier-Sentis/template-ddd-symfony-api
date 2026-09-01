@@ -1,6 +1,3 @@
-doctrine_fixtures:
-    directory: '%kernel.project_dir%/src'
-
 when@dev:
     doctrine_fixtures:
         directory: '%kernel.project_dir%/src'

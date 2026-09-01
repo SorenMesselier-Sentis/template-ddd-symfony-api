@@ -24,7 +24,7 @@ final class MermaidRenderer
             $lines[] = sprintf('    %s {', $table->tableName);
 
             foreach ($table->columns as $column) {
-                $lines[] = sprintf('        %s %s', $this->sanitizeType($column->type), $column->name);
+                $lines[] = sprintf('        %s %s', $column->name, $this->sanitizeType($column->type));
             }
 
             $lines[] = '    }';

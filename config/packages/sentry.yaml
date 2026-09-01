@@ -1,0 +1,10 @@
+sentry:
+    dsn: '%env(default::SENTRY_DSN)%'
+    register_error_listener: false
+    options:
+        environment: '%kernel.environment%'
+        release: '%env(APP_VERSION)%'
+
+when@test:
+    sentry:
+        dsn: null

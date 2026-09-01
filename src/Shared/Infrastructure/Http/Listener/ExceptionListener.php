@@ -113,8 +113,7 @@ final class ExceptionListener
     {
         if ($statusCode >= 500) {
             $this->logger->error($exception->getMessage(), [
-                'exception' => $exception::class,
-                'trace' => $exception->getTraceAsString(),
+                'exception' => $exception,
             ]);
 
             return;

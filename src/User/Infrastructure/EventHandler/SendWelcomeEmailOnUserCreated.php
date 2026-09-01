@@ -62,7 +62,7 @@ final class SendWelcomeEmailOnUserCreated
             $this->logger->error('Failed to send welcome email', [
                 'userId' => $event->aggregateId(),
                 'email' => $event->email,
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             $this->metrics->incrementCounter('emails_sent_total', [
                 'template' => 'welcome',

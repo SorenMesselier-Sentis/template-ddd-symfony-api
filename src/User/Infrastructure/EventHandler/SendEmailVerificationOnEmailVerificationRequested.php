@@ -61,7 +61,7 @@ final class SendEmailVerificationOnEmailVerificationRequested
         } catch (EmailDeliveryException $e) {
             $this->logger->error('Failed to send email verification', [
                 'userId' => $event->aggregateId(),
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             $this->metrics->incrementCounter('emails_sent_total', [
                 'template' => 'email_verification',

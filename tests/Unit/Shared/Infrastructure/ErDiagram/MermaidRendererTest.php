@@ -36,7 +36,7 @@ final class MermaidRendererTest extends UnitTestCase
 
         $this->assertStringStartsWith("```mermaid\nerDiagram\n", $output);
         $this->assertStringEndsWith("```\n", $output);
-        $this->assertStringContainsString("users {\n        uuid id\n        varchar100 first_name\n    }", $output);
+        $this->assertStringContainsString("users {\n        id uuid\n        first_name varchar100\n    }", $output);
     }
 
     public function testItRendersManyToManyRelationsWithCardinalitySymbols(): void

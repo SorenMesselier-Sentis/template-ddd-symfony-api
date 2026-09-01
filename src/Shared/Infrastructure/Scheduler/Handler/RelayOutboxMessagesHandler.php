@@ -35,7 +35,7 @@ final class RelayOutboxMessagesHandler
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Scheduled outbox relay failed', [
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             $this->metrics->incrementCounter('scheduler_task_runs_total', [
                 'task' => 'relay_outbox',

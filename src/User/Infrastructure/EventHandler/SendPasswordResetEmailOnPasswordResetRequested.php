@@ -61,7 +61,7 @@ final class SendPasswordResetEmailOnPasswordResetRequested
         } catch (EmailDeliveryException $e) {
             $this->logger->error('Failed to send password reset email', [
                 'userId' => $event->aggregateId(),
-                'exception' => $e->getMessage(),
+                'exception' => $e,
             ]);
             $this->metrics->incrementCounter('emails_sent_total', [
                 'template' => 'password_reset',
