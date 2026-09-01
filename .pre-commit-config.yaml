@@ -33,6 +33,11 @@ repos:
       hooks:
           - id: detect-private-key
 
+    - repo: https://github.com/gitleaks/gitleaks
+      rev: v8.30.1
+      hooks:
+          - id: gitleaks
+
     - repo: https://github.com/compilerla/conventional-pre-commit
       rev: v4.0.0
       hooks:

@@ -176,8 +176,8 @@ Authentication and authorization are split across layers:
 
 | Layer | Responsibility | Location |
 |---|---|---|
-| Infrastructure (HTTP) | Who is connected? Public vs authenticated routes | `config/packages/security.yaml`, `JwtAuthenticator`, `JsonAuthenticationEntryPoint` |
-| Application (User BC) | Which roles can run this use case? | `RoleRequirement`, `UserAuthorizer`, `AuthorizedMessage` on commands/queries |
+| Infrastructure (HTTP) | Who is connected? Public vs authenticated routes | `config/packages/security.yaml`, `JwtAuthenticator` (human JWT), `OAuth2ClientAuthenticator` (machine clients, see [API clients](docs/api-clients.md)), `JsonAuthenticationEntryPoint` |
+| Shared/Infrastructure | Which roles can run this use case? — principal-agnostic, works for any authenticator on the `api` firewall | `RoleRequirement`, `PrincipalRoleAuthorizer`, `AuthorizedMessage` on commands/queries |
 | Domain (User BC) | Vocabulary (`UserRole`, `UserContextInterface`, exceptions) | `src/User/Domain/` |
 
 **Public routes** (no JWT required) are declared only in `security.yaml`: login, refresh, and API documentation. On these routes, an invalid or stale `Authorization` header from the browser (e.g. Swagger UI) is ignored so the page still loads without a frontend.
@@ -400,7 +400,7 @@ On every `git commit`, the configured hooks will:
 
 - run **PHP CS Fixer** in dry-run mode on staged PHP files (same rules as `make cs-check`)
 - block commits that include sensitive files (`.env.local`, `config/jwt/*.pem`, decrypted Symfony secrets, …)
-- run **detect-private-key** on staged content
+- run **detect-private-key** and **gitleaks** on staged content
 - validate the **commit message** against [Conventional Commits](https://www.conventionalcommits.org/) (`feat: …`, `fix: …`, `chore: …`, etc.)
 
 Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
@@ -1109,7 +1109,7 @@ make test-unit        # unit tests only
 make test-integration # integration tests only (migrates test DB first)
 make test-http        # HTTP integration tests only (migrates test DB + reloads fixtures)
 make test-coverage    # generate HTML coverage report in var/coverage/
-make ci               # run all quality gates (cs-check, phpstan, deptrac, all test suites)
+make ci               # run all quality gates (cs-check, phpstan, deptrac, composer-audit, all test suites)
 ```
 
 `make test-http` exercises controllers end-to-end via `KernelBrowser`. Tests extend `HttpTestCase`, which resets the database, reloads fixtures, and provides `createAuthenticatedClient('admin'|'user')` using credentials from `FixtureData`.
@@ -1124,7 +1124,9 @@ The pipeline:
 2. Runs `composer install`
 3. Generates a JWT keypair in `config/jwt/` and an OAuth2 keypair in `config/oauth/` (neither committed — gitignored; see [docs/api-clients.md](docs/api-clients.md))
 4. Warms the Symfony dev container cache (required by PHPStan)
-5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, `composer-audit`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+
+A separate `secret-scan` job scans the full git history with [gitleaks](https://github.com/gitleaks/gitleaks) on every push/PR — see [Security scanning](#security-scanning).
 
 Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
 
@@ -1164,9 +1166,9 @@ If any step fails, PHPUnit output is printed directly in the terminal (same as i
 
 The `prod` target differs from the `dev` image used everywhere else in this doc: it `COPY`s the app source in and runs `composer install --no-dev` instead of relying on the bind-mounted source `make up`/`make init` use, so the resulting image is self-contained and deployable as-is — no host volume required. `APP_VERSION` is baked in at build time (`--build-arg APP_VERSION=<git sha>`, wired into `ci.yml` already) so the image is self-identifying for Sentry release tracking (see [Error tracking (Sentry)](#error-tracking-sentry)).
 
-What this deliberately does **not** include: a deployment target. Where the image actually runs (Kubernetes, ECS, Fly.io, a bare VM pulling the image, …) varies per fork, and a template guessing wrong here would add false confidence rather than save work — this stops at "there's a pullable, deployable image," which is the universal prerequisite regardless of target.
+This deliberately stops at "there's a pullable, deployable image" rather than picking a deployment target — where it actually runs (Kubernetes, ECS, Fly.io, a bare VM, …) varies too much per fork for a template to guess right. The one exception is [docs/deployment.md](docs/deployment.md): a single-VM Docker Compose deployment (`docker/compose.prod.yaml`), because it's a direct, low-effort extension of the Docker-first approach used everywhere else in this repo — not an attempt to cover every target.
 
-Two things any real deployment needs to handle itself, since the image intentionally doesn't:
+Two things any deployment needs to handle itself, since the image intentionally doesn't (both covered for the single-VM path in [docs/deployment.md](docs/deployment.md)):
 - **JWT and OAuth2 keys** (`config/jwt/*.pem`, `config/oauth/*.key`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above).
 - **Non-root container user**: the image currently runs as root, same as the `dev` image — FrankenPHP binding port 80 as non-root needs an explicit Linux capability grant (`cap_net_bind_service`) at the deployment layer. Worth hardening before a real production rollout, not included here.
 
@@ -1176,19 +1178,51 @@ Build it locally the same way CI does:
 docker build -f docker/php/Dockerfile --target prod --build-arg APP_VERSION=$(git rev-parse --short HEAD) -t myapp:prod .
 ```
 
+### Deploying to a single VM
+
+`docker/compose.prod.yaml` runs the published image (`php`, plus `scheduler` and `consumer` — the same
+worker commands as `make scheduler`/`make consume`, but as their own long-running services) alongside
+self-hosted Postgres/RabbitMQ/Redis, all on one host. FrankenPHP's embedded Caddy handles HTTPS
+automatically (Let's Encrypt) once `SERVER_NAME` is a real domain — no separate reverse proxy or
+cert-manager needed.
+
+```bash
+make prod-pull      # pull the image at $IMAGE_TAG
+make prod-migrate   # run pending migrations (one-off container)
+make prod-up        # start/recreate the stack, wait until healthy
+make prod-deploy    # all three, in order — this is what you run for every deploy
+```
+
+Full walkthrough (first-time setup, updating, rollback, backups): [docs/deployment.md](docs/deployment.md).
+
 ## Code quality
 
 Run static analysis, architecture checks, and code style:
 
 ```bash
-make cs-check  # PHP CS Fixer dry-run (fails if formatting drifts)
-make cs-fix    # apply PHP CS Fixer fixes
-make phpstan   # run PHPStan with phpstan.neon (level 9)
-make deptrac   # run Deptrac with deptrac.yaml
-make ci        # cs-check + phpstan + deptrac + all test suites (recommended before every PR)
+make cs-check       # PHP CS Fixer dry-run (fails if formatting drifts)
+make cs-fix         # apply PHP CS Fixer fixes
+make phpstan        # run PHPStan with phpstan.neon (level 9)
+make deptrac        # run Deptrac with deptrac.yaml
+make composer-audit # check installed dependencies against known security advisories
+make ci             # cs-check + phpstan + deptrac + composer-audit + all test suites (recommended before every PR)
 ```
 
 Pre-commit hooks (see [Getting started](#pre-commit-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
+
+### Security scanning
+
+Three layers, each catching a different class of problem:
+
+| Layer | Tool | When | Scope |
+|---|---|---|---|
+| Known-vulnerable dependencies | `composer audit` (built into Composer 2.4+, no signup) | `make ci` / every CI run | Installed `composer.lock` packages against the [FriendsOfPHP security advisories](https://github.com/FriendsOfPHP/security-advisories) database |
+| Outdated dependencies | [Dependabot](https://docs.github.com/en/code-security/dependabot) (`.github/dependabot.yml`) | Weekly, automated PRs | `composer`, the `docker/php` base image, and GitHub Actions themselves — native to GitHub, nothing to install or configure per fork |
+| Committed secrets | [gitleaks](https://github.com/gitleaks/gitleaks) | `secret-scan` CI job (every push/PR) + optional pre-commit hook | Full git history, not just the diff — catches a secret that was committed and later removed but never rotated |
+
+`make composer-audit` runs the first locally; it's also part of `make ci`, so a vulnerable dependency fails the same gate as a style or type error.
+
+The CI job downloads a pinned `gitleaks` binary directly from GitHub Releases (no `gitleaks-action`, to sidestep that Action's licensing terms for organization-owned repos) and runs `gitleaks detect --source . --redact` against the full clone (`fetch-depth: 0`). Known false positives — placeholder values that look like secrets but aren't (`docker/garage/garage.toml`'s fixed dev-only RPC secret, `.env.test`'s fixed test encryption key, base64 example strings in two OpenAPI docblocks) — are listed with an explanation in [`.gitleaksignore`](.gitleaksignore), keyed by commit+file+line fingerprint; a real secret anywhere else in history still fails the build. Enable the same check locally, before you commit, via the pre-commit hooks above.
 
 If Docker is not available in your environment, run them directly:
 

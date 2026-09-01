@@ -11,6 +11,25 @@ point of the file for a template that gets forked repeatedly.
 ## Unreleased
 
 ### Added
+- Single-VM production deployment: `docker/compose.prod.yaml` (published GHCR image, self-hosted
+  Postgres/RabbitMQ/Redis, `scheduler`/`consumer` as their own long-running services, no Garage/
+  Mailpit/dev tooling) plus `make prod-deploy` (`prod-pull` + `prod-migrate` + `prod-up`) and
+  `prod-db-backup`/`prod-db-restore`/`prod-down`/`prod-logs`. FrankenPHP's embedded Caddy handles
+  HTTPS automatically via `SERVER_NAME` (new env var) — no separate reverse proxy or cert-manager.
+  New `docs/deployment.md` covers first-time setup, updates, rollback, backups, and swapping in a
+  managed Postgres/Redis. Deliberately still not Kubernetes/ECS/Terraform — see the README
+  "Building & publishing the production image" for why those stay out of scope. Also adds
+  `APP_FRONTEND_URL` to `.env` (previously undefined, silently relying on a hardcoded fallback in
+  `config/services.yaml`) so production can actually override it.
+- Security scanning, three layers: `make composer-audit` (`composer audit` against the
+  FriendsOfPHP advisory database, now part of `make ci`), `.github/dependabot.yml` (weekly PRs
+  for `composer`, the `docker/php` base image, and GitHub Actions — no signup, native to
+  GitHub), and a `secret-scan` CI job running `gitleaks` against the full git history on every
+  push/PR (pinned binary downloaded directly from GitHub Releases, not the `gitleaks-action`
+  wrapper, to sidestep its licensing terms for organization-owned repos) plus a matching
+  pre-commit hook for local use. Four pre-existing false positives (fixed dev-only secrets in
+  `docker/garage/garage.toml`/`.env.test`, two OpenAPI example strings) are recorded with an
+  explanation in `.gitleaksignore`. See README "Security scanning".
 - GDPR right to erasure: self-service `DELETE /users/me` and admin `DELETE /users/{id}` now
   actually erase personal data instead of only soft-deleting the account. New
   `Shared\Domain\Privacy\PersonalDataEraserInterface` (mirrors the existing GDPR export
