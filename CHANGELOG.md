@@ -10,7 +10,21 @@ point of the file for a template that gets forked repeatedly.
 
 ## Unreleased
 
+### Fixed
+- `publish-image` CI job failed every run with `Cache export is not supported for the docker driver`:
+  `docker/build-push-action@v6` was used with `cache-to: type=gha` but no `docker/setup-buildx-action`
+  step, so buildx fell back to the classic `docker` driver, which can't export cache. Added
+  `docker/setup-buildx-action@v3` to both the `quality` and `publish-image` jobs (its default
+  `docker-container` driver supports GHA cache).
+
 ### Changed
+- `quality` job's PHP image build (`docker compose build php`, previously uncached — 40-60s every CI run
+  installing pecl extensions from scratch) now goes through `docker/build-push-action@v6` with
+  `cache-from`/`cache-to: type=gha` instead, `load: true`-ed into the local Docker daemon under a fixed
+  tag (`ddd-symfony-api-php:dev`, set via `docker/compose.yaml`'s new `image:` key on the `php` service)
+  so the later `docker compose up -d --wait` in `make up-ci` reuses it instead of rebuilding. The `prod`
+  image build in `publish-image` gets its own GHA cache scope (`php-prod` vs. `php-dev`) so the two
+  builds' caches don't evict each other.
 - ER diagram columns now render as `name type` (e.g. `owner_id uuid`) instead of `type name`, matching
   the order columns are declared in SQL.
 - Every `LoggerInterface::error()` call that logs a caught exception (`ExceptionListener`, the scheduler

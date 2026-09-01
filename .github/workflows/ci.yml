@@ -33,8 +33,19 @@ jobs:
             - name: Prepare environment file
               run: cp .env .env.local
 
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
             - name: Build PHP image
-              run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" build php
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: docker/php/Dockerfile
+                  target: dev
+                  load: true
+                  tags: ddd-symfony-api-php:dev
+                  cache-from: type=gha,scope=php-dev
+                  cache-to: type=gha,mode=max,scope=php-dev
 
             - name: Start services
               run: make up-ci
@@ -106,6 +117,9 @@ jobs:
                       type=sha,format=short
                       type=semver,pattern={{version}}
 
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
             - name: Build and push
               uses: docker/build-push-action@v6
               with:
@@ -117,5 +131,5 @@ jobs:
                   labels: ${{ steps.meta.outputs.labels }}
                   build-args: |
                       APP_VERSION=${{ github.sha }}
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
+                  cache-from: type=gha,scope=php-prod
+                  cache-to: type=gha,mode=max,scope=php-prod

@@ -3,6 +3,7 @@ services:
     # PHP (FrankenPHP — serves HTTP directly, no separate nginx)
     # =========================================================
     php:
+        image: ddd-symfony-api-php:dev
         build:
             context: ..
             dockerfile: docker/php/Dockerfile
