@@ -47,6 +47,13 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         return $user;
     }
 
+    public function findByIdIncludingDeleted(UserId $id): ?User
+    {
+        $user = $this->em->find(User::class, $id);
+
+        return $user instanceof User ? $user : null;
+    }
+
     public function findByEmail(Email $email): ?User
     {
         /** @var User|null $user */

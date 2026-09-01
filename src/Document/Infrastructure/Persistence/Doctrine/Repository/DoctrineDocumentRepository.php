@@ -32,6 +32,11 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
         $this->saveEntity($this->em, $document);
     }
 
+    public function delete(Document $document): void
+    {
+        $this->deleteEntity($this->em, $document);
+    }
+
     public function findById(DocumentId $id): ?Document
     {
         /** @var Document|null $document */
@@ -70,6 +75,19 @@ final class DoctrineDocumentRepository implements DocumentRepositoryInterface
     {
         /* @var list<Document> */
         return $this->activeByOwnerQueryBuilder($ownerId)
+            ->orderBy('d.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findByOwnerIdIncludingDeleted(OwnerId $ownerId): array
+    {
+        /* @var list<Document> */
+        return $this->em->createQueryBuilder()
+            ->select('d')
+            ->from(Document::class, 'd')
+            ->where('d.ownerId = :ownerId')
+            ->setParameter('ownerId', $ownerId)
             ->orderBy('d.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

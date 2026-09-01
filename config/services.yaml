@@ -18,6 +18,8 @@ services:
             tags: ['app.health_check']
         App\Shared\Domain\Privacy\PersonalDataExporterInterface:
             tags: ['app.gdpr_data_exporter']
+        App\Shared\Domain\Privacy\PersonalDataEraserInterface:
+            tags: ['app.gdpr_data_eraser']
 
     # Autowire src/ folder
     App\:
@@ -143,6 +145,14 @@ services:
     App\User\Application\Query\ExportUserData\ExportUserDataQueryHandler:
         arguments:
             $exporters: !tagged_iterator app.gdpr_data_exporter
+
+    App\User\Application\Command\EraseMyData\EraseMyDataCommandHandler:
+        arguments:
+            $erasers: !tagged_iterator app.gdpr_data_eraser
+
+    App\User\Application\Command\DeleteUser\DeleteUserCommandHandler:
+        arguments:
+            $erasers: !tagged_iterator app.gdpr_data_eraser
 
     # Scheduler
     App\Shared\Infrastructure\Scheduler\Handler\CleanupStaleOutboxMessagesHandler:

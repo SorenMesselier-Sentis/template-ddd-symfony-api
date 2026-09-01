@@ -158,7 +158,7 @@ make ci    # all quality gates
 4. Register the exception mapper in `config/services.yaml` with tag `app.exception_mapper`
 5. Extend `FixtureData` / `FixtureReference` if needed
 6. Write Http tests for new endpoints
-7. If the entity holds personal data about a user, implement `Shared\Domain\Privacy\PersonalDataExporterInterface` (mandatory — see README "GDPR data export")
+7. If the entity holds personal data about a user, implement `Shared\Domain\Privacy\PersonalDataExporterInterface` **and** `Shared\Domain\Privacy\PersonalDataEraserInterface` (both mandatory — see README "GDPR data export" and "GDPR right to erasure")
 8. If any command exposes a sensitive action (delete, role/permission change, auth event), implement `Shared\Domain\Audit\AuditableMessage` on it (mandatory for that action — see README "Audit trail")
 9. If an entity relates to another entity in the *same* BC, use a real Doctrine relation (`fetch="EAGER"` if the target's id is `readonly`); keep cross-BC references UUID-only (see the `Project`/`Task` reference BC)
 10. `make db-diff` → `make db-migrate`

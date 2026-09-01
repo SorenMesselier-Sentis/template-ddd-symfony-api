@@ -16,6 +16,12 @@ interface DocumentRepositoryInterface
 {
     public function save(Document $document): void;
 
+    /**
+     * Hard delete is used only for GDPR erasure (DocumentPersonalDataEraser); everywhere else
+     * documents are soft-deleted via Document::delete() + save().
+     */
+    public function delete(Document $document): void;
+
     public function findById(DocumentId $id): ?Document;
 
     public function findByIdIncludingDeleted(DocumentId $id): ?Document;
@@ -26,6 +32,11 @@ interface DocumentRepositoryInterface
      * @return list<Document>
      */
     public function findByOwnerId(OwnerId $ownerId): array;
+
+    /**
+     * @return list<Document>
+     */
+    public function findByOwnerIdIncludingDeleted(OwnerId $ownerId): array;
 
     /**
      * @return list<Document>

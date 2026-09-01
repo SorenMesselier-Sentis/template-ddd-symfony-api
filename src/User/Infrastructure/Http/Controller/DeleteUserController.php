@@ -10,8 +10,9 @@ use App\User\Application\Command\DeleteUser\DeleteUserCommand;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 
-#[Route('/users/{id}', methods: ['DELETE'])]
+#[Route('/users/{id}', requirements: ['id' => Requirement::UUID], methods: ['DELETE'])]
 #[OA\Delete(
     path: '/api/v1/users/{id}',
     operationId: 'deleteUser',

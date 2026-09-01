@@ -11,6 +11,35 @@ point of the file for a template that gets forked repeatedly.
 ## Unreleased
 
 ### Added
+- GDPR right to erasure: self-service `DELETE /users/me` and admin `DELETE /users/{id}` now
+  actually erase personal data instead of only soft-deleting the account. New
+  `Shared\Domain\Privacy\PersonalDataEraserInterface` (mirrors the existing GDPR export
+  interface, auto-tagged `app.gdpr_data_eraser`) — `User\Application\Privacy\UserPersonalDataEraser`
+  anonymizes name/email/password and revokes every refresh/password-reset/email-verification
+  token; `Document\Application\Privacy\DocumentPersonalDataEraser` purges the S3 object and
+  hard-deletes the row (new `DocumentRepositoryInterface::delete()`) — a deliberate, documented
+  exception to "soft delete everywhere," since original filenames are themselves often
+  identifying. Both erasure paths are audited (`user.data_erased`). See README "GDPR right to
+  erasure".
+
+### Fixed
+- `DELETE /users/{id}`'s unconstrained `{id}` route segment could swallow the new
+  `DELETE /users/me` (both 2-segment paths under `/users`, and attribute-route registration
+  order happens to be alphabetical by controller filename — `DeleteUserController` sorts before
+  `EraseMyDataController`), routing self-erasure requests into the admin delete-by-id handler
+  and failing with `403 insufficient_privileges` for any non-admin. Fixed by constraining
+  `DeleteUserController`'s route to `requirements: ['id' => Requirement::UUID]`, matching the
+  pattern `ActivateUserController`/`DeactivateUserController` already used for exactly this
+  reason.
+- `JwtTokenService::generateRefreshToken()` produced byte-identical JWTs for two logins of the
+  same user within the same second — the payload only carried `sub`/`type` (both constant per
+  user) plus Lexik's own second-precision `iat`/`exp`, so a second login's refresh token could
+  collide with the first on `refresh_tokens`' unique `token` column and 500. Added a random
+  `jti` claim (ignored by `TokenClaims::fromRefreshTokenPayload`, purely for uniqueness). Found
+  while testing GDPR erasure (two logins in one test), but pre-existing and reachable from
+  regular rapid re-login too. See `LoginUserControllerTest`.
+
+### Added
 - New `ApiClient` bounded context: machine-to-machine authentication via OAuth2 `client_credentials`
   (`league/oauth2-server`), for service-to-service or scripted callers that aren't a human user.
   `POST /api/v1/oauth/token` is RFC 6749-compliant (`access_token`/`token_type`/`expires_in`/`scope`,

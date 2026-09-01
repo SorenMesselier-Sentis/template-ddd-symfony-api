@@ -283,6 +283,20 @@ Bounded contexts don't know about each other, so the aggregation follows the sam
 - Only *active* records are included, matching what the user can already see through the regular endpoints (`Document\Application\Privacy\DocumentPersonalDataExporter` calls the same `findByOwnerId()` the documents list uses) — soft-deleted rows kept for audit purposes are not exported.
 - `Content-Disposition: attachment` is set so the response downloads as a file rather than rendering inline.
 
+### GDPR right to erasure
+
+`DELETE /users/me` (any authenticated user, their own account only) irreversibly erases every piece of personal data the application holds about the caller — anonymizes the profile (name, email, password), revokes every refresh/password-reset/email-verification token, and permanently deletes anything another bounded context holds (e.g. `Document\Application\Privacy\DocumentPersonalDataEraser` purges the S3 object *and* hard-deletes the row — original filenames are often themselves identifying, so unlike everywhere else in this app, a soft-deleted row would defeat the purpose). Admin `DELETE /users/{id}` triggers the exact same erasure, not a separate lighter "just suspend the account" path — "delete" already meant permanent (contrast with `deactivate()`, the reversible suspend), this just makes it actually erase data instead of only flipping a status flag.
+
+```bash
+curl -s -X DELETE http://localhost:8080/api/v1/users/me -H "Authorization: Bearer $TOKEN"
+```
+
+Mirrors the export mechanism above, symmetrically: `Shared\Domain\Privacy\PersonalDataEraserInterface` (`key(): string`, `erase(string $subjectId): void`), auto-tagged `app.gdpr_data_eraser`, `User\Application\Privacy\UserPersonalDataEraser` / `Document\Application\Privacy\DocumentPersonalDataEraser` today. Unlike the exporter, which is read-only and lets a generic query handler aggregate every tagged service's output into one response, erasure is a write per bounded context — each eraser is fully self-contained (load, mutate, persist, publish its own events); `EraseMyDataCommandHandler` and `DeleteUserCommandHandler` just loop over every tagged eraser.
+
+- Both self-service and admin-triggered call the same `PersonalDataEraserInterface` implementations — there's exactly one "what happens on erasure" behavior, not two.
+- Irreversible: the account cannot be un-erased. Contrast with `deactivate()` (`POST /users/{id}/deactivate`), which is the reversible suspend action.
+- Audited (`user.data_erased`) — see [Audit trail](#audit-trail), same as any other deletion/permission-change/auth event.
+
 ### Feature flags
 
 Toggle a feature on/off at runtime, without a redeploy — kill a broken feature in prod, or roll one out gradually — backed by a `feature_flags` table (centralized migration) so changes persist and are visible to every `php` replica immediately, unlike an env var.

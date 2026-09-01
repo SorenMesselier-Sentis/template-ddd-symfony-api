@@ -8,6 +8,7 @@ use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserActivated;
 use App\User\Domain\Event\UserCreated;
+use App\User\Domain\Event\UserDataErased;
 use App\User\Domain\Event\UserDeactivated;
 use App\User\Domain\Event\UserDeleted;
 use App\User\Domain\Event\UserEmailVerified;
@@ -197,6 +198,27 @@ final class User
             aggregateId: $this->id->value(),
             email: $this->email->value(),
         ));
+    }
+
+    /**
+     * GDPR right to erasure: overwrites every personally identifying field with a redacted
+     * placeholder in one shot Does not touch `status`; call delete()
+     * as well when the account itself should stop being usable (see UserPersonalDataEraser).
+     */
+    public function anonymize(
+        UserName $firstName,
+        UserName $lastName,
+        Email $email,
+        HashedPassword $password,
+    ): void {
+        $this->firstName = $firstName;
+        $this->lastName = $lastName;
+        $this->email = $email;
+        $this->password = $password;
+        $this->emailVerifiedAt = null;
+        $this->touch();
+
+        $this->record(new UserDataErased($this->id->value()));
     }
 
     public function isEmailVerified(): bool

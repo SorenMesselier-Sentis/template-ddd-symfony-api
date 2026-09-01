@@ -41,6 +41,39 @@ final class DoctrineDocumentRepositoryTest extends IntegrationTestCase
         $this->assertNotNull($this->repository->findByIdIncludingDeleted($document->id()));
     }
 
+    public function testDeleteHardDeletesTheRow(): void
+    {
+        $document = $this->createDocument(OwnerId::random(), 'documents', 'application/pdf');
+        $this->repository->save($document);
+
+        $this->repository->delete($document);
+
+        $this->assertNull($this->repository->findByIdIncludingDeleted($document->id()));
+    }
+
+    public function testFindByOwnerIdIncludingDeletedReturnsBothActiveAndSoftDeletedDocuments(): void
+    {
+        $ownerId = OwnerId::random();
+        $otherOwnerId = OwnerId::random();
+
+        $active = $this->createDocument($ownerId, 'documents', 'application/pdf');
+        $deleted = $this->createDocument($ownerId, 'documents', 'application/pdf');
+        $deleted->delete(false);
+        $deleted->pullDomainEvents();
+        $foreign = $this->createDocument($otherOwnerId, 'documents', 'application/pdf');
+
+        foreach ([$active, $deleted, $foreign] as $document) {
+            $this->repository->save($document);
+        }
+
+        $found = $this->repository->findByOwnerIdIncludingDeleted($ownerId);
+        $foundIds = array_map(static fn (Document $d) => $d->id()->value(), $found);
+
+        $this->assertContains($active->id()->value(), $foundIds);
+        $this->assertContains($deleted->id()->value(), $foundIds);
+        $this->assertNotContains($foreign->id()->value(), $foundIds);
+    }
+
     public function testFindByOwnerIdReturnsOnlyActiveDocumentsOrderedByCreatedAtDesc(): void
     {
         $ownerId = OwnerId::random();
