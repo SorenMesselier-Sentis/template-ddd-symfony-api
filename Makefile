@@ -96,6 +96,16 @@ db-reset: db-drop db-create db-migrate ## Drop, recreate and re-migrate the data
 db-validate: ## Validate the Doctrine schema against mappings
 	$(CONSOLE) doctrine:schema:validate
 
+db-backup: ## Dump the database to var/backups/<timestamp>.dump (pg_dump custom format) — local/manual only, see docs/backup-and-restore.md
+	@mkdir -p var/backups
+	$(DOCKER_COMPOSE) exec -T postgres sh -lc 'pg_dump -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -Fc' > "var/backups/$$(date +%Y%m%d%H%M%S).dump"
+	@echo "Backup written to var/backups/"
+
+db-restore: ## Restore the database from a dump file (file=var/backups/<name>.dump) — DESTRUCTIVE, overwrites existing data
+	@test -n "$(file)" || (echo "Usage: make db-restore file=var/backups/<name>.dump" && exit 1)
+	@test -f "$(file)" || (echo "File not found: $(file)" && exit 1)
+	$(DOCKER_COMPOSE) exec -T postgres sh -lc 'pg_restore -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" --clean --if-exists --no-owner' < "$(file)"
+
 debug-router: ## List all registered routes
 	$(CONSOLE) debug:router
 

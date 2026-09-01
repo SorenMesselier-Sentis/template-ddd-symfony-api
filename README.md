@@ -562,7 +562,11 @@ make db-reset     # drop, recreate and migrate
 make db-validate  # validate Doctrine mapping
 make db-fixtures  # load fixtures (dev only)
 make db-fresh     # db-reset + db-fixtures in one command
+make db-backup    # dump to var/backups/<timestamp>.dump — local/manual, see docs/backup-and-restore.md
+make db-restore file=var/backups/<name>.dump   # restore — DESTRUCTIVE, overwrites the current database
 ```
+
+See [`docs/backup-and-restore.md`](docs/backup-and-restore.md) for what's actually worth backing up (PostgreSQL only — Redis/RabbitMQ/Garage are all disposable or self-healing by design) and how `db-backup`/`db-restore` fit into a real production backup strategy.
 
 ### Fixtures and test data
 
