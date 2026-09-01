@@ -45,6 +45,8 @@ framework:
                             binding_keys: ['project.#']
                         events.document:
                             binding_keys: ['document.#']
+                        events.api_client:
+                            binding_keys: ['api_client.#']
                 retry_strategy:
                     max_retries: 3
                     delay: 1000

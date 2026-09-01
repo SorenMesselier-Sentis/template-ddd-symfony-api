@@ -26,24 +26,33 @@ final class JwtAuthenticator extends AbstractAuthenticator
     ) {
     }
 
+    /**
+     * The `api` firewall also authenticates OAuth2 client_credentials Bearer tokens (see
+     * ApiClient\Infrastructure\Security\OAuth2ClientAuthenticator on the same firewall) — both
+     * share the same `^/api` pattern and Bearer scheme, so this must not blindly claim every
+     * non-public request. league/oauth2-server always sets a `scopes` claim and never an
+     * `email` one; the Lexik access token here is the exact opposite (see JwtTokenService).
+     * Peeking at the unverified payload is just cheap routing — the real, signature-verified
+     * check still happens in authenticate() below.
+     */
     public function supports(Request $request): bool
     {
-        return false === $this->publicApiRequestMatcher->matches($request);
+        if ($this->publicApiRequestMatcher->matches($request)) {
+            return false;
+        }
+
+        $token = $this->bearerToken($request);
+
+        return null === $token || !self::looksLikeOAuth2Token($token);
     }
 
     public function authenticate(Request $request): Passport
     {
-        if (!$request->headers->has('Authorization')) {
+        $token = $this->bearerToken($request);
+
+        if (null === $token) {
             throw new CustomUserMessageAuthenticationException('authentication.missing_token');
         }
-
-        $authHeader = $request->headers->get('Authorization', '');
-
-        if (!str_starts_with($authHeader, 'Bearer ')) {
-            throw new CustomUserMessageAuthenticationException('invalid_token');
-        }
-
-        $token = trim(substr($authHeader, 7));
 
         try {
             $claims = $this->tokenService->decodeAccessToken($token);
@@ -83,5 +92,46 @@ final class JwtAuthenticator extends AbstractAuthenticator
                 },
             ],
         ], Response::HTTP_UNAUTHORIZED);
+    }
+
+    private function bearerToken(Request $request): ?string
+    {
+        if (!$request->headers->has('Authorization')) {
+            return null;
+        }
+
+        $authHeader = $request->headers->get('Authorization', '');
+
+        if (!str_starts_with($authHeader, 'Bearer ')) {
+            return null;
+        }
+
+        return trim(substr($authHeader, 7));
+    }
+
+    private static function looksLikeOAuth2Token(string $token): bool
+    {
+        $parts = explode('.', $token);
+
+        if (3 !== \count($parts)) {
+            return false;
+        }
+
+        $payload = json_decode(self::base64UrlDecode($parts[1]), true);
+
+        if (!\is_array($payload)) {
+            return false;
+        }
+
+        return isset($payload['scopes']) && !isset($payload['email']);
+    }
+
+    private static function base64UrlDecode(string $data): string
+    {
+        $base64 = strtr($data, '-_', '+/');
+        $padded = str_pad($base64, \strlen($base64) + (4 - \strlen($base64) % 4) % 4, '=');
+        $decoded = base64_decode($padded, true);
+
+        return false !== $decoded ? $decoded : '';
     }
 }

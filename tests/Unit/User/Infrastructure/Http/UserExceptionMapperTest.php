@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Unit\User\Infrastructure\Http;
 
 use App\Tests\Unit\UnitTestCase;
-use App\User\Domain\Exception\InsufficientPrivilegesException;
 use App\User\Domain\Exception\InvalidTokenException;
 use App\User\Domain\Exception\MissingTokenException;
 use App\User\Domain\Exception\TokenExpiredException;
@@ -19,14 +18,6 @@ final class UserExceptionMapperTest extends UnitTestCase
     protected function setUp(): void
     {
         $this->mapper = new UserExceptionMapper();
-    }
-
-    public function testInsufficientPrivilegesMapsTo403(): void
-    {
-        [$status, $code] = $this->mapper->resolve(InsufficientPrivilegesException::create());
-
-        $this->assertSame(403, $status);
-        $this->assertSame('insufficient_privileges', $code);
     }
 
     public function testInvalidTokenMapsTo401(): void

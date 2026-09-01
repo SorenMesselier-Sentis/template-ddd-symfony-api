@@ -34,4 +34,11 @@ final class FixtureData
     // Project BC's cross-BC UUID references (assigneeId -> User, attachmentId -> Document).
     public const TASK_JOHN_WEBSITE_DESIGN_ID = '66666666-6666-4666-8666-666666666666';
     public const TASK_JOHN_WEBSITE_DESIGN_TITLE = 'Design the homepage mockup';
+
+    public const API_CLIENT_TEST_ID = '77777777-7777-4777-8777-777777777777';
+    public const API_CLIENT_TEST_NAME = 'Test Worker';
+    // Plain-text secret for the fixture client — hashed at load time, known here only so
+    // HTTP tests can request a token for it (see ApiClientFixture).
+    public const API_CLIENT_TEST_SECRET = 'test-client-secret-do-not-use-in-prod';
+    public const API_CLIENT_TEST_SCOPE = 'documents:write';
 }

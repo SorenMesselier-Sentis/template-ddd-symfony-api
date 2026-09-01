@@ -1,0 +1,19 @@
+<doctrine-mapping
+    xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                        https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd"
+>
+    <entity name="App\ApiClient\Domain\Entity\ApiClient" table="api_clients">
+
+        <id name="id" type="api_client_id" column="id"/>
+
+        <field name="name" type="string" column="name" length="200" nullable="false"/>
+        <field name="secretHash" type="hashed_client_secret" column="secret_hash" length="255" nullable="false"/>
+        <field name="scopes" type="api_client_scopes" column="scopes" nullable="false"/>
+        <field name="status" type="api_client_status" column="status" length="20" nullable="false"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
+        <field name="lastUsedAt" type="datetime_immutable" column="last_used_at" nullable="true"/>
+
+    </entity>
+</doctrine-mapping>

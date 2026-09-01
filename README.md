@@ -1108,7 +1108,7 @@ The pipeline:
 
 1. Starts Docker services and bootstraps Garage (`make up-ci` — **PostgreSQL**, **RabbitMQ**, **Garage**, **Redis**, **PHP**, then layout/access key/buckets). No Mailpit: email only happens in async event handlers, which nothing consumes during tests, so no SMTP connection is ever attempted.
 2. Runs `composer install`
-3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
+3. Generates a JWT keypair in `config/jwt/` and an OAuth2 keypair in `config/oauth/` (neither committed — gitignored; see [docs/api-clients.md](docs/api-clients.md))
 4. Warms the Symfony dev container cache (required by PHPStan)
 5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
 
@@ -1130,6 +1130,14 @@ docker compose -f docker/compose.yaml --env-file .env.local exec php sh -c '
   openssl rsa -pubout -passin pass:change_me -in config/jwt/private.pem -out config/jwt/public.pem
 '
 
+# Generate the OAuth2 keypair once (required for /api/v1/oauth/token — see docs/api-clients.md):
+docker compose -f docker/compose.yaml --env-file .env.local exec php sh -c '
+  mkdir -p config/oauth
+  openssl genrsa -out config/oauth/private.key 2048
+  openssl rsa -in config/oauth/private.key -pubout -out config/oauth/public.key
+  chmod 600 config/oauth/private.key config/oauth/public.key
+'
+
 docker compose -f docker/compose.yaml --env-file .env.local exec php bin/console cache:warmup --env=dev
 make ci
 ```
@@ -1145,7 +1153,7 @@ The `prod` target differs from the `dev` image used everywhere else in this doc:
 What this deliberately does **not** include: a deployment target. Where the image actually runs (Kubernetes, ECS, Fly.io, a bare VM pulling the image, …) varies per fork, and a template guessing wrong here would add false confidence rather than save work — this stops at "there's a pullable, deployable image," which is the universal prerequisite regardless of target.
 
 Two things any real deployment needs to handle itself, since the image intentionally doesn't:
-- **JWT keys** (`config/jwt/*.pem`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above).
+- **JWT and OAuth2 keys** (`config/jwt/*.pem`, `config/oauth/*.key`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above).
 - **Non-root container user**: the image currently runs as root, same as the `dev` image — FrankenPHP binding port 80 as non-root needs an explicit Linux capability grant (`cap_net_bind_service`) at the deployment layer. Worth hardening before a real production rollout, not included here.
 
 Build it locally the same way CI does:

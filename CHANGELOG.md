@@ -10,6 +10,30 @@ point of the file for a template that gets forked repeatedly.
 
 ## Unreleased
 
+### Added
+- New `ApiClient` bounded context: machine-to-machine authentication via OAuth2 `client_credentials`
+  (`league/oauth2-server`), for service-to-service or scripted callers that aren't a human user.
+  `POST /api/v1/oauth/token` is RFC 6749-compliant (`access_token`/`token_type`/`expires_in`/`scope`,
+  `error`/`error_description` on failure) rather than the app's usual `ApiResponse` envelope — standard
+  OAuth2 client libraries expect exactly this shape. Admin-only management endpoints under
+  `/api/v1/api-clients` (create/get/list/rotate-secret/revoke/delete); the plain-text secret is returned
+  only once, at creation or rotation. Access tokens are tracked in `issued_access_tokens` for real
+  revocation (mirrors `RefreshToken`), with a daily cleanup job for expired ones. A machine client gets
+  `ROLE_API_CLIENT` plus `SCOPE_<SCOPE_UPPER_SNAKE>` per granted OAuth2 scope; no existing endpoint
+  accepts a machine client by default — a fork opts a command/query in explicitly via
+  `RoleRequirement::any('ROLE_ADMIN', 'SCOPE_DOCUMENTS_WRITE')`. See `docs/api-clients.md`.
+
+### Changed
+- `Shared\Domain\Security\MessageAuthorizerInterface`'s sole implementation moved from
+  `User\Application\Security\UserAuthorizer` (coupled to `User\Domain\Security\UserContextInterface`,
+  which only recognizes `SecurityUserAdapter`) to the new, BC-agnostic
+  `Shared\Infrastructure\Security\PrincipalRoleAuthorizer` (reads roles off whatever
+  `Symfony\Bundle\SecurityBundle\Security::getUser()` returns). Required so `RoleRequirement` checks work
+  for both human JWT logins and the new OAuth2 machine clients — without it, a valid OAuth2 client would
+  get `401 unauthenticated` on every protected command/query instead of a role-based `403`. No behavior
+  change for existing human-user flows: the new `Shared\Domain\Exception\InsufficientPrivilegesException`
+  carries the same `insufficient_privileges` error code the old User-BC exception did.
+
 ### Fixed
 - `publish-image` CI job failed every run with `Cache export is not supported for the docker driver`:
   `docker/build-push-action@v6` was used with `cache-to: type=gha` but no `docker/setup-buildx-action`

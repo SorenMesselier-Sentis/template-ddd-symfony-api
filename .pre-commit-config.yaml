@@ -14,16 +14,17 @@ repos:
             pass_filenames: true
 
           - id: block-sensitive-files
-            name: Block sensitive files (.env.local, JWT keys, decrypted secrets)
+            name: Block sensitive files (.env.local, JWT keys, OAuth2 keys, decrypted secrets)
             language: fail
             entry: >-
                 Sensitive file detected — must not be committed.
-                Use .env.local (gitignored) for secrets and keep JWT keys local.
+                Use .env.local (gitignored) for secrets and keep JWT/OAuth2 keys local.
             files: >-
                 ^(
                   \.env\.local|
                   \.env\..*\.local|
                   config/jwt/.*\.pem|
+                  config/oauth/.*\.key|
                   config/secrets/.*/.*\.private\.php
                 )$
 

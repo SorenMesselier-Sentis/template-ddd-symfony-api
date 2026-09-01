@@ -24,9 +24,9 @@ final class MigrationParserTest extends UnitTestCase
     {
         $files = $this->parser->discoverMigrationFiles($this->projectDir);
 
-        $this->assertCount(11, $files);
+        $this->assertCount(12, $files);
         $this->assertStringEndsWith('Version20260101000001.php', $files[0]);
-        $this->assertStringEndsWith('Version20260101000011.php', $files[10]);
+        $this->assertStringEndsWith('Version20260901124906.php', $files[11]);
     }
 
     public function testItParsesUsersTableWithSqlColumnTypes(): void

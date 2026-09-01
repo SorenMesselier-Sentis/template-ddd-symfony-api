@@ -2,6 +2,9 @@
 
 ```mermaid
 erDiagram
+    api_clients {
+        name varchar200
+    }
     audit_log {
         id uuid
         actor_id varchar255
@@ -35,6 +38,9 @@ erDiagram
         enabled boolean
         description varchar255
         updated_at timestamp0withouttimezone
+    }
+    issued_access_tokens {
+        scopes json
     }
     multipart_upload_sessions {
         upload_id varchar255
@@ -108,6 +114,7 @@ erDiagram
     }
     documents }o--|| users : "owner_id"
     email_verification_tokens }o--|| users : "user_id"
+    issued_access_tokens }o--|| api_clients : "api_client_id"
     multipart_upload_sessions }o--|| documents : "document_id"
     multipart_upload_sessions }o--|| users : "owner_id"
     password_reset_tokens }o--|| users : "user_id"

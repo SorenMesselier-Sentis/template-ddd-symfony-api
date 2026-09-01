@@ -60,6 +60,38 @@ services:
     App\User\Domain\Service\TokenServiceInterface:
         alias: App\User\Infrastructure\Service\JwtTokenService
 
+    # OAuth2 (league/oauth2-server) — machine-to-machine client_credentials auth, see ApiClient BC
+    League\OAuth2\Server\Repositories\ClientRepositoryInterface:
+        alias: App\ApiClient\Infrastructure\OAuth2\LeagueClientRepository
+    League\OAuth2\Server\Repositories\ScopeRepositoryInterface:
+        alias: App\ApiClient\Infrastructure\OAuth2\LeagueScopeRepository
+    League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface:
+        alias: App\ApiClient\Infrastructure\OAuth2\LeagueAccessTokenRepository
+
+    App\ApiClient\Infrastructure\OAuth2\AuthorizationServerFactory:
+        arguments:
+            $privateKeyPath: "%kernel.project_dir%/config/oauth/private.key"
+            $encryptionKey: "%env(OAUTH2_ENCRYPTION_KEY)%"
+            $accessTokenTtlSeconds: "%env(int:OAUTH2_ACCESS_TOKEN_TTL)%"
+
+    App\ApiClient\Infrastructure\OAuth2\ResourceServerFactory:
+        arguments:
+            $publicKeyPath: "%kernel.project_dir%/config/oauth/public.key"
+
+    League\OAuth2\Server\AuthorizationServer:
+        factory: ['@App\ApiClient\Infrastructure\OAuth2\AuthorizationServerFactory', 'create']
+
+    League\OAuth2\Server\ResourceServer:
+        factory: ['@App\ApiClient\Infrastructure\OAuth2\ResourceServerFactory', 'create']
+
+    Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory: ~
+    Symfony\Bridge\PsrHttpMessage\HttpMessageFactoryInterface:
+        alias: Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory
+
+    Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory: ~
+    Symfony\Bridge\PsrHttpMessage\HttpFoundationFactoryInterface:
+        alias: Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory
+
     # Contexts
     App\User\Domain\Security\UserContextInterface:
         alias: App\User\Infrastructure\Security\HttpUserContext
@@ -194,7 +226,7 @@ services:
               }
 
     App\Shared\Domain\Security\MessageAuthorizerInterface:
-        alias: App\User\Application\Security\UserAuthorizer
+        alias: App\Shared\Infrastructure\Security\PrincipalRoleAuthorizer
 
     App\Shared\Infrastructure\Http\Listener\ApiHeadersListener:
         arguments:
@@ -269,6 +301,11 @@ services:
             $authRegisterLimiter: '@limiter.auth_register'
             $environment: '%kernel.environment%'
 
+    App\ApiClient\Infrastructure\Security\ApiClientRateLimitListener:
+        arguments:
+            $oauthTokenLimiter: '@limiter.oauth_token'
+            $environment: '%kernel.environment%'
+
     # Repositories
     App\Project\Domain\Repository\TaskRepositoryInterface:
         alias: App\Project\Infrastructure\Persistence\Doctrine\Repository\DoctrineTaskRepository
@@ -288,6 +325,11 @@ services:
 
     App\User\Domain\Repository\EmailVerificationTokenRepositoryInterface:
         alias: App\User\Infrastructure\Persistence\Doctrine\Repository\DoctrineEmailVerificationTokenRepository
+
+    App\ApiClient\Domain\Repository\ApiClientRepositoryInterface:
+        alias: App\ApiClient\Infrastructure\Persistence\Doctrine\Repository\DoctrineApiClientRepository
+    App\ApiClient\Domain\Repository\IssuedAccessTokenRepositoryInterface:
+        alias: App\ApiClient\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssuedAccessTokenRepository
 
     # Document storage
     App\Document\Infrastructure\Storage\S3DocumentStorageAdapter:

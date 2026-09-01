@@ -12,6 +12,10 @@ framework:
             policy: sliding_window
             limit: 3
             interval: '15 minutes'
+        oauth_token:
+            policy: sliding_window
+            limit: 10
+            interval: '1 minute'
         # Blanket ceiling applied to every /api/v1 request (health, metrics and
         # docs are excluded), on top of the tighter per-endpoint auth limiters
         # above. Keyed by authenticated user id, falling back to client IP.
@@ -28,6 +32,8 @@ when@test:
             auth_forgot_password:
                 policy: no_limit
             auth_register:
+                policy: no_limit
+            oauth_token:
                 policy: no_limit
             api_default:
                 policy: no_limit

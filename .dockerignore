@@ -7,6 +7,7 @@ tests
 .env.*.local
 .env.test
 config/jwt/*.pem
+config/oauth/*.key
 
 var/cache
 var/log

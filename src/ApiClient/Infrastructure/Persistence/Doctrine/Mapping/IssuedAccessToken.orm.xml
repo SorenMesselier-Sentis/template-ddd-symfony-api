@@ -1,0 +1,26 @@
+<doctrine-mapping
+    xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                        https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd"
+>
+    <entity name="App\ApiClient\Domain\Entity\IssuedAccessToken" table="issued_access_tokens">
+
+        <!-- Plain string id (not a Uuid VO): league/oauth2-server generates its own opaque
+             random token identifier — see LeagueAccessTokenRepository::getNewToken(). -->
+        <id name="id" type="string" column="id" length="100"/>
+
+        <!-- Same-BC relation, fetch="EAGER" because ApiClient::$id is readonly — lazy ghost
+             proxies can't partially-init a readonly identifier (see Task -> Project mapping
+             for the identical rationale). -->
+        <many-to-one field="apiClient" target-entity="App\ApiClient\Domain\Entity\ApiClient" fetch="EAGER">
+            <join-column name="api_client_id" referenced-column-name="id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+
+        <field name="scopes" type="api_client_scopes" column="scopes" nullable="false"/>
+        <field name="expiresAt" type="datetime_immutable" column="expires_at" nullable="false"/>
+        <field name="revoked" type="boolean" column="revoked" nullable="false"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
+
+    </entity>
+</doctrine-mapping>
