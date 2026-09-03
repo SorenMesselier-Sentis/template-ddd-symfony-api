@@ -45,9 +45,32 @@ framework:
                             binding_keys: ['project.#']
                         events.document:
                             binding_keys: ['document.#']
+                        events.api_client:
+                            binding_keys: ['api_client.#']
+                        events.webhook_subscription:
+                            binding_keys: ['webhook_subscription.#']
                 retry_strategy:
                     max_retries: 3
                     delay: 1000
+                    multiplier: 2
+
+            # Outbound webhook HTTP delivery — deliberately its own transport/queue, consumed by
+            # its own worker (make webhook-consumer), not shared with `async`: a slow/down third
+            # party must never block welcome emails or other event handlers. More tolerant retry
+            # budget than `async` since a delivery failure here is the expected case, not a bug.
+            # Point-to-point (direct exchange), not pub/sub — DeliverWebhookCommand is a job for
+            # one specific subscription, never something another consumer also cares about.
+            webhook_delivery:
+                dsn: '%env(RABBITMQ_DSN)%'
+                options:
+                    exchange:
+                        name: webhook_delivery
+                        type: direct
+                    queues:
+                        webhook_delivery: ~
+                retry_strategy:
+                    max_retries: 5
+                    delay: 2000
                     multiplier: 2
 
             async.dead_letter:
@@ -64,6 +87,7 @@ framework:
         routing:
             'App\Shared\Domain\Bus\Command\Command': sync
             'App\Document\Application\Command\UploadDocument\RecordDocumentUploadFailureCommand': sync
+            'App\Webhook\Application\Command\DeliverWebhook\DeliverWebhookCommand': webhook_delivery
             'App\Shared\Domain\Bus\Query\Query': sync
             'App\Shared\Domain\Bus\Event\DomainEvent': async
             'App\Shared\Infrastructure\Messaging\RabbitMQ\DeadLetterMessage': async.dead_letter

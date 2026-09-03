@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Scheduler;
 
+use App\Shared\Infrastructure\Scheduler\Message\CleanupExpiredOAuthTokens;
 use App\Shared\Infrastructure\Scheduler\Message\CleanupExpiredRefreshTokens;
 use App\Shared\Infrastructure\Scheduler\Message\CleanupExpiredUserTokens;
 use App\Shared\Infrastructure\Scheduler\Message\CleanupStaleOutboxMessages;
@@ -36,6 +37,7 @@ final class DefaultSchedule implements ScheduleProviderInterface
                 RecurringMessage::every('10 seconds', new RelayOutboxMessages()),
                 RecurringMessage::cron('0 2 * * *', new CleanupExpiredRefreshTokens(), $utc),
                 RecurringMessage::cron('0 2 * * *', new CleanupExpiredUserTokens(), $utc),
+                RecurringMessage::cron('0 2 * * *', new CleanupExpiredOAuthTokens(), $utc),
                 RecurringMessage::cron('0 3 * * *', new CleanupStaleOutboxMessages(), $utc),
             );
     }

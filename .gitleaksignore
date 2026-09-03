@@ -1,0 +1,14 @@
+# Known false positives, reviewed — not real secrets.
+#
+# .env.test's OAUTH2_ENCRYPTION_KEY: a fixed dev/test-only Defuse\Crypto\Key value, same trust
+# model as JWT_PASSPHRASE=change_me and other committed dev defaults (see .env.test / README).
+7e5c80c3f6190afa82fa1e3bfc5b452420df571c:.env.test:generic-api-key:12
+
+# docker/garage/garage.toml's rpc_secret: Garage's own config is not env-driven and ships a
+# fixed dev-only RPC secret — see README "Reproduce the CI pipeline locally".
+a1605ab00200450588b6197cd67dd47003bc018e:docker/garage/garage.toml:generic-api-key:15
+
+# OpenAPI example values in LogoutUserController/RefreshTokenController — literal placeholder
+# strings in Swagger docs (base64 of "this-is-a-refresh-token"), not a real token.
+b8dc38cd51c12845e97dfeb9c3035810084dc326:src/User/Infrastructure/Http/Controller/LogoutUserController.php:generic-api-key:36
+b8dc38cd51c12845e97dfeb9c3035810084dc326:src/User/Infrastructure/Http/Controller/RefreshTokenController.php:generic-api-key:37

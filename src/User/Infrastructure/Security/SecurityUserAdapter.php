@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\User\Infrastructure\Security;
 
+use App\Shared\Domain\Security\SubjectIdentityInterface;
 use App\User\Domain\Entity\User;
 use App\User\Domain\ValueObject\UserRole;
 use App\User\Domain\ValueObject\UserStatus;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-final class SecurityUserAdapter implements UserInterface, PasswordAuthenticatedUserInterface
+final class SecurityUserAdapter implements UserInterface, PasswordAuthenticatedUserInterface, SubjectIdentityInterface
 {
     public function __construct(
         private readonly User $user,
@@ -47,5 +48,10 @@ final class SecurityUserAdapter implements UserInterface, PasswordAuthenticatedU
     public function getUser(): User
     {
         return $this->user;
+    }
+
+    public function subjectId(): string
+    {
+        return $this->user->id()->value();
     }
 }

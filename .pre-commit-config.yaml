@@ -14,16 +14,17 @@ repos:
             pass_filenames: true
 
           - id: block-sensitive-files
-            name: Block sensitive files (.env.local, JWT keys, decrypted secrets)
+            name: Block sensitive files (.env.local, JWT keys, OAuth2 keys, decrypted secrets)
             language: fail
             entry: >-
                 Sensitive file detected — must not be committed.
-                Use .env.local (gitignored) for secrets and keep JWT keys local.
+                Use .env.local (gitignored) for secrets and keep JWT/OAuth2 keys local.
             files: >-
                 ^(
                   \.env\.local|
                   \.env\..*\.local|
                   config/jwt/.*\.pem|
+                  config/oauth/.*\.key|
                   config/secrets/.*/.*\.private\.php
                 )$
 
@@ -31,6 +32,11 @@ repos:
       rev: v5.0.0
       hooks:
           - id: detect-private-key
+
+    - repo: https://github.com/gitleaks/gitleaks
+      rev: v8.30.1
+      hooks:
+          - id: gitleaks
 
     - repo: https://github.com/compilerla/conventional-pre-commit
       rev: v4.0.0

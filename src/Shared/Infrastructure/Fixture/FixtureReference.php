@@ -16,4 +16,8 @@ final class FixtureReference
 
     public const PROJECT_JOHN_WEBSITE = 'project.john.website';
     public const TASK_JOHN_WEBSITE_DESIGN = 'task.john.website.design';
+
+    public const API_CLIENT_TEST = 'api_client.test';
+
+    public const WEBHOOK_SUBSCRIPTION_TEST = 'webhook_subscription.test';
 }

@@ -19,6 +19,10 @@ final class PublicApiRequestMatcher
             return true;
         }
 
+        if ('/api/v1/oauth/token' === $path) {
+            return true;
+        }
+
         return str_starts_with($path, '/api/doc');
     }
 }

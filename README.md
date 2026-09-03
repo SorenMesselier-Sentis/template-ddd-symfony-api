@@ -168,6 +168,16 @@ Handlers are registered on `command.bus` only (no auto-broadcast to other buses)
 - The relation is `fetch="EAGER"`, not the Doctrine default `LAZY`. `Project::$id` is `readonly` (as recommended everywhere else in this template), and Doctrine's lazy ghost-object hydration needs to partially set an identifier before the rest of a proxy initializes — which conflicts with `readonly` and throws `LogicException: Attempting to change readonly property ...::$id`. Loading `Project` eagerly (a JOIN) sidesteps that entirely, and is the right call anyway since almost every `Task` handler needs the parent `Project` for the ownership check (`Task::project()->ownerId()`) — LAZY would just mean a second query on top of the JOIN you'd otherwise write by hand.
 - `TaskFixture` depends on `ProjectFixture` via Doctrine's `DependentFixtureInterface`/`getDependencies()` — the only place in this template fixtures need real load ordering, since every other cross-BC fixture link is a stable UUID from `FixtureData` with no persistence-order requirement.
 
+**Outbound webhooks (Webhook BC)** — lets an admin register an `https://` URL that gets a signed
+HTTP `POST` whenever a chosen domain event fires anywhere in the app, no per-BC wiring required:
+`Webhook\Infrastructure\EventHandler\DispatchWebhooksOnAnyDomainEvent` is typed to the same
+abstract `DomainEvent` base class every other bounded context's events extend, so Messenger's
+handler resolution invokes it for all of them. Delivery itself runs on its own Messenger
+transport/worker (`webhook_delivery` / `make webhook-consumer`), deliberately separate from the
+shared `async` transport, so a slow or down third party can never delay welcome emails or other
+event side-effects. See [docs/webhooks.md](docs/webhooks.md) for the payload format, signature
+verification, and the SSRF guard on subscription URLs.
+
 **OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers. Paths in attributes are relative to the API base (`/users`, `/auth/login`, …); the `/api/v1` prefix is configured once in `config/packages/nelmio_api_doc.yaml` (`servers`) and in `config/routes.yaml`. Swagger UI is served at `/api/doc` and the JSON spec at `/api/doc.json`. The health check (`GET /health`) is documented under the **Infrastructure** tag with the root server.
 
 ### Security
@@ -176,8 +186,8 @@ Authentication and authorization are split across layers:
 
 | Layer | Responsibility | Location |
 |---|---|---|
-| Infrastructure (HTTP) | Who is connected? Public vs authenticated routes | `config/packages/security.yaml`, `JwtAuthenticator`, `JsonAuthenticationEntryPoint` |
-| Application (User BC) | Which roles can run this use case? | `RoleRequirement`, `UserAuthorizer`, `AuthorizedMessage` on commands/queries |
+| Infrastructure (HTTP) | Who is connected? Public vs authenticated routes | `config/packages/security.yaml`, `JwtAuthenticator` (human JWT), `OAuth2ClientAuthenticator` (machine clients, see [API clients](docs/api-clients.md)), `JsonAuthenticationEntryPoint` |
+| Shared/Infrastructure | Which roles can run this use case? — principal-agnostic, works for any authenticator on the `api` firewall | `RoleRequirement`, `PrincipalRoleAuthorizer`, `AuthorizedMessage` on commands/queries |
 | Domain (User BC) | Vocabulary (`UserRole`, `UserContextInterface`, exceptions) | `src/User/Domain/` |
 
 **Public routes** (no JWT required) are declared only in `security.yaml`: login, refresh, and API documentation. On these routes, an invalid or stale `Authorization` header from the browser (e.g. Swagger UI) is ignored so the page still loads without a frontend.
@@ -283,6 +293,20 @@ Bounded contexts don't know about each other, so the aggregation follows the sam
 - Only *active* records are included, matching what the user can already see through the regular endpoints (`Document\Application\Privacy\DocumentPersonalDataExporter` calls the same `findByOwnerId()` the documents list uses) — soft-deleted rows kept for audit purposes are not exported.
 - `Content-Disposition: attachment` is set so the response downloads as a file rather than rendering inline.
 
+### GDPR right to erasure
+
+`DELETE /users/me` (any authenticated user, their own account only) irreversibly erases every piece of personal data the application holds about the caller — anonymizes the profile (name, email, password), revokes every refresh/password-reset/email-verification token, and permanently deletes anything another bounded context holds (e.g. `Document\Application\Privacy\DocumentPersonalDataEraser` purges the S3 object *and* hard-deletes the row — original filenames are often themselves identifying, so unlike everywhere else in this app, a soft-deleted row would defeat the purpose). Admin `DELETE /users/{id}` triggers the exact same erasure, not a separate lighter "just suspend the account" path — "delete" already meant permanent (contrast with `deactivate()`, the reversible suspend), this just makes it actually erase data instead of only flipping a status flag.
+
+```bash
+curl -s -X DELETE http://localhost:8080/api/v1/users/me -H "Authorization: Bearer $TOKEN"
+```
+
+Mirrors the export mechanism above, symmetrically: `Shared\Domain\Privacy\PersonalDataEraserInterface` (`key(): string`, `erase(string $subjectId): void`), auto-tagged `app.gdpr_data_eraser`, `User\Application\Privacy\UserPersonalDataEraser` / `Document\Application\Privacy\DocumentPersonalDataEraser` today. Unlike the exporter, which is read-only and lets a generic query handler aggregate every tagged service's output into one response, erasure is a write per bounded context — each eraser is fully self-contained (load, mutate, persist, publish its own events); `EraseMyDataCommandHandler` and `DeleteUserCommandHandler` just loop over every tagged eraser.
+
+- Both self-service and admin-triggered call the same `PersonalDataEraserInterface` implementations — there's exactly one "what happens on erasure" behavior, not two.
+- Irreversible: the account cannot be un-erased. Contrast with `deactivate()` (`POST /users/{id}/deactivate`), which is the reversible suspend action.
+- Audited (`user.data_erased`) — see [Audit trail](#audit-trail), same as any other deletion/permission-change/auth event.
+
 ### Feature flags
 
 Toggle a feature on/off at runtime, without a redeploy — kill a broken feature in prod, or roll one out gradually — backed by a `feature_flags` table (centralized migration) so changes persist and are visible to every `php` replica immediately, unlike an env var.
@@ -386,7 +410,7 @@ On every `git commit`, the configured hooks will:
 
 - run **PHP CS Fixer** in dry-run mode on staged PHP files (same rules as `make cs-check`)
 - block commits that include sensitive files (`.env.local`, `config/jwt/*.pem`, decrypted Symfony secrets, …)
-- run **detect-private-key** on staged content
+- run **detect-private-key** and **gitleaks** on staged content
 - validate the **commit message** against [Conventional Commits](https://www.conventionalcommits.org/) (`feat: …`, `fix: …`, `chore: …`, etc.)
 
 Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
@@ -607,6 +631,7 @@ See [docs/testing-emails.md](docs/testing-emails.md) for the full flow (API → 
 ```bash
 make consume          # start the event consumer (drains RabbitMQ events.* queues)
 make consume-dl       # start the dead letter consumer
+make webhook-consumer # start the outbound webhook HTTP delivery worker (see docs/webhooks.md)
 make scheduler        # start the Scheduler worker — drives outbox relay + daily cleanups
 make outbox-relay     # one-shot: publish persisted outbox events to the event bus
 make messenger-stop   # gracefully stop all workers
@@ -616,7 +641,7 @@ make messenger-failed-retry  # retry all failed messages
 make messenger-failed-remove # remove all failed messages
 ```
 
-In production, `make consume` and `make scheduler` should be supervised as long-running processes (systemd, supervisord, etc.) — `make outbox-relay` is then only kept as an operator escape hatch for manual triggering. The `--time-limit=3600` in both targets is the standard Symfony pattern for safe restarts.
+In production, `make consume`, `make webhook-consumer`, and `make scheduler` should be supervised as long-running processes (systemd, supervisord, etc.) — `make outbox-relay` is then only kept as an operator escape hatch for manual triggering. The `--time-limit=3600` in each target is the standard Symfony pattern for safe restarts.
 
 ### Scaffolding bounded contexts and CRUD entities
 
@@ -1066,6 +1091,10 @@ CommandHandler
               → RabbitMQ exchange "events" (topic)
                   → queue "events.<context>" (binding: <context>.#)
                       → MessageHandler (incl. async EventHandler/ side-effects: emails, etc.)
+                      → Webhook\DispatchWebhooksOnAnyDomainEvent (typed to the abstract
+                        DomainEvent, so every event from every context reaches it) → matches
+                        against active webhook subscriptions → DeliverWebhookCommand on the
+                        dedicated "webhook_delivery" transport/worker (see docs/webhooks.md)
 
 On failure after 3 retries:
   → failure_transport "async.dead_letter"
@@ -1095,7 +1124,7 @@ make test-unit        # unit tests only
 make test-integration # integration tests only (migrates test DB first)
 make test-http        # HTTP integration tests only (migrates test DB + reloads fixtures)
 make test-coverage    # generate HTML coverage report in var/coverage/
-make ci               # run all quality gates (cs-check, phpstan, deptrac, all test suites)
+make ci               # run all quality gates (cs-check, phpstan, deptrac, composer-audit, all test suites)
 ```
 
 `make test-http` exercises controllers end-to-end via `KernelBrowser`. Tests extend `HttpTestCase`, which resets the database, reloads fixtures, and provides `createAuthenticatedClient('admin'|'user')` using credentials from `FixtureData`.
@@ -1108,9 +1137,11 @@ The pipeline:
 
 1. Starts Docker services and bootstraps Garage (`make up-ci` — **PostgreSQL**, **RabbitMQ**, **Garage**, **Redis**, **PHP**, then layout/access key/buckets). No Mailpit: email only happens in async event handlers, which nothing consumes during tests, so no SMTP connection is ever attempted.
 2. Runs `composer install`
-3. Generates a JWT keypair in `config/jwt/` (not committed — gitignored)
+3. Generates a JWT keypair in `config/jwt/` and an OAuth2 keypair in `config/oauth/` (neither committed — gitignored; see [docs/api-clients.md](docs/api-clients.md))
 4. Warms the Symfony dev container cache (required by PHPStan)
-5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+5. Runs `make ci` — `cs-check`, `phpstan`, `deptrac`, `composer-audit`, then all PHPUnit suites (`Unit`, `Integration`, `Http`)
+
+A separate `secret-scan` job scans the full git history with [gitleaks](https://github.com/gitleaks/gitleaks) on every push/PR — see [Security scanning](#security-scanning).
 
 Tests run with `APP_ENV=test` (Symfony loads `.env.test` automatically). CI uses the default placeholder passwords from `.env` / `.env.test` — no real secrets.
 
@@ -1130,6 +1161,14 @@ docker compose -f docker/compose.yaml --env-file .env.local exec php sh -c '
   openssl rsa -pubout -passin pass:change_me -in config/jwt/private.pem -out config/jwt/public.pem
 '
 
+# Generate the OAuth2 keypair once (required for /api/v1/oauth/token — see docs/api-clients.md):
+docker compose -f docker/compose.yaml --env-file .env.local exec php sh -c '
+  mkdir -p config/oauth
+  openssl genrsa -out config/oauth/private.key 2048
+  openssl rsa -in config/oauth/private.key -pubout -out config/oauth/public.key
+  chmod 600 config/oauth/private.key config/oauth/public.key
+'
+
 docker compose -f docker/compose.yaml --env-file .env.local exec php bin/console cache:warmup --env=dev
 make ci
 ```
@@ -1142,10 +1181,10 @@ If any step fails, PHPUnit output is printed directly in the terminal (same as i
 
 The `prod` target differs from the `dev` image used everywhere else in this doc: it `COPY`s the app source in and runs `composer install --no-dev` instead of relying on the bind-mounted source `make up`/`make init` use, so the resulting image is self-contained and deployable as-is — no host volume required. `APP_VERSION` is baked in at build time (`--build-arg APP_VERSION=<git sha>`, wired into `ci.yml` already) so the image is self-identifying for Sentry release tracking (see [Error tracking (Sentry)](#error-tracking-sentry)).
 
-What this deliberately does **not** include: a deployment target. Where the image actually runs (Kubernetes, ECS, Fly.io, a bare VM pulling the image, …) varies per fork, and a template guessing wrong here would add false confidence rather than save work — this stops at "there's a pullable, deployable image," which is the universal prerequisite regardless of target.
+This deliberately stops at "there's a pullable, deployable image" rather than picking a deployment target — where it actually runs (Kubernetes, ECS, Fly.io, a bare VM, …) varies too much per fork for a template to guess right. The one exception is [docs/deployment.md](docs/deployment.md): a single-VM Docker Compose deployment (`docker/compose.prod.yaml`), because it's a direct, low-effort extension of the Docker-first approach used everywhere else in this repo — not an attempt to cover every target.
 
-Two things any real deployment needs to handle itself, since the image intentionally doesn't:
-- **JWT keys** (`config/jwt/*.pem`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above).
+Two things any deployment needs to handle itself, since the image intentionally doesn't (both covered for the single-VM path in [docs/deployment.md](docs/deployment.md)):
+- **JWT and OAuth2 keys** (`config/jwt/*.pem`, `config/oauth/*.key`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above).
 - **Non-root container user**: the image currently runs as root, same as the `dev` image — FrankenPHP binding port 80 as non-root needs an explicit Linux capability grant (`cap_net_bind_service`) at the deployment layer. Worth hardening before a real production rollout, not included here.
 
 Build it locally the same way CI does:
@@ -1154,19 +1193,51 @@ Build it locally the same way CI does:
 docker build -f docker/php/Dockerfile --target prod --build-arg APP_VERSION=$(git rev-parse --short HEAD) -t myapp:prod .
 ```
 
+### Deploying to a single VM
+
+`docker/compose.prod.yaml` runs the published image (`php`, plus `scheduler` and `consumer` — the same
+worker commands as `make scheduler`/`make consume`, but as their own long-running services) alongside
+self-hosted Postgres/RabbitMQ/Redis, all on one host. FrankenPHP's embedded Caddy handles HTTPS
+automatically (Let's Encrypt) once `SERVER_NAME` is a real domain — no separate reverse proxy or
+cert-manager needed.
+
+```bash
+make prod-pull      # pull the image at $IMAGE_TAG
+make prod-migrate   # run pending migrations (one-off container)
+make prod-up        # start/recreate the stack, wait until healthy
+make prod-deploy    # all three, in order — this is what you run for every deploy
+```
+
+Full walkthrough (first-time setup, updating, rollback, backups): [docs/deployment.md](docs/deployment.md).
+
 ## Code quality
 
 Run static analysis, architecture checks, and code style:
 
 ```bash
-make cs-check  # PHP CS Fixer dry-run (fails if formatting drifts)
-make cs-fix    # apply PHP CS Fixer fixes
-make phpstan   # run PHPStan with phpstan.neon (level 9)
-make deptrac   # run Deptrac with deptrac.yaml
-make ci        # cs-check + phpstan + deptrac + all test suites (recommended before every PR)
+make cs-check       # PHP CS Fixer dry-run (fails if formatting drifts)
+make cs-fix         # apply PHP CS Fixer fixes
+make phpstan        # run PHPStan with phpstan.neon (level 9)
+make deptrac        # run Deptrac with deptrac.yaml
+make composer-audit # check installed dependencies against known security advisories
+make ci             # cs-check + phpstan + deptrac + composer-audit + all test suites (recommended before every PR)
 ```
 
 Pre-commit hooks (see [Getting started](#pre-commit-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
+
+### Security scanning
+
+Three layers, each catching a different class of problem:
+
+| Layer | Tool | When | Scope |
+|---|---|---|---|
+| Known-vulnerable dependencies | `composer audit` (built into Composer 2.4+, no signup) | `make ci` / every CI run | Installed `composer.lock` packages against the [FriendsOfPHP security advisories](https://github.com/FriendsOfPHP/security-advisories) database |
+| Outdated dependencies | [Dependabot](https://docs.github.com/en/code-security/dependabot) (`.github/dependabot.yml`) | Weekly, automated PRs | `composer`, the `docker/php` base image, and GitHub Actions themselves — native to GitHub, nothing to install or configure per fork |
+| Committed secrets | [gitleaks](https://github.com/gitleaks/gitleaks) | `secret-scan` CI job (every push/PR) + optional pre-commit hook | Full git history, not just the diff — catches a secret that was committed and later removed but never rotated |
+
+`make composer-audit` runs the first locally; it's also part of `make ci`, so a vulnerable dependency fails the same gate as a style or type error.
+
+The CI job downloads a pinned `gitleaks` binary directly from GitHub Releases (no `gitleaks-action`, to sidestep that Action's licensing terms for organization-owned repos) and runs `gitleaks detect --source . --redact` against the full clone (`fetch-depth: 0`). Known false positives — placeholder values that look like secrets but aren't (`docker/garage/garage.toml`'s fixed dev-only RPC secret, `.env.test`'s fixed test encryption key, base64 example strings in two OpenAPI docblocks) — are listed with an explanation in [`.gitleaksignore`](.gitleaksignore), keyed by commit+file+line fingerprint; a real secret anywhere else in history still fails the build. Enable the same check locally, before you commit, via the pre-commit hooks above.
 
 If Docker is not available in your environment, run them directly:
 

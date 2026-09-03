@@ -7,82 +7,34 @@ namespace App\Project\Infrastructure\Security;
 use App\Project\Domain\Security\OwnerContextInterface;
 use App\Project\Domain\ValueObject\OwnerId;
 use App\Shared\Domain\Exception\UnauthenticatedException;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
+use App\Shared\Domain\Security\SubjectIdentityInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
 final class HttpOwnerContext implements OwnerContextInterface
 {
     public function __construct(
-        private readonly RequestStack $requestStack,
-        private readonly JWTTokenManagerInterface $jwtManager,
+        private readonly Security $security,
     ) {
     }
 
     public function ownerId(): OwnerId
     {
-        $payload = $this->payload();
+        $user = $this->security->getUser();
 
-        if (!isset($payload['sub']) || !is_string($payload['sub'])) {
+        if (!$user instanceof SubjectIdentityInterface) {
             throw UnauthenticatedException::create();
         }
 
-        return OwnerId::fromString($payload['sub']);
+        return OwnerId::fromString($user->subjectId());
     }
 
     public function roles(): array
     {
-        $payload = $this->payload();
-        $roles = $payload['roles'] ?? [];
-
-        if (!is_array($roles)) {
-            return [];
-        }
-
-        $normalizedRoles = [];
-
-        foreach ($roles as $role) {
-            if (\is_string($role)) {
-                $normalizedRoles[] = $role;
-            }
-        }
-
-        return $normalizedRoles;
+        return array_values($this->security->getUser()?->getRoles() ?? []);
     }
 
     public function isAuthenticated(): bool
     {
-        try {
-            $this->payload();
-
-            return true;
-        } catch (UnauthenticatedException) {
-            return false;
-        }
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function payload(): array
-    {
-        $request = $this->requestStack->getCurrentRequest();
-
-        if (null === $request) {
-            throw UnauthenticatedException::create();
-        }
-
-        $authHeader = $request->headers->get('Authorization', '');
-
-        if (!str_starts_with($authHeader, 'Bearer ')) {
-            throw UnauthenticatedException::create();
-        }
-
-        $token = trim(substr($authHeader, 7));
-
-        try {
-            return $this->jwtManager->parse($token);
-        } catch (\Throwable) {
-            throw UnauthenticatedException::create();
-        }
+        return $this->security->getUser() instanceof SubjectIdentityInterface;
     }
 }

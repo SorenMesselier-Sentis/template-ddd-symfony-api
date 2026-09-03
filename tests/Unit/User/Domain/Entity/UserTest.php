@@ -10,6 +10,7 @@ use App\Tests\Unit\User\Domain\Mother\HashedPasswordMother;
 use App\Tests\Unit\User\Domain\Mother\UserMother;
 use App\Tests\Unit\User\Domain\Mother\UserNameMother;
 use App\User\Domain\Event\UserCreated;
+use App\User\Domain\Event\UserDataErased;
 use App\User\Domain\Event\UserDeleted;
 use App\User\Domain\Event\UserReplaced;
 use App\User\Domain\Event\UserRolesUpdated;
@@ -129,6 +130,27 @@ final class UserTest extends UnitTestCase
         $events = $user->pullDomainEvents();
         $this->assertCount(2, $events);
         $this->assertInstanceOf(UserDeleted::class, $events[1]);
+    }
+
+    public function testItAnonymizesUser(): void
+    {
+        $user = UserMother::create();
+        $firstName = UserNameMother::create('deleted');
+        $lastName = UserNameMother::create('user');
+        $email = EmailMother::create('deleted-abc123@erased.invalid');
+        $password = HashedPasswordMother::create('a-random-erasure-password');
+
+        $user->anonymize($firstName, $lastName, $email, $password);
+
+        $this->assertEquals('deleted', $user->firstName()->value());
+        $this->assertEquals('user', $user->lastName()->value());
+        $this->assertEquals('deleted-abc123@erased.invalid', $user->email()->value());
+        $this->assertTrue($user->password()->verify('a-random-erasure-password'));
+        $this->assertFalse($user->isEmailVerified());
+
+        $events = $user->pullDomainEvents();
+        $this->assertCount(2, $events);
+        $this->assertInstanceOf(UserDataErased::class, $events[1]);
     }
 
     public function testItUpdatesRoles(): void

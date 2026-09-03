@@ -20,8 +20,8 @@ final class PutUserControllerTest extends HttpTestCase
             '/api/v1/users/'.$user['id'],
             server: ['CONTENT_TYPE' => 'application/json'],
             content: json_encode([
-                'firstName' => $user['firstName'],
-                'lastName' => $user['lastName'],
+                'firstName' => $user['first_name'],
+                'lastName' => $user['last_name'],
                 'email' => $user['email'],
                 'password' => 'secret1234',
             ], JSON_THROW_ON_ERROR),

@@ -10,6 +10,128 @@ point of the file for a template that gets forked repeatedly.
 
 ## Unreleased
 
+### Added
+- New `Webhook` bounded context: outbound HTTP notifications for third-party systems on any
+  domain event, anywhere in the app. `Webhook\Infrastructure\EventHandler\
+  DispatchWebhooksOnAnyDomainEvent` is type-hinted to the abstract `DomainEvent` base class every
+  bounded context's events already extend, so Messenger's handler resolution invokes it for every
+  event published — no per-BC wiring needed to make a new event webhook-eligible. Delivery runs
+  on its own Messenger transport/worker (`webhook_delivery` / `make webhook-consumer`,
+  `docker/compose.prod.yaml` service of the same name), separate from the shared `async`
+  transport, so a slow or down third party can never delay welcome emails or other event
+  side-effects; its retry strategy is more tolerant (`max_retries: 5`) since third-party failure
+  is the expected case here. Deliveries are HMAC-SHA256 signed (`X-Webhook-Signature:
+  sha256=<hex>`, GitHub/Stripe convention) with a plain-text-stored secret — re-readable by
+  design, since it must be recomputed on every delivery, mirroring the existing
+  `refresh_tokens.token` precedent. Subscription URLs go through a new `WebhookUrl` value object
+  that requires `https://` and rejects localhost/private/loopback/link-local hosts (including the
+  cloud metadata endpoint) as an SSRF guard. Admin-only CRUD under `/api/v1/webhook-subscriptions`
+  (create/get/list/update/rotate-secret/disable/enable/delete — disable/enable is reversible,
+  delete is not). See `docs/webhooks.md`.
+
+### Fixed
+- `Shared\Infrastructure\Http\Serializer\ResponseNormalizer` (the `NormalizerInterface` every
+  Query `Response` DTO goes through) returned `get_object_vars($object)` directly, bypassing the
+  serializer's configured `camel_case_to_snake_case` name converter entirely — so every
+  multi-word property on every query response DTO in the app (`createdAt`, `eventNames`,
+  `lastUsedAt`, etc.) was silently shipped as camelCase instead of the documented snake_case
+  convention (README "Response format", `CLAUDE.md`). Went unnoticed because no existing HTTP
+  test asserted a multi-word response field — only single-word fields (`name`, `status`, `id`),
+  which are case-invariant and look correct either way. Found while writing the Webhook HTTP
+  tests (`WebhookSubscriptionResponse.eventNames` came back as `eventNames`, not `event_names`).
+  Fixed by running each property name through the injected `NameConverterInterface` before
+  building the array. Note: `Document\Infrastructure\Http\Response\DocumentResponseData` (used by
+  the upload/multipart-complete endpoints) builds a plain array with hardcoded camelCase keys
+  instead of a `Response` DTO, so it doesn't go through this normalizer and is unaffected by
+  either the bug or this fix — a separate, pre-existing inconsistency, left as-is here.
+- `Document\Infrastructure\Security\HttpOwnerContext` and `Project\Infrastructure\Security\
+  HttpOwnerContext` manually re-parsed the raw `Authorization: Bearer` header themselves
+  (`RequestStack` + `JWTTokenManagerInterface::parse()`) instead of reading the already-
+  authenticated principal off Symfony Security, unlike every other principal-reading class in the
+  app (`User\Infrastructure\Security\HttpUserContext`, `Shared\Infrastructure\Security\
+  PrincipalRoleAuthorizer`). Harmless for human logins, but it meant these two BCs could never
+  recognize an authenticated OAuth2 `client_credentials` caller (`ApiClientSecurityAdapter`) as
+  authenticated at all, since `JWTTokenManagerInterface` can't parse a league/oauth2-server
+  access token — silently incompatible with the `SCOPE_*` machine-client convention
+  `PrincipalRoleAuthorizer` was built to support. Fixed by rewriting both classes to depend on
+  `Symfony\Bundle\SecurityBundle\Security`, mirroring `HttpUserContext`. Bridged via a new
+  `Shared\Domain\Security\SubjectIdentityInterface` (`subjectId(): string`), implemented by
+  `SecurityUserAdapter` — deliberately not by `ApiClientSecurityAdapter`, since an OAuth2 client
+  has no owner identity, so a machine caller now fails closed with `UnauthenticatedException`
+  instead of accidentally succeeding or crashing.
+
+### Added
+- Single-VM production deployment: `docker/compose.prod.yaml` (published GHCR image, self-hosted
+  Postgres/RabbitMQ/Redis, `scheduler`/`consumer` as their own long-running services, no Garage/
+  Mailpit/dev tooling) plus `make prod-deploy` (`prod-pull` + `prod-migrate` + `prod-up`) and
+  `prod-db-backup`/`prod-db-restore`/`prod-down`/`prod-logs`. FrankenPHP's embedded Caddy handles
+  HTTPS automatically via `SERVER_NAME` (new env var) — no separate reverse proxy or cert-manager.
+  New `docs/deployment.md` covers first-time setup, updates, rollback, backups, and swapping in a
+  managed Postgres/Redis. Deliberately still not Kubernetes/ECS/Terraform — see the README
+  "Building & publishing the production image" for why those stay out of scope. Also adds
+  `APP_FRONTEND_URL` to `.env` (previously undefined, silently relying on a hardcoded fallback in
+  `config/services.yaml`) so production can actually override it.
+- Security scanning, three layers: `make composer-audit` (`composer audit` against the
+  FriendsOfPHP advisory database, now part of `make ci`), `.github/dependabot.yml` (weekly PRs
+  for `composer`, the `docker/php` base image, and GitHub Actions — no signup, native to
+  GitHub), and a `secret-scan` CI job running `gitleaks` against the full git history on every
+  push/PR (pinned binary downloaded directly from GitHub Releases, not the `gitleaks-action`
+  wrapper, to sidestep its licensing terms for organization-owned repos) plus a matching
+  pre-commit hook for local use. Four pre-existing false positives (fixed dev-only secrets in
+  `docker/garage/garage.toml`/`.env.test`, two OpenAPI example strings) are recorded with an
+  explanation in `.gitleaksignore`. See README "Security scanning".
+- GDPR right to erasure: self-service `DELETE /users/me` and admin `DELETE /users/{id}` now
+  actually erase personal data instead of only soft-deleting the account. New
+  `Shared\Domain\Privacy\PersonalDataEraserInterface` (mirrors the existing GDPR export
+  interface, auto-tagged `app.gdpr_data_eraser`) — `User\Application\Privacy\UserPersonalDataEraser`
+  anonymizes name/email/password and revokes every refresh/password-reset/email-verification
+  token; `Document\Application\Privacy\DocumentPersonalDataEraser` purges the S3 object and
+  hard-deletes the row (new `DocumentRepositoryInterface::delete()`) — a deliberate, documented
+  exception to "soft delete everywhere," since original filenames are themselves often
+  identifying. Both erasure paths are audited (`user.data_erased`). See README "GDPR right to
+  erasure".
+
+### Fixed
+- `DELETE /users/{id}`'s unconstrained `{id}` route segment could swallow the new
+  `DELETE /users/me` (both 2-segment paths under `/users`, and attribute-route registration
+  order happens to be alphabetical by controller filename — `DeleteUserController` sorts before
+  `EraseMyDataController`), routing self-erasure requests into the admin delete-by-id handler
+  and failing with `403 insufficient_privileges` for any non-admin. Fixed by constraining
+  `DeleteUserController`'s route to `requirements: ['id' => Requirement::UUID]`, matching the
+  pattern `ActivateUserController`/`DeactivateUserController` already used for exactly this
+  reason.
+- `JwtTokenService::generateRefreshToken()` produced byte-identical JWTs for two logins of the
+  same user within the same second — the payload only carried `sub`/`type` (both constant per
+  user) plus Lexik's own second-precision `iat`/`exp`, so a second login's refresh token could
+  collide with the first on `refresh_tokens`' unique `token` column and 500. Added a random
+  `jti` claim (ignored by `TokenClaims::fromRefreshTokenPayload`, purely for uniqueness). Found
+  while testing GDPR erasure (two logins in one test), but pre-existing and reachable from
+  regular rapid re-login too. See `LoginUserControllerTest`.
+
+### Added
+- New `ApiClient` bounded context: machine-to-machine authentication via OAuth2 `client_credentials`
+  (`league/oauth2-server`), for service-to-service or scripted callers that aren't a human user.
+  `POST /api/v1/oauth/token` is RFC 6749-compliant (`access_token`/`token_type`/`expires_in`/`scope`,
+  `error`/`error_description` on failure) rather than the app's usual `ApiResponse` envelope — standard
+  OAuth2 client libraries expect exactly this shape. Admin-only management endpoints under
+  `/api/v1/api-clients` (create/get/list/rotate-secret/revoke/delete); the plain-text secret is returned
+  only once, at creation or rotation. Access tokens are tracked in `issued_access_tokens` for real
+  revocation (mirrors `RefreshToken`), with a daily cleanup job for expired ones. A machine client gets
+  `ROLE_API_CLIENT` plus `SCOPE_<SCOPE_UPPER_SNAKE>` per granted OAuth2 scope; no existing endpoint
+  accepts a machine client by default — a fork opts a command/query in explicitly via
+  `RoleRequirement::any('ROLE_ADMIN', 'SCOPE_DOCUMENTS_WRITE')`. See `docs/api-clients.md`.
+
+### Changed
+- `Shared\Domain\Security\MessageAuthorizerInterface`'s sole implementation moved from
+  `User\Application\Security\UserAuthorizer` (coupled to `User\Domain\Security\UserContextInterface`,
+  which only recognizes `SecurityUserAdapter`) to the new, BC-agnostic
+  `Shared\Infrastructure\Security\PrincipalRoleAuthorizer` (reads roles off whatever
+  `Symfony\Bundle\SecurityBundle\Security::getUser()` returns). Required so `RoleRequirement` checks work
+  for both human JWT logins and the new OAuth2 machine clients — without it, a valid OAuth2 client would
+  get `401 unauthenticated` on every protected command/query instead of a role-based `403`. No behavior
+  change for existing human-user flows: the new `Shared\Domain\Exception\InsufficientPrivilegesException`
+  carries the same `insufficient_privileges` error code the old User-BC exception did.
+
 ### Fixed
 - `publish-image` CI job failed every run with `Cache export is not supported for the docker driver`:
   `docker/build-push-action@v6` was used with `cache-to: type=gha` but no `docker/setup-buildx-action`

@@ -9,6 +9,7 @@ use App\Shared\Domain\Exception\DomainException;
 use App\Shared\Domain\Exception\FeatureDisabledException;
 use App\Shared\Domain\Exception\ForbiddenException;
 use App\Shared\Domain\Exception\IdempotencyKeyConflictException;
+use App\Shared\Domain\Exception\InsufficientPrivilegesException;
 use App\Shared\Domain\Exception\InvalidArgumentException;
 use App\Shared\Domain\Exception\NotFoundException;
 use App\Shared\Domain\Exception\RateLimitExceededException;
@@ -92,6 +93,7 @@ final class ExceptionListener
             $exception instanceof ValidationException => [422, 'validation_error'],
             $exception instanceof ForbiddenException => [403, $exception->errorCode()],
             $exception instanceof FeatureDisabledException => [403, $exception->errorCode()],
+            $exception instanceof InsufficientPrivilegesException => [403, $exception->errorCode()],
             $exception instanceof AccessDeniedException => [403, 'forbidden'],
             $exception instanceof ExpiredTokenException => [401, 'token_expired'],
             $exception instanceof LexikInvalidTokenException => [401, 'invalid_token'],

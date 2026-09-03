@@ -28,6 +28,14 @@ doctrine:
             task_title: App\Project\Infrastructure\Persistence\Doctrine\Type\TaskTitleType
             project_status: App\Project\Infrastructure\Persistence\Doctrine\Type\ProjectStatusType
             task_status: App\Project\Infrastructure\Persistence\Doctrine\Type\TaskStatusType
+            api_client_id: App\ApiClient\Infrastructure\Persistence\Doctrine\Type\ApiClientIdType
+            hashed_client_secret: App\ApiClient\Infrastructure\Persistence\Doctrine\Type\HashedClientSecretType
+            api_client_status: App\ApiClient\Infrastructure\Persistence\Doctrine\Type\ApiClientStatusType
+            api_client_scopes: App\ApiClient\Infrastructure\Persistence\Doctrine\Type\ApiClientScopesType
+            webhook_subscription_id: App\Webhook\Infrastructure\Persistence\Doctrine\Type\WebhookSubscriptionIdType
+            webhook_url: App\Webhook\Infrastructure\Persistence\Doctrine\Type\WebhookUrlType
+            webhook_subscription_status: App\Webhook\Infrastructure\Persistence\Doctrine\Type\WebhookSubscriptionStatusType
+            webhook_event_names: App\Webhook\Infrastructure\Persistence\Doctrine\Type\WebhookEventNamesType
     orm:
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         mappings:
@@ -60,6 +68,16 @@ doctrine:
                 type: xml
                 dir: "%kernel.project_dir%/src/Project/Infrastructure/Persistence/Doctrine/Mapping"
                 prefix: App\Project\Domain\Entity
+                is_bundle: false
+            ApiClient:
+                type: xml
+                dir: "%kernel.project_dir%/src/ApiClient/Infrastructure/Persistence/Doctrine/Mapping"
+                prefix: App\ApiClient\Domain\Entity
+                is_bundle: false
+            Webhook:
+                type: xml
+                dir: "%kernel.project_dir%/src/Webhook/Infrastructure/Persistence/Doctrine/Mapping"
+                prefix: App\Webhook\Domain\Entity
                 is_bundle: false
 when@prod:
     doctrine:

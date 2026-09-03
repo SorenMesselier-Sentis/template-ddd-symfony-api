@@ -158,7 +158,7 @@ make ci    # all quality gates
 4. Register the exception mapper in `config/services.yaml` with tag `app.exception_mapper`
 5. Extend `FixtureData` / `FixtureReference` if needed
 6. Write Http tests for new endpoints
-7. If the entity holds personal data about a user, implement `Shared\Domain\Privacy\PersonalDataExporterInterface` (mandatory — see README "GDPR data export")
+7. If the entity holds personal data about a user, implement `Shared\Domain\Privacy\PersonalDataExporterInterface` **and** `Shared\Domain\Privacy\PersonalDataEraserInterface` (both mandatory — see README "GDPR data export" and "GDPR right to erasure")
 8. If any command exposes a sensitive action (delete, role/permission change, auth event), implement `Shared\Domain\Audit\AuditableMessage` on it (mandatory for that action — see README "Audit trail")
 9. If an entity relates to another entity in the *same* BC, use a real Doctrine relation (`fetch="EAGER"` if the target's id is `readonly`); keep cross-BC references UUID-only (see the `Project`/`Task` reference BC)
 10. `make db-diff` → `make db-migrate`
@@ -216,6 +216,8 @@ Unmapped `DomainException` subclasses fall back to `422 / domain_error`. Unknown
 | **User** | Auth, users, refresh tokens | JWT, `AuthorizedMessage`, welcome email event handlers |
 | **Document** | S3-compatible object storage (Garage/R2) | Storage ports, `OwnerId` without FK, `DocumentExceptionMapper` |
 | **Project** | Projects with tasks | Real `<many-to-one>` between `Task`→`Project` (same BC — contrast with `Document`'s FK-less `OwnerId`), cross-BC `assigneeId`/`attachmentId` UUIDs, `DependentFixtureInterface` for fixture ordering |
+| **ApiClient** | OAuth2 `client_credentials` machine-to-machine auth | `league/oauth2-server` adapters in `Infrastructure/OAuth2/`, a second Symfony `custom_authenticators` entry sharing the `api` firewall with `JwtAuthenticator`, RFC 6749 token endpoint (not `ApiResponse`) — see [docs/api-clients.md](api-clients.md) |
+| **Webhook** | Outbound HTTP notifications on any domain event | Single `DispatchWebhooksOnAnyDomainEvent` handler typed to the abstract `DomainEvent` (no per-BC wiring), HMAC-SHA256 signing, dedicated `webhook_delivery` transport/worker, SSRF-guarded `WebhookUrl` VO — see [docs/webhooks.md](webhooks.md) |
 | **Shared** | Buses, outbox, email, health, HTTP envelope | No BC imports |
 
 ---

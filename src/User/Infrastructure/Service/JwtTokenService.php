@@ -54,6 +54,13 @@ final class JwtTokenService implements TokenServiceInterface
             payload: [
                 'sub' => $user->id()->value(),
                 'type' => 'refresh',
+                // Without a per-token nonce, two refresh tokens issued for the same user
+                // within the same second are byte-identical (Lexik's own iat/exp are also
+                // second-precision and otherwise the only variable claims), which collides
+                // with refresh_tokens' unique `token` column. jti is ignored by
+                // TokenClaims::fromRefreshTokenPayload (unknown claims pass through), so this
+                // is purely a uniqueness guarantee, not a claim anything decodes.
+                'jti' => bin2hex(random_bytes(16)),
             ],
         );
 

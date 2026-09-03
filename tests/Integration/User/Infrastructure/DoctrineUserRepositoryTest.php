@@ -57,6 +57,16 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
         $this->assertNull($found);
     }
 
+    public function testFindByIdReturnsNullForADeletedUserButIncludingDeletedFindsIt(): void
+    {
+        $user = UserMother::create();
+        $user->delete();
+        $this->repository->save($user);
+
+        $this->assertNull($this->repository->findById($user->id()));
+        $this->assertNotNull($this->repository->findByIdIncludingDeleted($user->id()));
+    }
+
     public function testItDetectsExistingEmail(): void
     {
         $email = EmailMother::create('exists@example.com');

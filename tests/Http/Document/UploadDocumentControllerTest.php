@@ -93,6 +93,9 @@ final class UploadDocumentControllerTest extends HttpTestCase
         $this->assertJsonEnvelope($response, 201);
 
         $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        // DocumentResponseData builds a plain array with hardcoded camelCase keys (not a
+        // Shared\Domain\Bus\Query\Response DTO), so it does not go through ResponseNormalizer /
+        // the app-wide snake_case name converter — pre-existing inconsistency, out of scope here.
         $this->assertSame('invoice.pdf', $payload['data']['originalName']);
         $this->assertSame('application/pdf', $payload['data']['mimeType']);
         $this->assertSame('documents', $payload['data']['bucket']);

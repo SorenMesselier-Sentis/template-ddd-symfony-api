@@ -80,15 +80,49 @@ jobs:
                     fi
                   '
 
+            - name: Generate OAuth2 keypair
+              run: |
+                  docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php sh -c '
+                    set -e
+                    mkdir -p config/oauth
+                    if [ ! -f config/oauth/private.key ]; then
+                      openssl genrsa -out config/oauth/private.key 2048
+                      openssl rsa -in config/oauth/private.key -pubout -out config/oauth/public.key
+                    fi
+                    chmod 600 config/oauth/private.key config/oauth/public.key
+                  '
+
             - name: Warm up Symfony container cache (PHPStan)
               run: docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" exec -T php bin/console cache:warmup --env=dev --no-debug
 
             - name: Run quality gates
               run: make ci
 
+    secret-scan:
+        name: Secret scanning (gitleaks)
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Download gitleaks
+              run: |
+                  curl -sSfL -o gitleaks.tar.gz \
+                    https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+                  tar -xzf gitleaks.tar.gz gitleaks
+
+            - name: Scan repository history
+              run: ./gitleaks detect --source . --redact --verbose
+
     publish-image:
         name: Publish production image
-        needs: quality
+        needs: [quality, secret-scan]
         if: github.event_name == 'push'
         runs-on: ubuntu-latest
         timeout-minutes: 20

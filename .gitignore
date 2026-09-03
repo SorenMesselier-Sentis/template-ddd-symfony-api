@@ -26,3 +26,7 @@ docker/data
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+###> app/oauth2-api-client ###
+/config/oauth/*.key
+###< app/oauth2-api-client ###

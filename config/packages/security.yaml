@@ -19,8 +19,10 @@ security:
             entry_point: App\User\Infrastructure\Security\JsonAuthenticationEntryPoint
             custom_authenticators:
                 - App\User\Infrastructure\Security\JwtAuthenticator
+                - App\ApiClient\Infrastructure\Security\OAuth2ClientAuthenticator
 
     access_control:
+        - { path: ^/api/v1/oauth/token, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/auth/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/auth/forgot-password, roles: PUBLIC_ACCESS }

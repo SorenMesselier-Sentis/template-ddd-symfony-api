@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Shared\Infrastructure\Http\Listener;
 
 use App\Shared\Domain\Exception\DomainException;
+use App\Shared\Domain\Exception\InsufficientPrivilegesException;
 use App\Shared\Domain\Exception\RateLimitExceededException;
 use App\Shared\Domain\Exception\ValidationError;
 use App\Shared\Domain\Exception\ValidationException;
@@ -75,6 +76,15 @@ final class ExceptionListenerTest extends UnitTestCase
         $this->assertSame(422, $response->getStatusCode());
         $this->assertSame('validation_error', $payload['error']['code']);
         $this->assertCount(1, $payload['error']['errors']);
+    }
+
+    public function testInsufficientPrivilegesExceptionMapsTo403(): void
+    {
+        $listener = new ExceptionListener($this->createStub(LoggerInterface::class), []);
+        [$status, $code] = $listener->resolveException(InsufficientPrivilegesException::create());
+
+        $this->assertSame(403, $status);
+        $this->assertSame('insufficient_privileges', $code);
     }
 
     public function testPlainExceptionReturns500(): void

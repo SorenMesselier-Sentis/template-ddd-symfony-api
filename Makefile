@@ -112,6 +112,9 @@ debug-router: ## List all registered routes
 consume: ## Consume the async Messenger transport
 	$(CONSOLE) messenger:consume async --time-limit=3600 -vv
 
+webhook-consumer: ## Consume the webhook_delivery Messenger transport (outbound webhook HTTP delivery)
+	$(CONSOLE) messenger:consume webhook_delivery --time-limit=3600 -vv
+
 consume-dl: ## Consume the async dead-letter transport
 	$(CONSOLE) messenger:consume async.dead_letter --time-limit=3600 -vv
 
@@ -176,6 +179,9 @@ remove-bc: ## Remove a bounded context (name=X [force=1]) — User, Document, Sh
 deptrac: ## Check architecture layer boundaries (run after every structural change)
 	$(PHP) vendor/bin/deptrac analyse
 
+composer-audit: ## Check installed dependencies against known security advisories
+	$(COMPOSER) audit
+
 phpstan: ## Run static analysis (level 9)
 	$(PHP) vendor/bin/phpstan analyse
 
@@ -205,7 +211,7 @@ er-diagram: ## Generate the ER diagram from Doctrine migrations
 	@$(CONSOLE) app:generate:er-diagram
 	@echo "ER diagram generated at docs/er-diagram.md"
 
-ci: cs-check phpstan deptrac test-unit test-integration test-http ## Run all CI quality gates
+ci: cs-check phpstan deptrac composer-audit test-unit test-integration test-http ## Run all CI quality gates
 
 test-coverage: ## Generate an HTML coverage report in var/coverage/
 	$(PHP_TEST) php -d pcov.enabled=1 -d pcov.directory=/app/src -d pcov.exclude="#^/app/(vendor|tests)/#" vendor/bin/phpunit --coverage-html var/coverage
@@ -228,3 +234,37 @@ openapi-export-yaml: ## Export the OpenAPI spec as YAML to var/openapi/openapi.y
 	mkdir -p var/openapi
 	$(CONSOLE) nelmio:apidoc:dump --format=yaml > var/openapi/openapi.yaml
 	@echo "OpenAPI YAML exported to var/openapi/openapi.yaml"
+
+# =========================================================
+# Production (single VM) — run on the deployment host, against
+# docker/compose.prod.yaml, driven by that host's own .env.local
+# (production values, never the dev ones). See docs/deployment.md.
+# =========================================================
+DOCKER_COMPOSE_PROD = docker compose -f docker/compose.prod.yaml --env-file .env.local
+
+prod-pull: ## Pull the production image (php/scheduler/consumer) at $IMAGE_TAG
+	$(DOCKER_COMPOSE_PROD) pull php scheduler consumer
+
+prod-migrate: ## Run pending database migrations against production (one-off container)
+	$(DOCKER_COMPOSE_PROD) run --rm php bin/console doctrine:migrations:migrate --no-interaction
+
+prod-up: ## Start (or recreate) the production stack, waiting until healthy
+	$(DOCKER_COMPOSE_PROD) up -d --wait
+
+prod-deploy: prod-pull prod-migrate prod-up ## Full deploy: pull the image, migrate, then (re)start the stack
+
+prod-down: ## Stop the production stack (data volumes are preserved)
+	$(DOCKER_COMPOSE_PROD) down
+
+prod-logs: ## Follow production logs (all services)
+	$(DOCKER_COMPOSE_PROD) logs -f
+
+prod-db-backup: ## Dump the production database to var/backups/<timestamp>.dump
+	@mkdir -p var/backups
+	$(DOCKER_COMPOSE_PROD) exec -T postgres sh -lc 'pg_dump -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -Fc' > "var/backups/$$(date +%Y%m%d%H%M%S).dump"
+	@echo "Backup written to var/backups/"
+
+prod-db-restore: ## Restore the production database from a dump file (file=var/backups/<name>.dump) — DESTRUCTIVE
+	@test -n "$(file)" || (echo "Usage: make prod-db-restore file=var/backups/<name>.dump" && exit 1)
+	@test -f "$(file)" || (echo "File not found: $(file)" && exit 1)
+	$(DOCKER_COMPOSE_PROD) exec -T postgres sh -lc 'pg_restore -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" --clean --if-exists --no-owner' < "$(file)"
