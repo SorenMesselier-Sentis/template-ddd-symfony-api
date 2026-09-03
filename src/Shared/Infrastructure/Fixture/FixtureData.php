@@ -41,4 +41,10 @@ final class FixtureData
     // HTTP tests can request a token for it (see ApiClientFixture).
     public const API_CLIENT_TEST_SECRET = 'test-client-secret-do-not-use-in-prod';
     public const API_CLIENT_TEST_SCOPE = 'documents:write';
+
+    public const WEBHOOK_SUBSCRIPTION_TEST_ID = '88888888-8888-4888-8888-888888888888';
+    public const WEBHOOK_SUBSCRIPTION_TEST_NAME = 'Test Subscription';
+    public const WEBHOOK_SUBSCRIPTION_TEST_URL = 'https://webhook.example.test/inbound';
+    public const WEBHOOK_SUBSCRIPTION_TEST_SECRET = 'test-webhook-signing-secret-do-not-use-in-prod';
+    public const WEBHOOK_SUBSCRIPTION_TEST_EVENT_NAME = 'api_client.created';
 }

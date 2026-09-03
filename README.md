@@ -168,6 +168,16 @@ Handlers are registered on `command.bus` only (no auto-broadcast to other buses)
 - The relation is `fetch="EAGER"`, not the Doctrine default `LAZY`. `Project::$id` is `readonly` (as recommended everywhere else in this template), and Doctrine's lazy ghost-object hydration needs to partially set an identifier before the rest of a proxy initializes — which conflicts with `readonly` and throws `LogicException: Attempting to change readonly property ...::$id`. Loading `Project` eagerly (a JOIN) sidesteps that entirely, and is the right call anyway since almost every `Task` handler needs the parent `Project` for the ownership check (`Task::project()->ownerId()`) — LAZY would just mean a second query on top of the JOIN you'd otherwise write by hand.
 - `TaskFixture` depends on `ProjectFixture` via Doctrine's `DependentFixtureInterface`/`getDependencies()` — the only place in this template fixtures need real load ordering, since every other cross-BC fixture link is a stable UUID from `FixtureData` with no persistence-order requirement.
 
+**Outbound webhooks (Webhook BC)** — lets an admin register an `https://` URL that gets a signed
+HTTP `POST` whenever a chosen domain event fires anywhere in the app, no per-BC wiring required:
+`Webhook\Infrastructure\EventHandler\DispatchWebhooksOnAnyDomainEvent` is typed to the same
+abstract `DomainEvent` base class every other bounded context's events extend, so Messenger's
+handler resolution invokes it for all of them. Delivery itself runs on its own Messenger
+transport/worker (`webhook_delivery` / `make webhook-consumer`), deliberately separate from the
+shared `async` transport, so a slow or down third party can never delay welcome emails or other
+event side-effects. See [docs/webhooks.md](docs/webhooks.md) for the payload format, signature
+verification, and the SSRF guard on subscription URLs.
+
 **OpenAPI** is generated from PHP attributes (`OpenApi\Attributes`) on HTTP controllers. Paths in attributes are relative to the API base (`/users`, `/auth/login`, …); the `/api/v1` prefix is configured once in `config/packages/nelmio_api_doc.yaml` (`servers`) and in `config/routes.yaml`. Swagger UI is served at `/api/doc` and the JSON spec at `/api/doc.json`. The health check (`GET /health`) is documented under the **Infrastructure** tag with the root server.
 
 ### Security
@@ -621,6 +631,7 @@ See [docs/testing-emails.md](docs/testing-emails.md) for the full flow (API → 
 ```bash
 make consume          # start the event consumer (drains RabbitMQ events.* queues)
 make consume-dl       # start the dead letter consumer
+make webhook-consumer # start the outbound webhook HTTP delivery worker (see docs/webhooks.md)
 make scheduler        # start the Scheduler worker — drives outbox relay + daily cleanups
 make outbox-relay     # one-shot: publish persisted outbox events to the event bus
 make messenger-stop   # gracefully stop all workers
@@ -630,7 +641,7 @@ make messenger-failed-retry  # retry all failed messages
 make messenger-failed-remove # remove all failed messages
 ```
 
-In production, `make consume` and `make scheduler` should be supervised as long-running processes (systemd, supervisord, etc.) — `make outbox-relay` is then only kept as an operator escape hatch for manual triggering. The `--time-limit=3600` in both targets is the standard Symfony pattern for safe restarts.
+In production, `make consume`, `make webhook-consumer`, and `make scheduler` should be supervised as long-running processes (systemd, supervisord, etc.) — `make outbox-relay` is then only kept as an operator escape hatch for manual triggering. The `--time-limit=3600` in each target is the standard Symfony pattern for safe restarts.
 
 ### Scaffolding bounded contexts and CRUD entities
 
@@ -1080,6 +1091,10 @@ CommandHandler
               → RabbitMQ exchange "events" (topic)
                   → queue "events.<context>" (binding: <context>.#)
                       → MessageHandler (incl. async EventHandler/ side-effects: emails, etc.)
+                      → Webhook\DispatchWebhooksOnAnyDomainEvent (typed to the abstract
+                        DomainEvent, so every event from every context reaches it) → matches
+                        against active webhook subscriptions → DeliverWebhookCommand on the
+                        dedicated "webhook_delivery" transport/worker (see docs/webhooks.md)
 
 On failure after 3 retries:
   → failure_transport "async.dead_letter"

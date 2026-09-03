@@ -1,0 +1,20 @@
+<doctrine-mapping
+    xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                        https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd"
+>
+    <entity name="App\Webhook\Domain\Entity\WebhookSubscription" table="webhook_subscriptions">
+
+        <id name="id" type="webhook_subscription_id" column="id"/>
+
+        <field name="name" type="string" column="name" length="200" nullable="false"/>
+        <field name="url" type="webhook_url" column="url" length="2048" nullable="false"/>
+        <field name="secret" type="string" column="secret" length="255" nullable="false"/>
+        <field name="eventNames" type="webhook_event_names" column="event_names" nullable="false"/>
+        <field name="status" type="webhook_subscription_status" column="status" length="20" nullable="false"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="false"/>
+
+    </entity>
+</doctrine-mapping>

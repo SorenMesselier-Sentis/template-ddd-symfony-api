@@ -102,6 +102,8 @@ services:
     App\Shared\Infrastructure\Http\Serializer\ValueObjectNormalizer:
         tags: [serializer.normalizer]
     App\Shared\Infrastructure\Http\Serializer\ResponseNormalizer:
+        arguments:
+            $nameConverter: '@serializer.name_converter.camel_case_to_snake_case'
         tags: [serializer.normalizer]
 
     # API Response
@@ -340,6 +342,9 @@ services:
         alias: App\ApiClient\Infrastructure\Persistence\Doctrine\Repository\DoctrineApiClientRepository
     App\ApiClient\Domain\Repository\IssuedAccessTokenRepositoryInterface:
         alias: App\ApiClient\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssuedAccessTokenRepository
+
+    App\Webhook\Domain\Repository\WebhookSubscriptionRepositoryInterface:
+        alias: App\Webhook\Infrastructure\Persistence\Doctrine\Repository\DoctrineWebhookSubscriptionRepository
 
     # Document storage
     App\Document\Infrastructure\Storage\S3DocumentStorageAdapter:

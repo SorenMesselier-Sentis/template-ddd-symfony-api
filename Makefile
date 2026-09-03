@@ -112,6 +112,9 @@ debug-router: ## List all registered routes
 consume: ## Consume the async Messenger transport
 	$(CONSOLE) messenger:consume async --time-limit=3600 -vv
 
+webhook-consumer: ## Consume the webhook_delivery Messenger transport (outbound webhook HTTP delivery)
+	$(CONSOLE) messenger:consume webhook_delivery --time-limit=3600 -vv
+
 consume-dl: ## Consume the async dead-letter transport
 	$(CONSOLE) messenger:consume async.dead_letter --time-limit=3600 -vv
 

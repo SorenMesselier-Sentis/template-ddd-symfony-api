@@ -217,6 +217,7 @@ Unmapped `DomainException` subclasses fall back to `422 / domain_error`. Unknown
 | **Document** | S3-compatible object storage (Garage/R2) | Storage ports, `OwnerId` without FK, `DocumentExceptionMapper` |
 | **Project** | Projects with tasks | Real `<many-to-one>` between `Task`→`Project` (same BC — contrast with `Document`'s FK-less `OwnerId`), cross-BC `assigneeId`/`attachmentId` UUIDs, `DependentFixtureInterface` for fixture ordering |
 | **ApiClient** | OAuth2 `client_credentials` machine-to-machine auth | `league/oauth2-server` adapters in `Infrastructure/OAuth2/`, a second Symfony `custom_authenticators` entry sharing the `api` firewall with `JwtAuthenticator`, RFC 6749 token endpoint (not `ApiResponse`) — see [docs/api-clients.md](api-clients.md) |
+| **Webhook** | Outbound HTTP notifications on any domain event | Single `DispatchWebhooksOnAnyDomainEvent` handler typed to the abstract `DomainEvent` (no per-BC wiring), HMAC-SHA256 signing, dedicated `webhook_delivery` transport/worker, SSRF-guarded `WebhookUrl` VO — see [docs/webhooks.md](webhooks.md) |
 | **Shared** | Buses, outbox, email, health, HTTP envelope | No BC imports |
 
 ---

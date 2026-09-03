@@ -11,6 +11,56 @@ point of the file for a template that gets forked repeatedly.
 ## Unreleased
 
 ### Added
+- New `Webhook` bounded context: outbound HTTP notifications for third-party systems on any
+  domain event, anywhere in the app. `Webhook\Infrastructure\EventHandler\
+  DispatchWebhooksOnAnyDomainEvent` is type-hinted to the abstract `DomainEvent` base class every
+  bounded context's events already extend, so Messenger's handler resolution invokes it for every
+  event published — no per-BC wiring needed to make a new event webhook-eligible. Delivery runs
+  on its own Messenger transport/worker (`webhook_delivery` / `make webhook-consumer`,
+  `docker/compose.prod.yaml` service of the same name), separate from the shared `async`
+  transport, so a slow or down third party can never delay welcome emails or other event
+  side-effects; its retry strategy is more tolerant (`max_retries: 5`) since third-party failure
+  is the expected case here. Deliveries are HMAC-SHA256 signed (`X-Webhook-Signature:
+  sha256=<hex>`, GitHub/Stripe convention) with a plain-text-stored secret — re-readable by
+  design, since it must be recomputed on every delivery, mirroring the existing
+  `refresh_tokens.token` precedent. Subscription URLs go through a new `WebhookUrl` value object
+  that requires `https://` and rejects localhost/private/loopback/link-local hosts (including the
+  cloud metadata endpoint) as an SSRF guard. Admin-only CRUD under `/api/v1/webhook-subscriptions`
+  (create/get/list/update/rotate-secret/disable/enable/delete — disable/enable is reversible,
+  delete is not). See `docs/webhooks.md`.
+
+### Fixed
+- `Shared\Infrastructure\Http\Serializer\ResponseNormalizer` (the `NormalizerInterface` every
+  Query `Response` DTO goes through) returned `get_object_vars($object)` directly, bypassing the
+  serializer's configured `camel_case_to_snake_case` name converter entirely — so every
+  multi-word property on every query response DTO in the app (`createdAt`, `eventNames`,
+  `lastUsedAt`, etc.) was silently shipped as camelCase instead of the documented snake_case
+  convention (README "Response format", `CLAUDE.md`). Went unnoticed because no existing HTTP
+  test asserted a multi-word response field — only single-word fields (`name`, `status`, `id`),
+  which are case-invariant and look correct either way. Found while writing the Webhook HTTP
+  tests (`WebhookSubscriptionResponse.eventNames` came back as `eventNames`, not `event_names`).
+  Fixed by running each property name through the injected `NameConverterInterface` before
+  building the array. Note: `Document\Infrastructure\Http\Response\DocumentResponseData` (used by
+  the upload/multipart-complete endpoints) builds a plain array with hardcoded camelCase keys
+  instead of a `Response` DTO, so it doesn't go through this normalizer and is unaffected by
+  either the bug or this fix — a separate, pre-existing inconsistency, left as-is here.
+- `Document\Infrastructure\Security\HttpOwnerContext` and `Project\Infrastructure\Security\
+  HttpOwnerContext` manually re-parsed the raw `Authorization: Bearer` header themselves
+  (`RequestStack` + `JWTTokenManagerInterface::parse()`) instead of reading the already-
+  authenticated principal off Symfony Security, unlike every other principal-reading class in the
+  app (`User\Infrastructure\Security\HttpUserContext`, `Shared\Infrastructure\Security\
+  PrincipalRoleAuthorizer`). Harmless for human logins, but it meant these two BCs could never
+  recognize an authenticated OAuth2 `client_credentials` caller (`ApiClientSecurityAdapter`) as
+  authenticated at all, since `JWTTokenManagerInterface` can't parse a league/oauth2-server
+  access token — silently incompatible with the `SCOPE_*` machine-client convention
+  `PrincipalRoleAuthorizer` was built to support. Fixed by rewriting both classes to depend on
+  `Symfony\Bundle\SecurityBundle\Security`, mirroring `HttpUserContext`. Bridged via a new
+  `Shared\Domain\Security\SubjectIdentityInterface` (`subjectId(): string`), implemented by
+  `SecurityUserAdapter` — deliberately not by `ApiClientSecurityAdapter`, since an OAuth2 client
+  has no owner identity, so a machine caller now fails closed with `UnauthenticatedException`
+  instead of accidentally succeeding or crashing.
+
+### Added
 - Single-VM production deployment: `docker/compose.prod.yaml` (published GHCR image, self-hosted
   Postgres/RabbitMQ/Redis, `scheduler`/`consumer` as their own long-running services, no Garage/
   Mailpit/dev tooling) plus `make prod-deploy` (`prod-pull` + `prod-migrate` + `prod-up`) and

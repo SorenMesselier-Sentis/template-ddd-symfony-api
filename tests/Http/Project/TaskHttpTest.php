@@ -39,8 +39,8 @@ final class TaskHttpTest extends HttpTestCase
         $task = json_decode((string) $client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR)['data'];
         $this->assertSame('Write the launch announcement', $task['title']);
         $this->assertSame('todo', $task['status']);
-        $this->assertSame(FixtureData::USER_JANE_ID, $task['assigneeId']);
-        $this->assertSame(FixtureData::DOCUMENT_JOHN_INVOICE_ID, $task['attachmentId']);
+        $this->assertSame(FixtureData::USER_JANE_ID, $task['assignee_id']);
+        $this->assertSame(FixtureData::DOCUMENT_JOHN_INVOICE_ID, $task['attachment_id']);
 
         $client->request(
             'PATCH',
