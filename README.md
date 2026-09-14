@@ -1144,9 +1144,10 @@ The `prod` target differs from the `dev` image used everywhere else in this doc:
 
 What this deliberately does **not** include: a deployment target. Where the image actually runs (Kubernetes, ECS, Fly.io, a bare VM pulling the image, …) varies per fork, and a template guessing wrong here would add false confidence rather than save work — this stops at "there's a pullable, deployable image," which is the universal prerequisite regardless of target.
 
-Two things any real deployment needs to handle itself, since the image intentionally doesn't:
-- **JWT keys** (`config/jwt/*.pem`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above).
-- **Non-root container user**: the image currently runs as root, same as the `dev` image — FrankenPHP binding port 80 as non-root needs an explicit Linux capability grant (`cap_net_bind_service`) at the deployment layer. Worth hardening before a real production rollout, not included here.
+One thing any real deployment needs to handle itself, since the image intentionally doesn't:
+- **JWT keys** (`config/jwt/*.pem`) are gitignored and excluded from the image via `.dockerignore` — they must never be baked into a distributable image. Inject them at deploy time (a mounted secret, or generate at container startup) the same way local dev and CI already do (see "Reproduce the CI pipeline locally" above). Whatever mounts them must make them readable by the image's runtime user — uid/gid `1000` (`app`), see below — not just `root`.
+
+**Non-root container user**: unlike the `dev` image (which stays root for bind-mount convenience with the host during local development), the `prod` target runs as an unprivileged `app` user (uid/gid `1000`). FrankenPHP still binds port 80 without root by granting the `frankenphp` binary the `cap_net_bind_service` Linux capability at build time (`setcap`) instead of running the process as root; `/app`, and Caddy's own state dirs (`/data/caddy`, `/config/caddy`), are owned by `app`. No extra deployment-layer configuration needed for this — it's baked into the image.
 
 Build it locally the same way CI does:
 

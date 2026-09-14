@@ -100,7 +100,25 @@ ENV APP_VERSION=$APP_VERSION
 RUN apk del autoconf g++ make linux-headers \
     && rm -rf /tmp/pear /var/cache/apk/*
 
-COPY . .
+# Unprivileged runtime user. FrankenPHP normally needs root to bind :80;
+# instead we grant the "app" user just the cap_net_bind_service capability
+# on the frankenphp binary itself (libcap is only needed to set it, so it's
+# removed again right after) and own every dir the process writes to —
+# Caddy's own state (XDG_DATA_HOME/XDG_CONFIG_HOME, baked into the base
+# image as /data/caddy, /config/caddy) plus /app, where Symfony creates
+# var/cache and var/log on first boot (excluded from the image by
+# .dockerignore, so nothing to chown there yet).
+RUN addgroup -g 1000 app \
+    && adduser -D -u 1000 -G app app \
+    && apk add --no-cache libcap \
+    && setcap cap_net_bind_service=+ep /usr/local/bin/frankenphp \
+    && apk del libcap \
+    && mkdir -p /data/caddy /config/caddy \
+    && chown -R app:app /app /data/caddy /config/caddy
+
+COPY --chown=app:app . .
+
+USER app
 
 RUN composer install --no-dev --optimize-autoloader --classmap-authoritative --no-scripts --no-interaction
 

@@ -18,6 +18,13 @@ point of the file for a template that gets forked repeatedly.
   `docker-container` driver supports GHA cache).
 
 ### Changed
+- The `prod` Docker image target now runs as an unprivileged `app` user (uid/gid `1000`) instead of
+  root. FrankenPHP binds port 80 via the `cap_net_bind_service` Linux capability granted to the
+  `frankenphp` binary at build time (`setcap`) rather than needing a root process; `/app` and Caddy's
+  own state dirs (`/data/caddy`, `/config/caddy`) are chowned to `app`. The `dev` image is unchanged
+  (stays root, for bind-mount convenience with the host). Deployers injecting `config/jwt/*.pem` as a
+  mounted secret must make it readable by uid/gid `1000`, not just `root` — see README "Building &
+  publishing the production image".
 - `quality` job's PHP image build (`docker compose build php`, previously uncached — 40-60s every CI run
   installing pecl extensions from scratch) now goes through `docker/build-push-action@v6` with
   `cache-from`/`cache-to: type=gha` instead, `load: true`-ed into the local Docker daemon under a fixed
