@@ -413,22 +413,19 @@ make up      # start again — fast, no rebuild or reinstall
 
 `make ps`/`make logs` inspect the running stack; see "Development" below for the full command reference (database, messaging, email, scaffolding, …).
 
-### Pre-commit hooks (recommended)
+### Git hooks (recommended)
 
-Git hooks are **optional** but recommended to catch formatting drift and accidental secret commits before they reach CI.
-
-Install [pre-commit](https://pre-commit.com/) once per machine, then enable the hooks for this repository:
+Git hooks are **optional** but recommended to catch formatting drift and accidental secret commits before they reach CI. They're plain bash scripts under `scripts/git-hooks/` — no Python, no `pip install`, no local package of any kind. Enable them once per clone:
 
 ```bash
-pip install pre-commit   # or: brew install pre-commit
-pre-commit install --install-hooks   # installs pre-commit + commit-msg hooks
+make hooks-install   # git config core.hooksPath scripts/git-hooks
 ```
 
-On every `git commit`, the configured hooks will:
+On every `git commit`, the hooks will:
 
 - run **PHP CS Fixer** in dry-run mode on staged PHP files (same rules as `make cs-check`)
 - block commits that include sensitive files (`.env.local`, `config/jwt/*.pem`, decrypted Symfony secrets, …)
-- run **detect-private-key** on staged content
+- scan staged content for private key material (`-----BEGIN ... PRIVATE KEY-----`)
 - validate the **commit message** against [Conventional Commits](https://www.conventionalcommits.org/) (`feat: …`, `fix: …`, `chore: …`, etc.)
 
 Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
@@ -441,25 +438,15 @@ git commit -m "fix(user): reject expired refresh tokens"
 git commit -m "chore: update README CI section"
 ```
 
-Run file checks manually against the full tree:
-
-```bash
-pre-commit run --all-files
-```
-
-Test a commit message without committing:
-
-```bash
-echo "feat: example message" | pre-commit run conventional-pre-commit --hook-stage commit-msg --commit-msg-filename /dev/stdin
-```
-
-When the PHP container is running (`make up`), hooks execute PHP CS Fixer inside Docker (PHP 8.4). Otherwise they fall back to `vendor/bin/php-cs-fixer` on the host. You can also check style directly with Composer dependencies installed locally:
+When the PHP container is running (`make up`), the pre-commit hook runs PHP CS Fixer inside Docker (PHP 8.4). Otherwise it falls back to `vendor/bin/php-cs-fixer` on the host if present. You can also check style directly with Composer dependencies installed locally:
 
 ```bash
 vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
 ```
 
 With Docker only, use `make cs-check` instead.
+
+To disable the hooks again: `make hooks-uninstall`.
 
 ### Environment variables
 
@@ -1218,7 +1205,7 @@ make deptrac   # run Deptrac with deptrac.yaml
 make ci        # cs-check + phpstan + deptrac + all test suites (recommended before every PR)
 ```
 
-Pre-commit hooks (see [Getting started](#pre-commit-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
+Git hooks (see [Getting started](#git-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
 
 If Docker is not available in your environment, run them directly:
 

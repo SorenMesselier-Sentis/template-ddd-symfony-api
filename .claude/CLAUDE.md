@@ -111,7 +111,7 @@ Fixtures live per-BC in `<BC>/Infrastructure/Fixture/` and are auto-discovered �
 ## Conventions
 
 - **Update `CHANGELOG.md`** — add an entry under `## Unreleased` for any user-facing change (new feature, fix, behavior change, new convention); skip it only for pure chore/ci/test-only work. Do this in the same turn as the code change, not as an afterthought. This is a template that gets forked repeatedly — the changelog is how a fork knows what upstream is worth pulling in.
-- Commit messages must be Conventional Commits (enforced by `conventional-pre-commit` in `.pre-commit-config.yaml`, which also blocks `.env.local`, JWT keys, and private keys).
+- Commit messages must be Conventional Commits (enforced by the `scripts/git-hooks/commit-msg` hook, enabled via `make hooks-install`; the same hook set's `pre-commit` script also blocks `.env.local`, JWT keys, and private keys — plain bash/git, no local package required).
 - JWT keys in `config/jwt/*.pem` are gitignored and must be generated locally (see README "Reproduce the CI pipeline locally").
 - CI (`.github/workflows/ci.yml`) boots the real Docker stack and runs `make ci`; it also regenerates and commits `docs/er-diagram.md` on pushes to `main`.
 

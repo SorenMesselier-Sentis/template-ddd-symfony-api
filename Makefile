@@ -60,6 +60,13 @@ bash: ## Open a shell inside the php container (working dir /app)
 install: ## Install Composer dependencies
 	$(COMPOSER) install
 
+hooks-install: ## Enable git hooks (pre-commit + commit-msg) — plain bash/git, no local package required
+	chmod +x scripts/git-hooks/pre-commit scripts/git-hooks/commit-msg scripts/git-hooks/lib-php-cs-fixer.sh
+	git config core.hooksPath scripts/git-hooks
+
+hooks-uninstall: ## Disable the git hooks installed by hooks-install
+	git config --unset core.hooksPath || true
+
 jwt-keys: ## Generate the local JWT keypair (required for auth / HTTP tests) — skips if already present
 	$(PHP) sh -c '\
 		if [ -f config/jwt/private.pem ]; then \

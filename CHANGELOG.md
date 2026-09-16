@@ -19,6 +19,12 @@ point of the file for a template that gets forked repeatedly.
   `docker-container` driver supports GHA cache).
 
 ### Changed
+- Replaced the `pre-commit` framework (`.pre-commit-config.yaml`) with plain bash git hooks under
+  `scripts/git-hooks/`, enabled via `make hooks-install` (`git config core.hooksPath`). The old setup
+  required installing the `pre-commit` Python package on the host (`pip install pre-commit`) just to
+  run a PHP CS Fixer dry-run, a private-key scan, and a Conventional Commits check — all now plain
+  bash/git with zero local package dependency, consistent with this template's "everything runs in
+  Docker, no local toolchain assumption" rule. `make hooks-uninstall` reverts. See README "Git hooks".
 - The `prod` Docker image target now runs as an unprivileged `app` user (uid/gid `1000`) instead of
   root. FrankenPHP binds port 80 via the `cap_net_bind_service` Linux capability granted to the
   `frankenphp` binary at build time (`setcap`) rather than needing a root process; `/app` and Caddy's

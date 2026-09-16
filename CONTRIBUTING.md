@@ -36,8 +36,8 @@ make er-diagram   # regenerate docs/er-diagram.md (CI also does this on main, bu
 ## Commit messages
 
 Commits must follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`,
-`refactor:`, `chore:`, ...) — enforced by `conventional-pre-commit` if you've installed the hooks
-(`pre-commit install`), and by the PR-title check in CI either way, since GitHub's default squash-merge
+`refactor:`, `chore:`, ...) — enforced by the `commit-msg` hook if you've enabled the git hooks
+(`make hooks-install`), and by the PR-title check in CI either way, since GitHub's default squash-merge
 uses the PR title as the final commit message.
 
 ## Scaffolding, not hand-writing

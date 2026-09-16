@@ -241,4 +241,4 @@ make ci
 
 Runs `cs-check`, `phpstan` (level 9), `deptrac`, and all PHPUnit suites.
 
-Optional local hooks: [README — Pre-commit](../README.md#pre-commit-hooks-recommended).
+Optional local hooks: [README — Git hooks](../README.md#git-hooks-recommended).
