@@ -1,7 +1,10 @@
 .DEFAULT_GOAL := help
 .PHONY: help
 
-DOCKER_COMPOSE = docker compose -f docker/compose.yaml --env-file .env.local
+# Compose's own default project name is the basename of the directory holding the compose file
+COMPOSE_PROJECT_NAME = $(shell basename "$(CURDIR)" | tr '[:upper:]' '[:lower:]')
+
+DOCKER_COMPOSE = docker compose -p $(COMPOSE_PROJECT_NAME) -f docker/compose.yaml --env-file .env.local
 DOCKER_COMPOSE_ALL = $(DOCKER_COMPOSE) --profile monitoring
 # Core stack : everything the app needs to run and be exercised manually.
 CORE_SERVICES = php postgres rabbitmq redis garage mailpit
@@ -56,6 +59,17 @@ bash: ## Open a shell inside the php container (working dir /app)
 
 install: ## Install Composer dependencies
 	$(COMPOSER) install
+
+jwt-keys: ## Generate the local JWT keypair (required for auth / HTTP tests) — skips if already present
+	$(PHP) sh -c '\
+		if [ -f config/jwt/private.pem ]; then \
+			echo "config/jwt/private.pem already exists — skipping (delete it first to regenerate)."; \
+		else \
+			mkdir -p config/jwt && \
+			openssl genrsa -aes256 -passout pass:change_me -out config/jwt/private.pem 4096 && \
+			openssl rsa -pubout -passin pass:change_me -in config/jwt/private.pem -out config/jwt/public.pem; \
+		fi \
+	'
 
 update: ## Update Composer dependencies
 	$(COMPOSER) update
@@ -136,7 +150,7 @@ outbox-relay: ## One-shot manual flush of the transactional outbox
 scheduler: ## Run the Scheduler worker (outbox relay + daily cleanups)
 	$(CONSOLE) messenger:consume scheduler_default --time-limit=3600 -vv
 
-init: build up install db-fresh garage-bootstrap ## First-time setup: build + up + install + db-fresh + garage-bootstrap
+init: build up install jwt-keys db-fresh garage-bootstrap ## First-time setup: build + up + install + jwt-keys + db-fresh + garage-bootstrap
 
 garage-bootstrap: ## One-time (idempotent) Garage bootstrap: layout, access key, buckets (keep bucket list in sync with document_storage.buckets)
 	@set -a; . ./.env.local; set +a; \

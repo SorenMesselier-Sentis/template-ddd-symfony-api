@@ -132,6 +132,7 @@ events.product:
 - [ ] Use `FixtureData` / `FixtureReference` from Shared for stable IDs and cross-test values
 - [ ] No `Shared/Infrastructure` orchestrator importing other BC fixtures (Deptrac)
 - [ ] Cross-BC links via UUID constants only, or [fixture groups](../README.md#fixtures-and-test-data) when a real entity dependency exists
+- [ ] Optional: a random-bulk layer via `FixtureFaker` + a `$randomCount` constructor arg wired to its own `FIXTURES_RANDOM_<NAME>_COUNT` env var (defaulting to 0, forced to 0 in `.env.test`) — see [README "Named fixtures vs. random bulk volume"](../README.md#fixtures-and-test-data). Never randomize the named rows themselves.
 
 ### 9. Tests
 

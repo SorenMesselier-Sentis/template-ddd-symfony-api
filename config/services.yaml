@@ -7,6 +7,10 @@ parameters:
     app_frontend_url_default: 'http://localhost:8080'
     cors_allowed_origins_default: ''
     otel_exporter_otlp_endpoint_default: ''
+    fixtures_random_user_count_default: 0
+    fixtures_random_document_count_default: 0
+    fixtures_random_project_count_default: 0
+    fixtures_random_task_count_default: 0
 
 services:
     _defaults:
@@ -382,3 +386,24 @@ services:
     Sentry\Monolog\LogToSentryIssueHandler:
         arguments:
             $level: !php/const Monolog\Logger::ERROR
+
+    # Fixtures — random bulk volume on top of the named/stable rows (see
+    # README "Fixtures and test data"). Each count is 0 unless its env var is
+    # set; FIXTURES_RANDOM_*_COUNT is forced to 0 in .env.test so the HTTP
+    # suite (which reloads every fixture before each test) stays fast and
+    # unaffected by random data.
+    App\User\Infrastructure\Fixture\UserFixture:
+        arguments:
+            $randomCount: '%env(int:default:fixtures_random_user_count_default:FIXTURES_RANDOM_USER_COUNT)%'
+
+    App\Document\Infrastructure\Fixture\DocumentFixture:
+        arguments:
+            $randomCount: '%env(int:default:fixtures_random_document_count_default:FIXTURES_RANDOM_DOCUMENT_COUNT)%'
+
+    App\Project\Infrastructure\Fixture\ProjectFixture:
+        arguments:
+            $randomCount: '%env(int:default:fixtures_random_project_count_default:FIXTURES_RANDOM_PROJECT_COUNT)%'
+
+    App\Project\Infrastructure\Fixture\TaskFixture:
+        arguments:
+            $randomCount: '%env(int:default:fixtures_random_task_count_default:FIXTURES_RANDOM_TASK_COUNT)%'

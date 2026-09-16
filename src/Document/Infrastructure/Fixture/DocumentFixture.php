@@ -11,20 +11,29 @@ final class DocumentFixture extends Fixture
 {
     public function __construct(
         private readonly DocumentObjectStorageFixtureSeeder $objectStorageSeeder,
+        private readonly int $randomCount = 0,
     ) {
     }
 
     public function load(ObjectManager $manager): void
     {
-        $this->objectStorageSeeder->seed();
+        $definitions = [
+            ...DocumentFixtureCatalog::definitions(),
+            ...DocumentFixtureCatalog::randomDefinitions($this->randomCount),
+        ];
 
-        foreach (DocumentFixtureCatalog::definitions() as $definition) {
+        $this->objectStorageSeeder->seed($definitions);
+
+        foreach ($definitions as $definition) {
             $document = DocumentFixtureCatalog::createDocument($definition);
 
             $document->pullDomainEvents();
 
             $manager->persist($document);
-            $this->addReference($definition['reference'], $document);
+
+            if (null !== $definition['reference']) {
+                $this->addReference($definition['reference'], $document);
+            }
         }
 
         $manager->flush();
