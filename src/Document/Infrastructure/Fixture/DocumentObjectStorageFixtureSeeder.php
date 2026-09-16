@@ -19,13 +19,27 @@ final class DocumentObjectStorageFixtureSeeder
     ) {
     }
 
-    public function seed(): void
+    /**
+     * @param list<array{
+     *     reference: ?string,
+     *     id: string,
+     *     ownerId: string,
+     *     bucket: string,
+     *     originalName: string,
+     *     size: int,
+     *     mimeType: string
+     * }> $definitions Named catalog entries plus any random ones — must match
+     *                 exactly what the caller then persists as `Document` rows,
+     *                 so the two stay byte-for-byte in sync (same ids, same
+     *                 object paths)
+     */
+    public function seed(array $definitions): void
     {
         if (!$this->isObjectStorageAvailable()) {
             return;
         }
 
-        foreach (DocumentFixtureCatalog::bucketNames() as $bucketName) {
+        foreach (DocumentFixtureCatalog::bucketNames($definitions) as $bucketName) {
             $bucket = BucketName::fromString($bucketName);
 
             if (!$this->bucketChecker->exists($bucket)) {
@@ -33,7 +47,7 @@ final class DocumentObjectStorageFixtureSeeder
             }
         }
 
-        foreach (DocumentFixtureCatalog::definitions() as $definition) {
+        foreach ($definitions as $definition) {
             $this->documentStorage->upload(
                 bucket: BucketName::fromString($definition['bucket']),
                 objectPath: DocumentFixtureCatalog::objectPathFor($definition),

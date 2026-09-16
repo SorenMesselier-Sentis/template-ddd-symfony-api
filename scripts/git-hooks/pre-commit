@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Installed via `make hooks-install` (git config core.hooksPath scripts/git-hooks).
+# No local package required — everything below is plain bash/git, with PHP CS Fixer
+# running in the php container when it's up (falls back to vendor/bin on the host).
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT_DIR"
+
+# Null-delimited to survive filenames with spaces; read loop (not mapfile) to
+# stay compatible with the ancient bash 3.2 macOS ships as /bin/bash.
+STAGED_FILES=()
+while IFS= read -r -d '' file; do
+    STAGED_FILES+=("$file")
+done < <(git diff --cached --name-only --diff-filter=ACM -z)
+
+if [[ ${#STAGED_FILES[@]} -eq 0 ]]; then
+    exit 0
+fi
+
+status=0
+
+# --- Block sensitive files -------------------------------------------------
+SENSITIVE_PATTERN='(^|/)\.env\.local$|(^|/)\.env\.[^/]*\.local$|^config/jwt/.*\.pem$|^config/secrets/[^/]+/.*\.private\.php$'
+sensitive_hits=()
+for file in "${STAGED_FILES[@]}"; do
+    if [[ "$file" =~ $SENSITIVE_PATTERN ]]; then
+        sensitive_hits+=("$file")
+    fi
+done
+if [[ ${#sensitive_hits[@]} -gt 0 ]]; then
+    echo "✗ Sensitive file(s) staged — must not be committed:" >&2
+    printf '    %s\n' "${sensitive_hits[@]}" >&2
+    echo "  Use .env.local (gitignored) for secrets and keep JWT keys local." >&2
+    status=1
+fi
+
+# --- Detect private keys in staged content ---------------------------------
+PRIVATE_KEY_PATTERN='-----BEGIN (RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----'
+key_hits=()
+for file in "${STAGED_FILES[@]}"; do
+    if git show ":$file" 2>/dev/null | grep -qE -- "$PRIVATE_KEY_PATTERN"; then
+        key_hits+=("$file")
+    fi
+done
+if [[ ${#key_hits[@]} -gt 0 ]]; then
+    echo "✗ Private key material detected in staged content:" >&2
+    printf '    %s\n' "${key_hits[@]}" >&2
+    status=1
+fi
+
+# --- PHP CS Fixer (dry-run) on staged PHP files -----------------------------
+php_files=()
+for file in "${STAGED_FILES[@]}"; do
+    if [[ "$file" == *.php && -f "$file" ]]; then
+        php_files+=("$file")
+    fi
+done
+if [[ ${#php_files[@]} -gt 0 ]]; then
+    if ! scripts/git-hooks/lib-php-cs-fixer.sh "${php_files[@]}"; then
+        status=1
+    fi
+fi
+
+exit $status

@@ -128,10 +128,21 @@ events.product:
 
 ### 8. Fixtures
 
+Write fixtures as part of scaffolding the new BC/entity, not as a later follow-up — every reference context (`User`, `Document`, `Project`) ships both a fixed record and a random-bulk layer from day one.
+
 - [ ] `<Name>Fixture.php` in `Infrastructure/Fixture/`
 - [ ] Use `FixtureData` / `FixtureReference` from Shared for stable IDs and cross-test values
 - [ ] No `Shared/Infrastructure` orchestrator importing other BC fixtures (Deptrac)
 - [ ] Cross-BC links via UUID constants only, or [fixture groups](../README.md#fixtures-and-test-data) when a real entity dependency exists
+- [ ] Random-bulk layer via `FixtureFaker` + a `$randomCount` constructor arg, generated alongside the fixed record(s) — not bolted on afterwards. Wire it in `config/services.yaml` the same way as `ProjectFixture`/`UserFixture`/`DocumentFixture`:
+
+```yaml
+App\Product\Infrastructure\Fixture\ProductFixture:
+    arguments:
+        $randomCount: '%env(int:default:fixtures_random_product_count_default:FIXTURES_RANDOM_PRODUCT_COUNT)%'
+```
+
+  with the `fixtures_random_product_count_default` parameter set to `0` and the real count defined via `FIXTURES_RANDOM_PRODUCT_COUNT` in `.env`/`.env.local` (forced to `0` in `.env.test`) — see [README "Named fixtures vs. random bulk volume"](../README.md#fixtures-and-test-data). Never randomize the named/stable rows themselves. A missing `$randomCount` binding silently defaults to `0` and produces no random rows without erroring, so don't skip the `services.yaml` wiring.
 
 ### 9. Tests
 
@@ -230,4 +241,4 @@ make ci
 
 Runs `cs-check`, `phpstan` (level 9), `deptrac`, and all PHPUnit suites.
 
-Optional local hooks: [README — Pre-commit](../README.md#pre-commit-hooks-recommended).
+Optional local hooks: [README — Git hooks](../README.md#git-hooks-recommended).

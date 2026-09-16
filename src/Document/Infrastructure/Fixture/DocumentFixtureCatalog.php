@@ -11,13 +11,22 @@ use App\Document\Domain\ValueObject\MimeType;
 use App\Document\Domain\ValueObject\ObjectPath;
 use App\Document\Domain\ValueObject\OwnerId;
 use App\Shared\Infrastructure\Fixture\FixtureData;
+use App\Shared\Infrastructure\Fixture\FixtureFaker;
 use App\Shared\Infrastructure\Fixture\FixtureReference;
 
 final class DocumentFixtureCatalog
 {
+    private const RANDOM_BUCKETS = ['documents', 'invoices'];
+
+    private const RANDOM_MIME_TYPES = [
+        'application/pdf' => 'pdf',
+        'image/png' => 'png',
+        'text/plain' => 'txt',
+    ];
+
     /**
      * @return list<array{
-     *     reference: string,
+     *     reference: ?string,
      *     id: string,
      *     ownerId: string,
      *     bucket: string,
@@ -60,13 +69,62 @@ final class DocumentFixtureCatalog
     }
 
     /**
+     * Extra unreferenced documents on top of the named ones above, purely to
+     * populate the database with a realistic volume — e.g. for exercising
+     * `GET /documents` pagination. Owned by the three named users only (never
+     * a made-up id), so every random document still belongs to a real,
+     * loggable-in account. Count is 0 unless `FIXTURES_RANDOM_DOCUMENT_COUNT`
+     * is set (see README "Fixtures and test data"); always 0 in the test env.
+     *
+     * @return list<array{
+     *     reference: ?string,
+     *     id: string,
+     *     ownerId: string,
+     *     bucket: string,
+     *     originalName: string,
+     *     size: int,
+     *     mimeType: string
+     * }>
+     */
+    public static function randomDefinitions(int $count): array
+    {
+        if ($count < 1) {
+            return [];
+        }
+
+        $faker = FixtureFaker::create();
+        $owners = [FixtureData::USER_JOHN_ID, FixtureData::USER_JANE_ID, FixtureData::USER_BOB_ID];
+
+        $definitions = [];
+
+        for ($i = 0; $i < $count; ++$i) {
+            $mimeType = (string) $faker->randomKey(self::RANDOM_MIME_TYPES);
+            $extension = self::RANDOM_MIME_TYPES[$mimeType];
+
+            $definitions[] = [
+                'reference' => null,
+                'id' => DocumentId::random()->value(),
+                'ownerId' => FixtureFaker::randomElement($faker, $owners),
+                'bucket' => FixtureFaker::randomElement($faker, self::RANDOM_BUCKETS),
+                'originalName' => sprintf('%s.%s', $faker->slug(3), $extension),
+                'size' => $faker->numberBetween(1_024, 5_000_000),
+                'mimeType' => $mimeType,
+            ];
+        }
+
+        return $definitions;
+    }
+
+    /**
+     * @param list<array{bucket: string, ...}> $definitions
+     *
      * @return list<string>
      */
-    public static function bucketNames(): array
+    public static function bucketNames(array $definitions): array
     {
         $buckets = [];
 
-        foreach (self::definitions() as $definition) {
+        foreach ($definitions as $definition) {
             $buckets[$definition['bucket']] = true;
         }
 
@@ -75,7 +133,7 @@ final class DocumentFixtureCatalog
 
     /**
      * @param array{
-     *     reference: string,
+     *     reference: ?string,
      *     id: string,
      *     ownerId: string,
      *     bucket: string,
@@ -102,7 +160,7 @@ final class DocumentFixtureCatalog
 
     /**
      * @param array{
-     *     reference: string,
+     *     reference: ?string,
      *     id: string,
      *     ownerId: string,
      *     bucket: string,
@@ -122,7 +180,7 @@ final class DocumentFixtureCatalog
 
     /**
      * @param array{
-     *     reference: string,
+     *     reference: ?string,
      *     id: string,
      *     ownerId: string,
      *     bucket: string,

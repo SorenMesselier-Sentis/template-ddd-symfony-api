@@ -2,6 +2,19 @@
 
 A production-ready REST API template built with Symfony 8 and Domain-Driven Design principles.
 
+**New here? Jump straight to [Getting started](#getting-started) to run the project.**
+
+- [Stack](#stack)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Development](#development)
+- [REST API](#rest-api)
+- [Adding a new Bounded Context](#adding-a-new-bounded-context)
+- [Services](#services)
+- [Event flow](#event-flow)
+- [Testing](#testing)
+- [Code quality](#code-quality)
+
 ## Stack
 
 | Layer | Technology |
@@ -362,31 +375,57 @@ Each hub instance keeps updates in memory only (the default "local" transport) �
 
 ### Installation
 
+**1. Clone and configure**
+
 ```bash
 git clone <repository-url>
 cd <project-name>
-cp .env .env.local        # then edit .env.local with your secrets
+cp .env .env.local        # then edit .env.local with your own secrets
+```
+
+**2. First-time setup**
+
+```bash
 make init
 ```
 
-`make init` will build the Docker images, start the core containers (**php (FrankenPHP), postgres, rabbitmq, redis, garage, mailpit** — the minimum needed to run and test the app), install Composer dependencies, create the database, run all migrations, and bootstrap Garage. Prometheus, Grafana and postgres_exporter are optional and not started by `make init`/`make up` — see "Monitoring stack (optional)" below.
+One command does everything: builds the Docker images, starts the core containers (**php (FrankenPHP), postgres, rabbitmq, redis, garage, mailpit** — the minimum needed to run and test the app), installs Composer dependencies, generates a local JWT keypair (`config/jwt/*.pem`, required for auth — see `make jwt-keys` below), creates the database, runs all migrations, loads the fixtures (three demo users plus documents/projects/tasks — see "Fixtures and test data"), and bootstraps Garage. Takes a minute or two the first time (image build + Composer install); every `make up` after that is seconds. Prometheus, Grafana and postgres_exporter are optional and not started by `make init`/`make up` — see "Monitoring stack (optional)" below.
 
-### Pre-commit hooks (recommended)
+Every `make` target passes `docker compose -p <repo-directory-name>` (see `Makefile`'s `DOCKER_COMPOSE`), so container names are namespaced by the checkout's own directory name rather than Compose's default (the basename of `docker/`, identical — and therefore colliding — across every fork). Running two checkouts (e.g. this template and a fork) side by side on the same machine still gets each its own containers, as long as the two directories aren't named identically.
 
-Git hooks are **optional** but recommended to catch formatting drift and accidental secret commits before they reach CI.
-
-Install [pre-commit](https://pre-commit.com/) once per machine, then enable the hooks for this repository:
+**3. Verify it's running**
 
 ```bash
-pip install pre-commit   # or: brew install pre-commit
-pre-commit install --install-hooks   # installs pre-commit + commit-msg hooks
+curl http://localhost:8080/health/live
+# {"data":{"status":"ok"}}
 ```
 
-On every `git commit`, the configured hooks will:
+`/health` (see "Health check (CI/CD)" below) additionally checks database/RabbitMQ/object storage and can report transient errors for a few seconds right after `make init`/`make up` while those containers finish coming up — `/health/live` only confirms the app itself answers requests.
+
+Or open the Swagger UI at [http://localhost:8080/api/doc/](http://localhost:8080/api/doc/) and try `POST /api/v1/auth/login` with one of the seeded users — `john.doe@example.com` / `secret1234` (admin), see "Fixtures and test data" for the full list.
+
+**4. Stop / restart**
+
+```bash
+make down    # stop and remove all containers
+make up      # start again — fast, no rebuild or reinstall
+```
+
+`make ps`/`make logs` inspect the running stack; see "Development" below for the full command reference (database, messaging, email, scaffolding, …).
+
+### Git hooks (recommended)
+
+Git hooks are **optional** but recommended to catch formatting drift and accidental secret commits before they reach CI. They're plain bash scripts under `scripts/git-hooks/` — no Python, no `pip install`, no local package of any kind. Enable them once per clone:
+
+```bash
+make hooks-install   # git config core.hooksPath scripts/git-hooks
+```
+
+On every `git commit`, the hooks will:
 
 - run **PHP CS Fixer** in dry-run mode on staged PHP files (same rules as `make cs-check`)
 - block commits that include sensitive files (`.env.local`, `config/jwt/*.pem`, decrypted Symfony secrets, …)
-- run **detect-private-key** on staged content
+- scan staged content for private key material (`-----BEGIN ... PRIVATE KEY-----`)
 - validate the **commit message** against [Conventional Commits](https://www.conventionalcommits.org/) (`feat: …`, `fix: …`, `chore: …`, etc.)
 
 Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
@@ -399,25 +438,15 @@ git commit -m "fix(user): reject expired refresh tokens"
 git commit -m "chore: update README CI section"
 ```
 
-Run file checks manually against the full tree:
-
-```bash
-pre-commit run --all-files
-```
-
-Test a commit message without committing:
-
-```bash
-echo "feat: example message" | pre-commit run conventional-pre-commit --hook-stage commit-msg --commit-msg-filename /dev/stdin
-```
-
-When the PHP container is running (`make up`), hooks execute PHP CS Fixer inside Docker (PHP 8.4). Otherwise they fall back to `vendor/bin/php-cs-fixer` on the host. You can also check style directly with Composer dependencies installed locally:
+When the PHP container is running (`make up`), the pre-commit hook runs PHP CS Fixer inside Docker (PHP 8.4). Otherwise it falls back to `vendor/bin/php-cs-fixer` on the host if present. You can also check style directly with Composer dependencies installed locally:
 
 ```bash
 vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
 ```
 
 With Docker only, use `make cs-check` instead.
+
+To disable the hooks again: `make hooks-uninstall`.
 
 ### Environment variables
 
@@ -570,12 +599,13 @@ See [`docs/backup-and-restore.md`](docs/backup-and-restore.md) for what's actual
 
 ### Fixtures and test data
 
-Doctrine fixtures live in each bounded context (`User/Infrastructure/Fixture/`, `Document/Infrastructure/Fixture/`). Shared conventions keep dev and test data in sync:
+Doctrine fixtures live in each bounded context (`User/Infrastructure/Fixture/`, `Document/Infrastructure/Fixture/`, `Project/Infrastructure/Fixture/`). Shared conventions keep dev and test data in sync:
 
 | Class | Location | Purpose |
 |---|---|---|
 | `FixtureReference` | `Shared/Infrastructure/Fixture/` | Stable Doctrine reference keys (`user.john`, `document.john.invoice`, …) used with `addReference()` / `getReference()` |
 | `FixtureData` | `Shared/Infrastructure/Fixture/` | Stable values (UUIDs, emails, default password) reused by fixtures and HTTP tests |
+| `FixtureFaker` | `Shared/Infrastructure/Fixture/` | Seedless [`fakerphp/faker`](https://fakerphp.org/) generator factory for the random-bulk layer below |
 
 Each bounded context registers its own fixture class under `<BC>/Infrastructure/Fixture/`. Doctrine auto-discovers every fixture under `src/` — there is **no orchestrator in Shared** (Deptrac forbids `Shared/Infrastructure` from importing other bounded contexts).
 
@@ -589,6 +619,21 @@ php bin/console doctrine:fixtures:load --group=document --append --no-interactio
 ```
 
 HTTP integration tests reset the database and reload all fixtures before each test (`HttpTestCase::resetDatabase()`), then authenticate using credentials from `FixtureData` (e.g. `USER_JOHN_EMAIL` / `DEFAULT_PASSWORD` for admin, `USER_JANE_EMAIL` for a regular user).
+
+#### Named fixtures vs. random bulk volume
+
+The three named users (John = admin, Jane = a regular user with data, Bob = a regular user with none — for permission/empty-state checks) and their documents/project/tasks stay **entirely hand-written and deterministic**: HTTP tests authenticate against `FixtureData::USER_JOHN_EMAIL`/`USER_JANE_EMAIL` by value, and the Project/Task fixtures deliberately demonstrate the cross-BC UUID pattern (`assigneeId`/`attachmentId`) — none of that should be randomized.
+
+On top of that, each BC's main fixture class can append **extra, unreferenced rows** generated via `FixtureFaker`, purely to populate the database with a realistic volume (e.g. to exercise `GET /users`/`GET /documents` pagination, or just to have something to scroll through in dev). Controlled per BC by an env var, all defaulting to 0 (disabled) unless set:
+
+| Env var | Fixture | Default (`.env`) |
+|---|---|---|
+| `FIXTURES_RANDOM_USER_COUNT` | `UserFixture` | 25 |
+| `FIXTURES_RANDOM_DOCUMENT_COUNT` | `DocumentFixture` | 40 |
+| `FIXTURES_RANDOM_PROJECT_COUNT` | `ProjectFixture` | 10 |
+| `FIXTURES_RANDOM_TASK_COUNT` | `TaskFixture` | 60 |
+
+Random documents/projects/tasks are always owned by one of the three named users (never a made-up id), so every generated row still belongs to a real, loggable-in account. `.env.test` forces all four to `0` — `HttpTestCase` reloads every fixture before each test, so any non-zero count there would slow the suite down and make row counts non-deterministic across runs. To add the same layer to a new bounded context, follow the pattern in `UserFixture`/`ProjectFixture`: a `$randomCount` constructor argument wired in `config/services.yaml` via `%env(int:default:...)%`, guarded by `if ($this->randomCount < 1) return;`.
 
 ### Email (local)
 
@@ -1122,15 +1167,8 @@ Run `make ci` locally before opening a PR — it executes the same quality gates
 cp .env .env.local                              # skip if .env.local already exists
 make up-ci                                      # starts postgres/rabbitmq/garage/redis/php + bootstraps Garage
 make install
-
-# Generate JWT keys once (required for auth / HTTP tests):
-docker compose -f docker/compose.yaml --env-file .env.local exec php sh -c '
-  mkdir -p config/jwt
-  openssl genrsa -aes256 -passout pass:change_me -out config/jwt/private.pem 4096
-  openssl rsa -pubout -passin pass:change_me -in config/jwt/private.pem -out config/jwt/public.pem
-'
-
-docker compose -f docker/compose.yaml --env-file .env.local exec php bin/console cache:warmup --env=dev
+make jwt-keys                                   # generate the local JWT keypair once (required for auth / HTTP tests)
+make warmup
 make ci
 ```
 
@@ -1167,7 +1205,7 @@ make deptrac   # run Deptrac with deptrac.yaml
 make ci        # cs-check + phpstan + deptrac + all test suites (recommended before every PR)
 ```
 
-Pre-commit hooks (see [Getting started](#pre-commit-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
+Git hooks (see [Getting started](#git-hooks-recommended)) run the same PHP CS Fixer dry-run check automatically on staged `.php` files before each commit.
 
 If Docker is not available in your environment, run them directly:
 

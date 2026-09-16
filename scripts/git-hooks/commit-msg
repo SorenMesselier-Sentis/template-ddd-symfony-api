@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Installed via `make hooks-install`. Validates Conventional Commits without
+# any external tool — pure bash regex against the commit message file git passes in.
+set -euo pipefail
+
+COMMIT_MSG_FILE="$1"
+FIRST_LINE="$(sed -n '1p' "$COMMIT_MSG_FILE")"
+
+# Ignore merge commits and fixup!/squash! commits.
+if [[ "$FIRST_LINE" =~ ^(Merge|fixup!|squash!) ]]; then
+    exit 0
+fi
+
+TYPES='build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test'
+PATTERN="^(${TYPES})(\([a-z0-9_-]+\))?!?: .+"
+
+if [[ ! "$FIRST_LINE" =~ $PATTERN ]]; then
+    cat >&2 <<EOF
+✗ Commit message does not follow Conventional Commits:
+    $FIRST_LINE
+
+  Expected: <type>(<scope>): <description>
+  Allowed types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test
+
+  Examples:
+    feat(document): add multipart upload endpoints
+    fix(user): reject expired refresh tokens
+    chore: update README CI section
+EOF
+    exit 1
+fi
