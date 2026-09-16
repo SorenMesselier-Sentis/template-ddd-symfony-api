@@ -58,7 +58,7 @@ bash: ## Open a shell inside the php container (working dir /app)
 	$(PHP) sh
 
 install: ## Install Composer dependencies
-	$(COMPOSER) install
+	$(COMPOSER) install --no-interaction --prefer-dist --no-progress
 
 hooks-install: ## Enable git hooks (pre-commit + commit-msg) — plain bash/git, no local package required
 	chmod +x scripts/git-hooks/pre-commit scripts/git-hooks/commit-msg scripts/git-hooks/lib-php-cs-fixer.sh
@@ -86,7 +86,7 @@ clear: ## Clear the Symfony cache and re-dump the autoloader
 	$(COMPOSER) dump-autoload -o
 
 warmup: ## Warm up the Symfony cache
-	$(CONSOLE) cache:warmup
+	$(CONSOLE) cache:warmup --no-debug
 
 db-create: ## Create the database if it doesn't already exist
 	$(CONSOLE) doctrine:database:create --if-not-exists
