@@ -19,6 +19,10 @@ final class PublicApiRequestMatcher
             return true;
         }
 
+        if (str_starts_with($path, '/api/v1/legal/documents')) {
+            return true;
+        }
+
         return str_starts_with($path, '/api/doc');
     }
 }

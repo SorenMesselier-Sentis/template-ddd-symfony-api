@@ -26,6 +26,7 @@ final class ExportMyDataControllerTest extends HttpTestCase
         $this->assertArrayHasKey('exported_at', $payload['data']);
         $this->assertSame(FixtureData::USER_JANE_EMAIL, $payload['data']['profile']['email']);
         $this->assertGreaterThanOrEqual(1, \count($payload['data']['documents']));
+        $this->assertGreaterThanOrEqual(1, \count($payload['data']['profile']['consents']));
     }
 
     public function testExportRequiresAuthentication(): void

@@ -30,4 +30,7 @@ interface UserRepositoryInterface
 
     /** @return CursorPage<User> */
     public function findByFiltersCursor(Filters $filters, CursorPagination $cursorPagination): CursorPage;
+
+    /** @return array<int, User> */
+    public function findDeletedBefore(\DateTimeImmutable $before): array;
 }

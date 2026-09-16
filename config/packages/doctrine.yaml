@@ -12,6 +12,8 @@ doctrine:
             refresh_token_id: App\User\Infrastructure\Persistence\Doctrine\Type\RefreshTokenIdType
             password_reset_token_id: App\User\Infrastructure\Persistence\Doctrine\Type\PasswordResetTokenIdType
             email_verification_token_id: App\User\Infrastructure\Persistence\Doctrine\Type\EmailVerificationTokenIdType
+            consent_id: App\User\Infrastructure\Persistence\Doctrine\Type\ConsentIdType
+            consent_type: App\User\Infrastructure\Persistence\Doctrine\Type\ConsentTypeType
             document_id: App\Document\Infrastructure\Persistence\Doctrine\Type\DocumentIdType
             owner_id: App\Document\Infrastructure\Persistence\Doctrine\Type\OwnerIdType
             bucket_name: App\Document\Infrastructure\Persistence\Doctrine\Type\BucketNameType
@@ -47,6 +49,11 @@ doctrine:
                 prefix: App\User\Domain\Entity
                 is_bundle: false
             emailVerificationToken:
+                type: xml
+                dir: "%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping"
+                prefix: App\User\Domain\Entity
+                is_bundle: false
+            consent:
                 type: xml
                 dir: "%kernel.project_dir%/src/User/Infrastructure/Persistence/Doctrine/Mapping"
                 prefix: App\User\Domain\Entity

@@ -10,6 +10,14 @@ erDiagram
         context json
         occurred_at timestamp0withouttimezone
     }
+    consents {
+        id uuid
+        user_id uuid
+        type varchar30
+        version varchar50
+        given_at timestamp0withouttimezone
+        withdrawn_at timestamp0withouttimezone
+    }
     documents {
         id uuid
         owner_id uuid
@@ -106,6 +114,7 @@ erDiagram
         created_at timestamp0withouttimezone
         updated_at timestamp0withouttimezone
     }
+    consents }o--|| users : "user_id"
     documents }o--|| users : "owner_id"
     email_verification_tokens }o--|| users : "user_id"
     multipart_upload_sessions }o--|| documents : "document_id"

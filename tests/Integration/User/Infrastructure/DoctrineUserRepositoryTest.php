@@ -113,4 +113,36 @@ final class DoctrineUserRepositoryTest extends IntegrationTestCase
         $this->assertNull($page->nextCursor);
         $this->assertGreaterThanOrEqual(1, \count($page->items));
     }
+
+    public function testFindDeletedBeforeOnlyReturnsUsersDeletedBeforeTheCutoff(): void
+    {
+        $oldEnough = UserMother::create();
+        $oldEnough->delete();
+        $this->repository->save($oldEnough);
+
+        $tooRecent = UserMother::create();
+        $tooRecent->delete();
+        $this->repository->save($tooRecent);
+
+        $stillActive = UserMother::create();
+        $this->repository->save($stillActive);
+
+        // Backdate via raw SQL — User::delete() always stamps "now", so the only
+        // way to get a deletion that predates a cutoff in a fast test is to move
+        // the clock on the row directly rather than racing real time.
+        $this->em->getConnection()->executeStatement(
+            'UPDATE users SET deleted_at = ? WHERE id = ?',
+            [(new \DateTimeImmutable('-60 days'))->format('Y-m-d H:i:s'), $oldEnough->id()->value()],
+        );
+        $this->em->clear();
+
+        $cutoff = (new \DateTimeImmutable())->modify('-30 days');
+        $found = $this->repository->findDeletedBefore($cutoff);
+
+        $foundIds = array_map(static fn ($user) => $user->id()->value(), $found);
+
+        $this->assertContains($oldEnough->id()->value(), $foundIds);
+        $this->assertNotContains($tooRecent->id()->value(), $foundIds);
+        $this->assertNotContains($stillActive->id()->value(), $foundIds);
+    }
 }

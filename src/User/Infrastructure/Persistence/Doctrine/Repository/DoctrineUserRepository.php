@@ -123,4 +123,20 @@ final class DoctrineUserRepository implements UserRepositoryInterface
 
         return new CursorPage($items, $nextCursor);
     }
+
+    /** @return array<int, User> */
+    public function findDeletedBefore(\DateTimeImmutable $before): array
+    {
+        /** @var array<int, User> $users */
+        $users = $this->em->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->andWhere('u.status = :deleted')
+            ->andWhere('u.deletedAt < :before')
+            ->setParameter('deleted', UserStatus::DELETED->value)
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getResult();
+
+        return $users;
+    }
 }

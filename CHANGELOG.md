@@ -10,6 +10,24 @@ point of the file for a template that gets forked repeatedly.
 
 ## Unreleased
 
+### Added
+- GDPR retention automation, consent management, and legal document stubs. Soft-deleted personal data
+  was never actually purged — `status = deleted` rows lived forever, failing the storage-limitation
+  principle. Added `Shared\Domain\Privacy\PersonalDataAnonymizerInterface` (the automated counterpart
+  to the existing `PersonalDataExporterInterface`, same auto-tagged/collected pattern), a `User`
+  implementation that scrubs `firstName`/`lastName`/`email` on users soft-deleted past
+  `GDPR_RETENTION_DAYS` (default 30, same fallback-with-warning behavior as `OUTBOX_RETENTION_DAYS`),
+  and a new daily scheduled cleanup task (`CleanupExpiredPersonalDataHandler`, mirrors
+  `CleanupStaleOutboxMessagesHandler`). Also added a `Consent` entity/repository in the `User` BC
+  (`POST`/`GET /users/me/consents`, `DELETE /users/me/consents/{type}`, recorded in the audit trail,
+  included in `GET /users/me/export`) so a fork can record and withdraw consent for
+  `terms_of_service`/`privacy_policy`/`marketing_emails`, plus placeholder `docs/legal/*.md` documents
+  (clearly marked for legal review) and a public `GET /legal/documents` endpoint exposing their current
+  versions via `User\Infrastructure\Legal\LegalDocumentVersion`. Scope is deliberately limited to the
+  `User` BC — the new Shared port is generic so a fork can add `Document`/`Project` implementations the
+  same way `DocumentPersonalDataExporter` extends the export side today. No enforcement (e.g. blocking
+  API calls until ToS is accepted) is included; that's app-specific.
+
 ### Fixed
 - Docker Compose's default project name is the basename of the directory holding the compose file (`docker`) — identical for every fork of this template, so two checkouts on the same machine (e.g. this template and a fork) resolved to the same container names and could silently run commands against each other's stack (including `make db-fresh`, which drops and recreates the database). `Makefile`'s `DOCKER_COMPOSE` now passes `docker compose -p <repo-directory-name>` so each checkout gets its own containers automatically, no per-fork config needed. Added `make jwt-keys` (idempotent) so the JWT keypair setup step in README "Reproduce the CI pipeline locally" no longer needs a raw `docker compose` invocation either.
 - The `-p <repo-directory-name>` fix above broke `quality` CI: `make up-ci` now starts containers under project `<repo-directory-name>`, but every other step in that job (`Install Composer dependencies`, ER diagram generation, JWT keygen, cache warmup) called `docker compose` directly without `-p`, which resolved to the *old* default project (`docker`) — an empty project with no containers, so those steps failed with `service "php" is not running` right after `make up-ci` had just reported it healthy. Rather than re-deriving the project name a second time in CI (two independent computations that can only drift further apart), those steps now call the equivalent `make` target (`make install`, `make er-diagram`, `make jwt-keys`, `make warmup` — all pre-existing) so the Makefile stays the single place that knows about `-p`; `ci.yml` no longer invokes `docker compose` directly at all.

@@ -7,6 +7,7 @@ namespace App\Tests\Unit\User\Application\Privacy;
 use App\Tests\Unit\UnitTestCase;
 use App\Tests\Unit\User\Domain\Mother\UserMother;
 use App\User\Application\Privacy\UserPersonalDataExporter;
+use App\User\Domain\Repository\ConsentRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\User\Domain\ValueObject\UserId;
 
@@ -14,7 +15,10 @@ final class UserPersonalDataExporterTest extends UnitTestCase
 {
     public function testKeyIsProfile(): void
     {
-        $exporter = new UserPersonalDataExporter($this->createStub(UserRepositoryInterface::class));
+        $exporter = new UserPersonalDataExporter(
+            $this->createStub(UserRepositoryInterface::class),
+            $this->createStub(ConsentRepositoryInterface::class),
+        );
 
         $this->assertSame('profile', $exporter->key());
     }
@@ -29,7 +33,10 @@ final class UserPersonalDataExporterTest extends UnitTestCase
             ->with($this->callback(fn (UserId $id) => $id->equals($user->id())))
             ->willReturn($user);
 
-        $exporter = new UserPersonalDataExporter($repository);
+        $consentRepository = $this->createStub(ConsentRepositoryInterface::class);
+        $consentRepository->method('findByUserId')->willReturn([]);
+
+        $exporter = new UserPersonalDataExporter($repository, $consentRepository);
         $data = $exporter->export($user->id()->value());
 
         $this->assertSame($user->id()->value(), $data['id']);
@@ -38,6 +45,7 @@ final class UserPersonalDataExporterTest extends UnitTestCase
         $this->assertSame($user->lastName()->value(), $data['last_name']);
         $this->assertArrayHasKey('roles', $data);
         $this->assertArrayHasKey('created_at', $data);
+        $this->assertSame([], $data['consents']);
     }
 
     public function testExportReturnsEmptyArrayWhenUserNotFound(): void
@@ -45,7 +53,10 @@ final class UserPersonalDataExporterTest extends UnitTestCase
         $repository = $this->createStub(UserRepositoryInterface::class);
         $repository->method('findById')->willReturn(null);
 
-        $exporter = new UserPersonalDataExporter($repository);
+        $exporter = new UserPersonalDataExporter(
+            $repository,
+            $this->createStub(ConsentRepositoryInterface::class),
+        );
 
         $this->assertSame([], $exporter->export(UserId::random()->value()));
     }

@@ -7,6 +7,7 @@ namespace App\User\Domain\Entity;
 use App\Shared\Domain\Bus\Event\DomainEvent;
 use App\Shared\Domain\ValueObject\Email;
 use App\User\Domain\Event\UserActivated;
+use App\User\Domain\Event\UserAnonymized;
 use App\User\Domain\Event\UserCreated;
 use App\User\Domain\Event\UserDeactivated;
 use App\User\Domain\Event\UserDeleted;
@@ -40,6 +41,7 @@ final class User
         private readonly \DateTimeImmutable $createdAt,
         private \DateTimeImmutable $updatedAt,
         private ?\DateTimeImmutable $emailVerifiedAt,
+        private ?\DateTimeImmutable $deletedAt = null,
     ) {
     }
 
@@ -191,12 +193,29 @@ final class User
     public function delete(): void
     {
         $this->status = UserStatus::DELETED;
+        $this->deletedAt = new \DateTimeImmutable();
         $this->touch();
 
         $this->record(new UserDeleted(
             aggregateId: $this->id->value(),
             email: $this->email->value(),
         ));
+    }
+
+    /**
+     * Scrubs personal data on a user that has been soft-deleted past the
+     * GDPR retention window. The row and its id are kept so cross-BC UUID
+     * references, audit log entries, and refresh-token history stay valid —
+     * only the identifying fields are overwritten.
+     */
+    public function anonymize(): void
+    {
+        $this->firstName = UserName::fromString('deleted_user');
+        $this->lastName = UserName::fromString('deleted_user');
+        $this->email = Email::fromString(sprintf('deleted-%s@anonymized.invalid', $this->id->value()));
+        $this->touch();
+
+        $this->record(new UserAnonymized($this->id->value()));
     }
 
     public function isEmailVerified(): bool
@@ -276,5 +295,10 @@ final class User
     public function emailVerifiedAt(): ?\DateTimeImmutable
     {
         return $this->emailVerifiedAt;
+    }
+
+    public function deletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
     }
 }

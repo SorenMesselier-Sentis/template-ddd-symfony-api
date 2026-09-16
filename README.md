@@ -165,13 +165,15 @@ templates/email/
 
 **Channel-agnostic notifications** — `NotificationSenderInterface` (in `Shared/Domain/Notification/`) lets the domain dispatch a `Notification` without knowing its delivery channel. `ChannelNotificationSender` resolves the right `NotificationChannelHandler` from the `NotificationChannel` enum (`email`, `in_app`). For the `email` channel, the handler delegates to `EmailSenderInterface` so the mailer stays a single integration point. This is the path used by `SendWelcomeEmailOnUserCreated` and `SendAccountDeletionEmailOnUserDeleted`, both registered as async `event.bus` handlers in `User/Infrastructure/EventHandler/`.
 
-**Scheduled recurring tasks** — `DefaultSchedule` (in `Shared/Infrastructure/Scheduler/`) is the single `#[AsSchedule('default')]` provider for the application. It is stateful (`stateful(cache)` + `processOnlyLastMissedRun(true)`), so missed ticks during a worker restart are recovered without flooding. It is also `lock()`-guarded with a PostgreSQL advisory lock (`symfony/lock`, DSN in `LOCK_DSN`, `postgresql+advisory://...`): if the `scheduler` worker is scaled to more than one replica, only the replica holding the lock generates and dispatches due messages, so recurring tasks never run twice concurrently. The schedule currently registers three tasks:
+**Scheduled recurring tasks** — `DefaultSchedule` (in `Shared/Infrastructure/Scheduler/`) is the single `#[AsSchedule('default')]` provider for the application. It is stateful (`stateful(cache)` + `processOnlyLastMissedRun(true)`), so missed ticks during a worker restart are recovered without flooding. It is also `lock()`-guarded with a PostgreSQL advisory lock (`symfony/lock`, DSN in `LOCK_DSN`, `postgresql+advisory://...`): if the `scheduler` worker is scaled to more than one replica, only the replica holding the lock generates and dispatches due messages, so recurring tasks never run twice concurrently. The schedule currently registers five tasks:
 
 | Cadence | Task | Handler |
 |---|---|---|
 | every 10 seconds | `RelayOutboxMessages` — publishes pending `outbox_messages` rows to RabbitMQ via the existing `OutboxRelay` | `Shared/Infrastructure/Scheduler/Handler/RelayOutboxMessagesHandler` |
 | daily at 02:00 UTC | `CleanupExpiredRefreshTokens` — deletes expired refresh tokens via `RefreshTokenRepositoryInterface::deleteExpired()` | `User/Infrastructure/Scheduler/CleanupExpiredRefreshTokensHandler` |
+| daily at 02:00 UTC | `CleanupExpiredUserTokens` — deletes expired password-reset and email-verification tokens | `User/Infrastructure/Scheduler/CleanupExpiredUserTokensHandler` |
 | daily at 03:00 UTC | `CleanupStaleOutboxMessages` — purges published outbox rows older than `OUTBOX_RETENTION_DAYS` (default 30) via `OutboxMessagesCleaner` | `Shared/Infrastructure/Scheduler/Handler/CleanupStaleOutboxMessagesHandler` |
+| daily at 04:00 UTC | `CleanupExpiredPersonalData` — anonymizes users soft-deleted more than `GDPR_RETENTION_DAYS` (default 30) days ago, across every `app.gdpr_data_anonymizer`-tagged implementation | `Shared/Infrastructure/Scheduler/Handler/CleanupExpiredPersonalDataHandler` |
 
 Handlers are registered on `command.bus` only (no auto-broadcast to other buses). Failures are logged via `LoggerInterface` and swallowed so a single bad tick never crashes the scheduler worker. The manual `make outbox-relay` and `app:outbox:relay` console command remain available for on-demand triggering.
 
@@ -472,6 +474,10 @@ MAILER_FROM=noreply@example.com
 
 # Outbox cleanup retention (days). Values <1 fall back to 30 with a warning log.
 OUTBOX_RETENTION_DAYS=30
+
+# GDPR retention (days) before soft-deleted personal data is anonymized by the
+# daily scheduled cleanup task. Values <1 fall back to 30 with a warning log.
+GDPR_RETENTION_DAYS=30
 
 # Error tracking (Sentry — see "Error tracking (Sentry)"). Empty = disabled,
 # safe no-op. APP_VERSION doubles as the Sentry release — set it at
@@ -1119,8 +1125,10 @@ On failure after 3 retries:
               → DeadLetterMessageHandler
 
 Periodic maintenance (same Scheduler worker):
-  → daily 02:00 UTC → CleanupExpiredRefreshTokens → RefreshTokenRepositoryInterface::deleteExpired()
-  → daily 03:00 UTC → CleanupStaleOutboxMessages   → OutboxMessagesCleaner::purge(OUTBOX_RETENTION_DAYS)
+  → daily 02:00 UTC → CleanupExpiredRefreshTokens  → RefreshTokenRepositoryInterface::deleteExpired()
+  → daily 02:00 UTC → CleanupExpiredUserTokens      → password-reset + email-verification token cleanup
+  → daily 03:00 UTC → CleanupStaleOutboxMessages    → OutboxMessagesCleaner::purge(OUTBOX_RETENTION_DAYS)
+  → daily 04:00 UTC → CleanupExpiredPersonalData    → app.gdpr_data_anonymizer tagged services (GDPR_RETENTION_DAYS)
 ```
 
 ## Testing

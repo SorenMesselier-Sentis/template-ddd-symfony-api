@@ -17,6 +17,7 @@
         <field name="emailVerifiedAt" type="datetime_immutable" column="email_verified_at" nullable="true"/>
         <field name="createdAt" type="datetime_immutable" column="created_at" nullable="false"/>
         <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="false"/>
+        <field name="deletedAt" type="datetime_immutable" column="deleted_at" nullable="true"/>
 
     </entity>
 </doctrine-mapping>

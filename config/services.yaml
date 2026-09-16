@@ -22,6 +22,8 @@ services:
             tags: ['app.health_check']
         App\Shared\Domain\Privacy\PersonalDataExporterInterface:
             tags: ['app.gdpr_data_exporter']
+        App\Shared\Domain\Privacy\PersonalDataAnonymizerInterface:
+            tags: ['app.gdpr_data_anonymizer']
 
     # Autowire src/ folder
     App\:
@@ -120,6 +122,11 @@ services:
     App\Shared\Infrastructure\Scheduler\Handler\CleanupStaleOutboxMessagesHandler:
         arguments:
             $retentionDays: "%env(int:OUTBOX_RETENTION_DAYS)%"
+
+    App\Shared\Infrastructure\Scheduler\Handler\CleanupExpiredPersonalDataHandler:
+        arguments:
+            $anonymizers: !tagged_iterator app.gdpr_data_anonymizer
+            $retentionDays: "%env(int:GDPR_RETENTION_DAYS)%"
 
     # Logger
     App\Shared\Infrastructure\Logging\MonologLogger:

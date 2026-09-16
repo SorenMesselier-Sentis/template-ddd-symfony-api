@@ -9,6 +9,7 @@ use App\Tests\Unit\User\Domain\Mother\EmailMother;
 use App\Tests\Unit\User\Domain\Mother\HashedPasswordMother;
 use App\Tests\Unit\User\Domain\Mother\UserMother;
 use App\Tests\Unit\User\Domain\Mother\UserNameMother;
+use App\User\Domain\Event\UserAnonymized;
 use App\User\Domain\Event\UserCreated;
 use App\User\Domain\Event\UserDeleted;
 use App\User\Domain\Event\UserReplaced;
@@ -125,10 +126,31 @@ final class UserTest extends UnitTestCase
         $user->delete();
 
         $this->assertEquals(UserStatus::DELETED, $user->status());
+        $this->assertNotNull($user->deletedAt());
 
         $events = $user->pullDomainEvents();
         $this->assertCount(2, $events);
         $this->assertInstanceOf(UserDeleted::class, $events[1]);
+    }
+
+    public function testItAnonymizesAUser(): void
+    {
+        $user = UserMother::create();
+        $id = $user->id()->value();
+        $user->delete();
+        $user->pullDomainEvents();
+
+        $user->anonymize();
+
+        $this->assertEquals($id, $user->id()->value());
+        $this->assertEquals(UserStatus::DELETED, $user->status());
+        $this->assertEquals('deleted_user', $user->firstName()->value());
+        $this->assertEquals('deleted_user', $user->lastName()->value());
+        $this->assertEquals(sprintf('deleted-%s@anonymized.invalid', $id), $user->email()->value());
+
+        $events = $user->pullDomainEvents();
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(UserAnonymized::class, $events[0]);
     }
 
     public function testItUpdatesRoles(): void
