@@ -39,14 +39,6 @@ final class ProjectFixture extends Fixture
         $manager->flush();
     }
 
-    /**
-     * Extra unreferenced projects on top of the named one above, purely to
-     * populate the database with a realistic volume — e.g. for exercising
-     * `GET /projects` pagination. Owned by the three named users only, so
-     * every random project still belongs to a real, loggable-in account.
-     * Count is 0 unless `FIXTURES_RANDOM_PROJECT_COUNT` is set (see README
-     * "Fixtures and test data"); always 0 in the test env.
-     */
     private function loadRandomProjects(ObjectManager $manager): void
     {
         if ($this->randomCount < 1) {
